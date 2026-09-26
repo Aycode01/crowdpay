@@ -172,6 +172,14 @@ export const api = {
     const res = await apiClient.get(`/campaigns/${id}/milestones`, { params });
     return res.data;
   },
+  async getCampaignBudgets(campaignId) {
+    const res = await apiClient.get(`/campaigns/${campaignId}/budgets`);
+    return res.data;
+  },
+  async saveCampaignBudgets(campaignId, budgets) {
+    const res = await apiClient.post(`/campaigns/${campaignId}/budgets`, { budgets });
+    return res.data;
+  },
   async getCampaignTranslations(campaignId) {
     const res = await apiClient.get(`/campaigns/${campaignId}/translations`);
     return res.data?.data || res.data || [];
@@ -322,6 +330,18 @@ export const api = {
   },
   async verify2FA({ code }) {
     const res = await apiClient.post('/users/me/2fa/verify', { code });
+    return res.data;
+  },
+  async requestDataExport() {
+    const res = await apiClient.post('/users/me/exports');
+    return res.data;
+  },
+  async getDataExports() {
+    const res = await apiClient.get('/users/me/exports');
+    return res.data;
+  },
+  async getExportDownloadUrl(exportId) {
+    const res = await apiClient.get(`/users/me/exports/${exportId}/download`);
     return res.data;
   },
   async listCampaignPools(campaignId) {

@@ -264,6 +264,24 @@ router.delete('/campaigns/:id', asyncHandler(async (req, res) => {
 
 /**
  * @openapi
+ * /api/admin/campaigns/{id}/revisions:
+ *   get:
+ *     summary: List revision history for a campaign
+ */
+router.get('/campaigns/:id/revisions', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { rows } = await db.query(
+    `SELECT id, title, description, target_amount, created_at 
+     FROM campaign_revisions 
+     WHERE campaign_id = $1 
+     ORDER BY created_at DESC`,
+    [id]
+  );
+  res.json(rows);
+}));
+
+/**
+ * @openapi
  * /api/admin/users/{id}/ban:
  *   patch:
  *     summary: Ban a user
@@ -406,7 +424,7 @@ router.get('/withdrawals', asyncHandler(async (req, res) => {
 
   const dataResult = await db.query(
     `SELECT wr.id, c.title as campaign_title, u.name as creator_name, wr.amount, wr.asset_type, 
-            wr.status, wr.creator_signed, wr.platform_signed, wr.created_at
+            wr.status, wr.creator_signed, wr.platform_signed, wr.created_at, wr.evidence
      FROM withdrawal_requests wr
      JOIN campaigns c ON wr.campaign_id = c.id
      JOIN users u ON c.creator_id = u.id
