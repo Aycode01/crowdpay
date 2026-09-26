@@ -98,7 +98,7 @@ router.post(
   validateRequest,
   asyncHandler(async (req, res) => {
     const campaignId = req.params.id;
-    const { message } = req.body;
+    const message = req.body.message;
     const isTest = process.env.NODE_ENV === "test";
 
     const { rows: campaignRows } = await db.query(
