@@ -156,10 +156,13 @@ router.post(
                 body: message.length > 200 ? `${message.slice(0, 200).trim()}…` : message,
                 link: `/campaigns/${campaignId}`,
               }).catch((err) =>
-                logger.error("Thank-you notification failed", {
-                  userId: contributor.id,
-                  error: err.message,
-                }),
+                logger.error(
+                  "Thank-you notification failed",
+                  {
+                    userId: contributor.id,
+                    error: err.message,
+                  },
+                ),
               );
 
               return sendThankYouEmail({

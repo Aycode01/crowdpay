@@ -4,10 +4,10 @@ const { Pool } = require('pg');
 const {
   listUpMigrationFilenames,
   readUpSql,
-  readDownSql,
   fileHashFor,
-  downFilenameFor,
   ensureSchemaMigrationsTable,
+  validateMigrationFiles,
+  listAllMigrationFilenames,
   loadApplied,
 } = require('./migrateLib');
 
@@ -44,6 +44,7 @@ const ALREADY_CREATED_CODES = new Set([
 async function runUp() {
   const client = await pool.connect();
   try {
+    validateMigrationFiles();
     await ensureSchemaMigrationsTable(client);
     const appliedRows = await loadApplied(client);
     const appliedMap = new Map(appliedRows.map((r) => [r.filename, r]));
@@ -60,6 +61,7 @@ async function runUp() {
       }
     }
 
+    let count = 0;
     for (const file of listUpMigrationFilenames()) {
       if (appliedMap.has(file)) {
         continue;
@@ -74,29 +76,25 @@ async function runUp() {
           [file, hash]
         );
         await client.query('COMMIT');
+        count++;
       } catch (err) {
         await client.query('ROLLBACK').catch(() => {});
         if (BOOTSTRAP_SCHEMA && err.code && ALREADY_CREATED_CODES.has(err.code)) {
-          // schema.sql already provides the canonical version of this object.
-          // Record the migration as applied so later incremental migrations
-          // (which assume it ran) proceed normally (#800).
-
           await client.query('BEGIN');
           await client.query(
             'INSERT INTO schema_migrations (filename, file_hash) VALUES ($1, $2)',
             [file, hash]
           );
           await client.query('COMMIT');
+          count++;
           continue;
         }
         throw err;
       }
     }
-
-
-  } catch (err) {
+    console.log(`[migrate] Done. Applied ${count} migration(s).`);
+  } catch (_err) {
     await client.query('ROLLBACK').catch(() => {});
-
     process.exitCode = 1;
   } finally {
     client.release();
@@ -111,12 +109,16 @@ async function runStatus() {
     const appliedRows = await loadApplied(client);
     const appliedMap = new Map(appliedRows.map((r) => [r.filename, r]));
 
-    const files = listUpMigrationFilenames();
+    const files = listAllMigrationFilenames();
     const rows = files.map((file) => {
       const record = appliedMap.get(file);
       let status = 'PENDING';
       let appliedAt = '';
-      if (record) {
+      if (!file.endsWith('.sql')) {
+        status = 'UNSUPPORTED FORMAT';
+      } else if (file.endsWith('.down.sql')) {
+        status = 'DOWN MIGRATION';
+      } else if (record) {
         appliedAt = record.applied_at instanceof Date
           ? record.applied_at.toISOString()
           : String(record.applied_at);
@@ -132,12 +134,13 @@ async function runStatus() {
     console.log('-----------------');
     for (const r of rows) {
       const at = r.appliedAt ? ` @ ${r.appliedAt}` : '';
-      console.log(`  ${r.status.padEnd(24)} ${r.file}${at}`);
+      console.log(`  ${r.status.padEnd(28)} ${r.file}${at}`);
     }
     const pending = rows.filter((r) => r.status === 'PENDING').length;
-    const applied = rows.length - pending;
+    const applied = rows.filter((r) => r.status.startsWith('APPLIED')).length;
+    const unsupported = rows.filter((r) => r.status === 'UNSUPPORTED FORMAT').length;
     console.log('-----------------');
-    console.log(`${applied} applied, ${pending} pending (${rows.length} total).`);
+    console.log(`${applied} applied, ${pending} pending, ${unsupported} unsupported (${rows.length} total).`);
   } catch (err) {
     console.error('[migrate:status] Failed:', err.message);
     process.exitCode = 1;
@@ -147,44 +150,9 @@ async function runStatus() {
   }
 }
 
-async function runDown(count) {
-  const client = await pool.connect();
-  try {
-    await ensureSchemaMigrationsTable(client);
-    const appliedRows = await loadApplied(client);
-    const appliedSet = new Set(appliedRows.map((r) => r.filename));
-
-    const appliedSeq = listUpMigrationFilenames().filter((f) => appliedSet.has(f));
-    const toRollBack = appliedSeq.slice(-count).reverse();
-
-    if (toRollBack.length === 0) {
-      console.log('[migrate:down] No applied migrations to roll back.');
-      return;
-    }
-
-    for (const file of toRollBack) {
-      const down = readDownSql(file);
-      if (down === null || down === undefined) {
-        console.error(
-          `[migrate:down] No down migration found for '${file}' ` +
-            `(expected ${downFilenameFor(file)}). Skipping.`
-        );
-        continue;
-      }
-      console.log(`[migrate:down] Rolling back: ${file}`);
-      await client.query('BEGIN');
-      await client.query(down);
-      await client.query('DELETE FROM schema_migrations WHERE filename = $1', [file]);
-      await client.query('COMMIT');
-    }
-  } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
-    console.error('[migrate:down] Failed:', err.message);
-    process.exitCode = 1;
-  } finally {
-    client.release();
-    await pool.end();
-  }
+async function runDown() {
+  console.error('[migrate:down] Rollback is not supported due to lack of down migration files.');
+  process.exitCode = 1;
 }
 
 async function main() {
@@ -196,14 +164,12 @@ async function main() {
     case 'status':
       await runStatus();
       break;
-    case 'down': {
-      const n = Number(process.argv[3]);
-      await runDown(Number.isFinite(n) ? n : 1);
+    case 'down':
+      await runDown();
       break;
-    }
     default:
       console.error(`Unknown command: ${COMMAND}`);
-      console.error('Usage: node db/migrate.js [up|status|down [count]] [--bootstrap-schema]');
+      console.error('Usage: node db/migrate.js [up|status|down] [--bootstrap-schema]');
       console.error('  --bootstrap-schema  skip migrations whose objects already exist after');
       console.error('                      `psql -f db/schema.sql` (used by npm run migrate:fresh)');
       process.exitCode = 1;

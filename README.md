@@ -54,6 +54,14 @@ Backend  ───────────────────────�
 
 ---
 
+## Database Migrations
+
+CrowdPay uses a strict SQL migration runner located in `backend/db/`. All migration files must be `.sql` files in `backend/db/migrations/`.
+
+- Run migrations: `npm run migrate`
+- Check migration status: `npm run migrate:status` (lists all migrations, including unsupported formats with explicit states)
+- Bootstrap schema and run migrations: `npm run migrate:fresh`
+
 ## Project Structure
 
 ```
@@ -113,7 +121,7 @@ npm run migrate
 
 cd ../frontend && npm install
 # Optional: copy frontend defaults before overriding API, Stellar, Firebase, or Sentry settings
-cp .env.example .env
+lp .env.example .env
 
 # Two terminals:
 cd backend  && npm run dev   # http://localhost:3001
@@ -279,7 +287,7 @@ Feature flags use pluggable adapters. In addition to the default `env` adapter, 
 ## Part of Savitura
 
 - **[Fluxa](https://github.com/Savitura/Fluxa)** — the payment infrastructure layer
-- **[SaviTools](https://github.com/Savitura/Savitools)** — developer tools for Stellar builders
+- **[SaviTools](https://github.com/Savitura/SaviTools)** — developer tools for Stellar builders
 
 ---
 
