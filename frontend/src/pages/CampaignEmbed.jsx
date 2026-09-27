@@ -51,6 +51,7 @@ export default function CampaignEmbed() {
     const targetOrigin = parentOrigin || '*';
     let lastHeight = 0;
     let frame = 0;
+    let notifyTimeout = 0;
 
     const measureHeight = () => {
       const doc = document.documentElement;
@@ -85,7 +86,7 @@ export default function CampaignEmbed() {
     window.addEventListener('load', scheduleNotify);
 
     frame = window.requestAnimationFrame(() => {
-      setTimeout(scheduleNotify, 50);
+      notifyTimeout = window.setTimeout(scheduleNotify, 50);
     });
 
     return () => {
@@ -93,6 +94,7 @@ export default function CampaignEmbed() {
       window.removeEventListener('resize', scheduleNotify);
       window.removeEventListener('load', scheduleNotify);
       if (frame) window.cancelAnimationFrame(frame);
+      if (notifyTimeout) window.clearTimeout(notifyTimeout);
     };
   }, [stats, loading, error, parentOrigin]);
 

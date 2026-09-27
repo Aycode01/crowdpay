@@ -7,7 +7,7 @@ import {
   isCreatorChecklistDismissed,
   restoreCreatorChecklist,
   shouldShowCreatorChecklist,
-} from '../lib/onboarding';
+} from '../../lib/onboarding';
 
 describe('creator onboarding checklist', () => {
   beforeEach(() => {

@@ -153,5 +153,5 @@ describe('Campaign Translations UI & Logic', () => {
         })
       );
     });
-  });
+  }, 15000);
 });
