@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import PropTypes from 'prop-types';
 import * as Sentry from '@sentry/react';
 import { api } from '../services/api';
@@ -272,6 +273,7 @@ function PlatformHealthPanel() {
 }
 
 function WithdrawalQueue() {
+  const { t } = useTranslation();
   const [rows, setRows] = useState([]);
   const [review, setReview] = useState(null);
   const [error, setError] = useState(null);
@@ -488,7 +490,7 @@ function WithdrawalQueue() {
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   rows={3}
-                  placeholder="Explain why this withdrawal is rejected…"
+                  placeholder={t('admin.withdrawalRejectionPlaceholder')}
                 />
                 <button type="button" className="btn-secondary" disabled={busy} onClick={reject}>
                   Reject withdrawal

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getNetwork, signTransaction } from '@stellar/freighter-api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -39,6 +40,7 @@ async function completeGovernanceAction(prepareResponse, submitSignedUrl) {
 export default function Governance() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const [feeInfo, setFeeInfo] = useState(null);
   const [proposals, setProposals] = useState([]);
   const [activeProposal, setActiveProposal] = useState(null);
@@ -362,9 +364,9 @@ export default function Governance() {
                       value={newProposal.new_fee_bps}
                       onChange={(e) => setNewProposal({ ...newProposal, new_fee_bps: e.target.value })}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                      placeholder="250 (2.5%)"
+                      placeholder={t('governance.feePlaceholder')}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Enter basis points (0-10000). 100 bps = 1%</p>
+                    <p className="text-xs text-gray-500 mt-1">{t('governance.basisPointsHelp')}</p>
                   </div>
 
                   <div>
@@ -379,9 +381,9 @@ export default function Governance() {
                       value={newProposal.new_creator_share_bps}
                       onChange={(e) => setNewProposal({ ...newProposal, new_creator_share_bps: e.target.value })}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                      placeholder="500 (5%)"
+                      placeholder={t('governance.creatorSharePlaceholder')}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Enter basis points (0-10000). 100 bps = 1%</p>
+                    <p className="text-xs text-gray-500 mt-1">{t('governance.basisPointsHelp')}</p>
                   </div>
 
                   <div>
@@ -396,7 +398,7 @@ export default function Governance() {
                       onChange={(e) => setNewProposal({ ...newProposal, rationale_text: e.target.value })}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2"
                       rows="3"
-                      placeholder="Explain why this change is needed..."
+                      placeholder={t('governance.rationalePlaceholder')}
                     />
                   </div>
 

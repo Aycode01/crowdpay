@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { getNetwork, signTransaction } from '@stellar/freighter-api';
 import { stellarExpertTxUrl } from '../config/stellar';
@@ -19,7 +20,20 @@ function statusLabel(row, isExpired) {
   return row.status;
 }
 
+function withdrawalsStatusLabel(row, isExpired, t) {
+  if (isExpired) return t('withdrawals.statusExpired');
+  if (row.status === 'pending') {
+    if (!row.creator_signed) return t('withdrawals.awaitingCreator');
+    if (!row.platform_signed) return t('withdrawals.awaitingPlatform');
+  }
+  if (row.status === 'submitted') return t('withdrawals.releasedOnChain');
+  if (row.status === 'denied') return t('withdrawals.deniedCancelled');
+  if (row.status === 'failed') return t('withdrawals.failedSeeAudit');
+  return row.status;
+}
+
 export default function WithdrawalsSection({ campaign, milestones = [], user, token, onReleased }) {
+  const { t } = useTranslation();
   const toast = useToast();
   const [forbidden, setForbidden] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -533,14 +547,14 @@ export default function WithdrawalsSection({ campaign, milestones = [], user, to
                     {row.destination_key.slice(0, 6)}…{row.destination_key.slice(-4)}
                   </code>
                 </div>
-                <div style={styles.meta}>{statusLabel(row, expiredIds.has(row.id))}</div>
+                <div style={styles.meta}>{withdrawalsStatusLabel(row, expiredIds.has(row.id), t)}</div>
                 {row.evidence && row.evidence.length > 0 && (
                   <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
-                    <strong>Evidence:</strong>{' '}
+                    <strong>{t('withdrawals.evidenceLabel')}</strong>{' '}
                     {row.evidence.map((ev, i) => (
                       <span key={i}>
                         <a href={ev} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)' }}>
-                          Link {i + 1}
+                          {t('withdrawals.link', { num: i + 1 })}
                         </a>
                         {i < row.evidence.length - 1 ? ', ' : ''}
                       </span>
@@ -553,8 +567,7 @@ export default function WithdrawalsSection({ campaign, milestones = [], user, to
                     style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}
                     role="alert"
                   >
-                    This withdrawal XDR has expired. Please cancel this request and submit a new
-                    one.
+                    {t('withdrawals.expiredNotice')}
                   </div>
                 )}
                 {row.denial_reason && (

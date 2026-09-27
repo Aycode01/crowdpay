@@ -38,7 +38,7 @@ CREATE TABLE campaigns (
   asset_type          TEXT NOT NULL CHECK (asset_type IN ('XLM', 'USDC')),
   wallet_public_key   TEXT UNIQUE NOT NULL,
   status              TEXT NOT NULL DEFAULT 'active'
-                        CHECK (status IN ('active', 'funded', 'in_progress', 'completed', 'closed', 'withdrawn', 'failed', 'suspended')),
+                        CHECK (status IN ('active', 'funded', 'in_progress', 'completed', 'closed', 'withdrawn', 'failed', 'suspended', 'disputed')),
   deadline            DATE,
   show_backer_amounts BOOLEAN DEFAULT TRUE,
   category            TEXT CHECK (category IN (
@@ -99,6 +99,7 @@ CREATE TABLE contributions (
   tx_hash             TEXT UNIQUE NOT NULL,  -- deduplicate by Stellar transaction hash
   display_name        VARCHAR(50),
   refunded            BOOLEAN NOT NULL DEFAULT FALSE,
+  refund_status       TEXT CHECK (refund_status IN ('partial', 'full')),
   platform_fee_amount NUMERIC(20, 7),
   ip_address          TEXT,
   device_fingerprint  TEXT,   -- salted HMAC of client device fingerprint (never raw)
@@ -175,18 +176,18 @@ CREATE INDEX idx_announcements_created_by ON platform_announcements (created_by)
 CREATE INDEX idx_announcements_current ON platform_announcements (active_from DESC)
   WHERE deactivated_at IS NULL;
 
-CREATE INDEX ON contributions (campaign_id);
+CREATE INDEX idx_contributions_campaign_id ON contributions (campaign_id);
 CREATE INDEX idx_contributions_campaign_unrefunded
   ON contributions (campaign_id)
   WHERE refunded = FALSE;
-CREATE INDEX ON contributions (tx_hash);
+CREATE INDEX idx_contributions_tx_hash ON contributions (tx_hash);
 CREATE UNIQUE INDEX contributions_anchor_transaction_idx
   ON contributions (anchor_id, anchor_transaction_id)
   WHERE anchor_transaction_id IS NOT NULL;
-CREATE INDEX ON campaigns (status);
-CREATE INDEX ON campaigns (creator_id);
-CREATE INDEX ON campaigns (category);
-CREATE INDEX ON campaigns (featured) WHERE featured = TRUE;
+CREATE INDEX idx_campaigns_status ON campaigns (status);
+CREATE INDEX idx_campaigns_creator_id ON campaigns (creator_id);
+CREATE INDEX idx_campaigns_category ON campaigns (category);
+CREATE INDEX idx_campaigns_featured ON campaigns (featured) WHERE featured = TRUE;
 CREATE UNIQUE INDEX users_kyc_provider_reference_idx
   ON users (kyc_provider_reference)
   WHERE kyc_provider_reference IS NOT NULL;

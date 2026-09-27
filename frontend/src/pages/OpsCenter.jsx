@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ResponsiveContainer,
   LineChart,
@@ -10,6 +11,7 @@ import {
 } from 'recharts';
 
 export default function OpsCenter() {
+  const { t } = useTranslation();
   const [apiKey, setApiKey] = useState(
     () => localStorage.getItem('cp_ops_api_key') || sessionStorage.getItem('cp_ops_api_key') || ''
   );
@@ -238,7 +240,7 @@ export default function OpsCenter() {
                 type="password"
                 value={tempKey}
                 onChange={(e) => setTempKey(e.target.value)}
-                placeholder="Enter key (e.g. ops_secret_dev_key)"
+                placeholder={t('opsCenter.apiKeyPlaceholder')}
                 required
                 style={styles.input}
               />

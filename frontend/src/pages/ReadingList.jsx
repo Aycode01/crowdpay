@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useToast } from '../context/ToastContext';
 
 export default function ReadingList() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -39,16 +41,16 @@ export default function ReadingList() {
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reading List</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('readingList.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {campaigns.length} saved {campaigns.length === 1 ? 'campaign' : 'campaigns'}
+            {campaigns.length} {t(campaigns.length === 1 ? 'readingList.campaign' : 'readingList.campaigns')}
           </p>
         </div>
         <Link
           to="/discover"
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
         >
-          Discover Campaigns
+          {t('readingList.discoverCampaigns')}
         </Link>
       </div>
 
@@ -56,7 +58,7 @@ export default function ReadingList() {
       <div className="flex flex-wrap gap-3 mb-6">
         <input
           type="text"
-          placeholder="Search saved campaigns..."
+          placeholder={t('readingList.searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1 min-w-[200px] px-3 py-2 border rounded-lg text-sm"
@@ -66,22 +68,22 @@ export default function ReadingList() {
           onChange={(e) => setFilter(e.target.value)}
           className="px-3 py-2 border rounded-lg text-sm"
         >
-          <option value="all">All status</option>
-          <option value="active">Active</option>
-          <option value="funded">Funded</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
+          <option value="all">{t('readingList.allStatus')}</option>
+          <option value="active">{t('home.statusActive')}</option>
+          <option value="funded">{t('home.statusFunded')}</option>
+          <option value="in_progress">{t('readingList.statusInProgress')}</option>
+          <option value="completed">{t('readingList.statusCompleted')}</option>
         </select>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-400">Loading...</div>
+        <div className="text-center py-12 text-gray-400">{t('common.loading')}</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
-          {search ? 'No campaigns match your search.' : 'Your reading list is empty.'}
+          {search ? t('readingList.noMatches') : t('readingList.empty')}
           <br />
           <Link to="/discover" className="text-indigo-600 hover:text-indigo-800 text-sm font-medium mt-2 inline-block">
-            Browse campaigns to save them
+            {t('readingList.browseCampaigns')}
           </Link>
         </div>
       ) : (
@@ -102,7 +104,7 @@ export default function ReadingList() {
                   <button
                     onClick={() => handleRemove(camp.id)}
                     className="shrink-0 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded"
-                    title="Remove from reading list"
+                    title={t('readingList.removeFromList')}
                   >
                     ✕
                   </button>
@@ -111,7 +113,7 @@ export default function ReadingList() {
                 <div className="mt-3">
                   <div className="flex items-center justify-between text-sm mb-1">
                     <span className="text-gray-500">
-                      {Number(camp.raised_amount).toLocaleString()} raised
+                      {Number(camp.raised_amount).toLocaleString()} {t('readingList.raised')}
                     </span>
                     <span className="font-medium text-gray-700">{pct.toFixed(1)}%</span>
                   </div>
@@ -136,7 +138,7 @@ export default function ReadingList() {
                     to={`/campaigns/${camp.id}`}
                     className="text-indigo-600 hover:text-indigo-800 font-medium"
                   >
-                    View →
+                    {t('readingList.view')}
                   </Link>
                 </div>
               </div>

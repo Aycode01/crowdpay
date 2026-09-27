@@ -868,7 +868,7 @@ export default function CreateCampaign() {
                 step="any"
                 value={form.target_amount}
                 onChange={setField('target_amount')}
-                placeholder="0.00"
+                placeholder={t('createCampaign.targetAmountPlaceholder')}
                 required
                 aria-required="true"
               />
@@ -892,19 +892,19 @@ export default function CreateCampaign() {
 
             <div className="form-stack" style={{ marginTop: '1rem' }}>
               <label className="label-strong" htmlFor="cc-category">
-                Category (Optional)
+                {t('createCampaign.contributionLimits')}
               </label>
               <input
                 id="cc-category"
                 value={form.category}
                 onChange={setField('category')}
-                placeholder="e.g. tech, art, community"
+                placeholder={t('createCampaign.categoryPlaceholder')}
                 autoComplete="off"
               />
             </div>
 
             <div style={{ marginTop: '1.25rem', border: '1px dashed var(--color-border)', padding: '1rem', borderRadius: '8px' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.5rem' }}>Contribution limits (Optional)</h3>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.5rem' }}>{t('createCampaign.contributionLimits')}</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div className="form-stack">
                   <label className="label-strong" htmlFor="cc-min-contrib">
@@ -918,7 +918,7 @@ export default function CreateCampaign() {
                     step="any"
                     value={form.min_contribution}
                     onChange={setField('min_contribution')}
-                    placeholder="e.g. 5"
+                    placeholder={t('createCampaign.minContributionPlaceholder')}
                   />
                 </div>
                 <div className="form-stack">
@@ -933,7 +933,7 @@ export default function CreateCampaign() {
                     step="any"
                     value={form.max_contribution}
                     onChange={setField('max_contribution')}
-                    placeholder="e.g. 500"
+                    placeholder={t('createCampaign.maxContributionPlaceholder')}
                   />
                 </div>
               </div>
@@ -1108,7 +1108,7 @@ export default function CreateCampaign() {
                 type="text"
                 value={form.country}
                 onChange={setField('country')}
-                placeholder="e.g. United States, Kenya, Global"
+                placeholder={t('createCampaign.countryPlaceholder')}
                 maxLength={80}
               />
             </div>
@@ -1559,7 +1559,7 @@ export default function CreateCampaign() {
                       <input
                         value={milestone.title}
                         onChange={(e) => setMilestoneField(index, 'title', e.target.value)}
-                        placeholder="e.g. Deliver prototype"
+                        placeholder={t('createCampaign.milestoneTitlePlaceholder')}
                       />
                     </div>
                     <div className="form-stack" style={{ marginTop: '0.75rem' }}>
@@ -1570,7 +1570,7 @@ export default function CreateCampaign() {
                         value={milestone.description}
                         onChange={(e) => setMilestoneField(index, 'description', e.target.value)}
                         rows={3}
-                        placeholder="Explain what contributors should expect before this release unlocks."
+                        placeholder={t('createCampaign.milestoneDescriptionPlaceholder')}
                       />
                     </div>
                     <div className="form-stack" style={{ marginTop: '0.75rem' }}>
@@ -1584,7 +1584,7 @@ export default function CreateCampaign() {
                         onChange={(e) =>
                           setMilestoneField(index, 'release_percentage', e.target.value)
                         }
-                        placeholder="25"
+                        placeholder={t('createCampaign.milestoneReleasePlaceholder')}
                       />
                     </div>
                   </div>
@@ -1604,46 +1604,46 @@ export default function CreateCampaign() {
             )}
 
             <div className="campaign-card" style={{ marginTop: '1.75rem', marginBottom: '1rem' }}>
-              <strong>Reward tiers <span style={{ fontWeight: 500, color: 'var(--color-text-muted)' }}>(optional)</span></strong>
+              <strong>{t('createCampaign.rewardTiers')} <span style={{ fontWeight: 500, color: 'var(--color-text-muted)' }}>{t('createCampaign.rewardTiersOptional')}</span></strong>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.88rem', lineHeight: 1.5, marginTop: '0.35rem' }}>
-                Offer backer perks at set contribution levels. Backers who contribute at or above a {"tier's"} minimum unlock it. Up to 10 tiers.
+                {t('createCampaign.rewardTiersHelp')}
               </p>
             </div>
 
             {form.reward_tiers.length === 0 ? (
               <div className="alert alert--info" style={{ marginBottom: '1rem' }}>
-                No reward tiers yet. Tiers are optional — you can launch without them.
+                {t('createCampaign.noRewardTiers')}
               </div>
             ) : (
               <div style={{ display: 'grid', gap: '0.85rem' }}>
                 {form.reward_tiers.map((tier, index) => (
                   <div key={index} className="campaign-card">
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <strong>Tier {index + 1}</strong>
+                      <strong>{t('createCampaign.tierLabel', { count: index + 1 })}</strong>
                       <button type="button" className="btn-secondary" onClick={() => removeTier(index)} style={{ fontSize: '0.8rem' }}>
-                        Remove
+                        {t('createCampaign.removeTier')}
                       </button>
                     </div>
                     <div className="form-stack">
-                      <label className="label-strong">Title</label>
+                      <label className="label-strong">{t('createCampaign.tierTitle')}</label>
                       <input
                         value={tier.title}
                         onChange={(e) => setTierField(index, 'title', e.target.value)}
-                        placeholder="e.g. Early Bird"
+                        placeholder={t('createCampaign.tierTitlePlaceholder')}
                       />
                     </div>
                     <div className="form-stack" style={{ marginTop: '0.75rem' }}>
-                      <label className="label-strong">Description <span style={{ fontWeight: 500, color: 'var(--color-text-muted)' }}>(optional)</span></label>
+                      <label className="label-strong">{t('createCampaign.tierDescription')} <span style={{ fontWeight: 500, color: 'var(--color-text-muted)' }}>{t('createCampaign.tierDescriptionOptional')}</span></label>
                       <textarea
                         value={tier.description}
                         onChange={(e) => setTierField(index, 'description', e.target.value)}
                         rows={2}
-                        placeholder="What backers get at this tier."
+                        placeholder={t('createCampaign.tierDescriptionPlaceholder')}
                       />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.75rem' }}>
                       <div className="form-stack">
-                        <label className="label-strong">Minimum amount ({form.asset_type})</label>
+                        <label className="label-strong">{t('createCampaign.tierMinAmount', { asset: form.asset_type })}</label>
                         <input
                           type="number"
                           inputMode="decimal"
@@ -1651,11 +1651,11 @@ export default function CreateCampaign() {
                           step="any"
                           value={tier.min_amount}
                           onChange={(e) => setTierField(index, 'min_amount', e.target.value)}
-                          placeholder="e.g. 25"
+                          placeholder={t('createCampaign.tierMinAmountPlaceholder')}
                         />
                       </div>
                       <div className="form-stack">
-                        <label className="label-strong">Limit <span style={{ fontWeight: 500, color: 'var(--color-text-muted)' }}>(optional)</span></label>
+                        <label className="label-strong">{t('createCampaign.tierLimit')} <span style={{ fontWeight: 500, color: 'var(--color-text-muted)' }}>{t('createCampaign.tierLimitOptional')}</span></label>
                         <input
                           type="number"
                           inputMode="numeric"
@@ -1663,12 +1663,12 @@ export default function CreateCampaign() {
                           step="1"
                           value={tier.limit}
                           onChange={(e) => setTierField(index, 'limit', e.target.value)}
-                          placeholder="Unlimited"
+                          placeholder={t('createCampaign.tierLimitPlaceholder')}
                         />
                       </div>
                     </div>
                     <div className="form-stack" style={{ marginTop: '0.75rem' }}>
-                      <label className="label-strong">Estimated delivery <span style={{ fontWeight: 500, color: 'var(--color-text-muted)' }}>(optional)</span></label>
+                      <label className="label-strong">{t('createCampaign.tierEstimatedDelivery')} <span style={{ fontWeight: 500, color: 'var(--color-text-muted)' }}>{t('createCampaign.tierEstimatedDeliveryOptional')}</span></label>
                       <input
                         type="date"
                         min={today}
@@ -1683,27 +1683,27 @@ export default function CreateCampaign() {
                           checked={Boolean(tier.nft_enabled)}
                           onChange={(e) => setTierField(index, 'nft_enabled', e.target.checked)}
                         />
-                        Issue an NFT proof of support for this tier
+                        {t('createCampaign.tierNftEnabled')}
                       </label>
                       <p style={{ marginTop: '0.45rem', marginBottom: '0.65rem', fontSize: '0.84rem', color: 'var(--color-text-secondary)' }}>
-                        Contributors who unlock this tier will receive a unique NFT reward record linked to the campaign.
+                        {t('createCampaign.tierNftHelp')}
                       </p>
                       {Boolean(tier.nft_enabled) && (
                         <div style={{ display: 'grid', gap: '0.65rem' }}>
                           <div className="form-stack">
-                            <label className="label-strong">Metadata URL <span style={{ fontWeight: 500, color: 'var(--color-text-muted)' }}>(optional)</span></label>
+                            <label className="label-strong">{t('createCampaign.tierMetadataUrl')} <span style={{ fontWeight: 500, color: 'var(--color-text-muted)' }}>{t('createCampaign.tierMetadataUrlOptional')}</span></label>
                             <input
                               value={tier.nft_metadata_url || ''}
                               onChange={(e) => setTierField(index, 'nft_metadata_url', e.target.value)}
-                              placeholder="https://ipfs.io/ipfs/..."
+                              placeholder={t('createCampaign.tierMetadataUrlPlaceholder')}
                             />
                           </div>
                           <div className="form-stack">
-                            <label className="label-strong">Artwork URL <span style={{ fontWeight: 500, color: 'var(--color-text-muted)' }}>(optional)</span></label>
+                            <label className="label-strong">{t('createCampaign.tierArtworkUrl')} <span style={{ fontWeight: 500, color: 'var(--color-text-muted)' }}>{t('createCampaign.tierArtworkUrlOptional')}</span></label>
                             <input
                               value={tier.nft_artwork_url || ''}
                               onChange={(e) => setTierField(index, 'nft_artwork_url', e.target.value)}
-                              placeholder="https://ipfs.io/ipfs/..."
+                              placeholder={t('createCampaign.tierArtworkUrlPlaceholder')}
                             />
                           </div>
                         </div>
@@ -1716,7 +1716,7 @@ export default function CreateCampaign() {
 
             {form.reward_tiers.length < 10 && (
               <button type="button" className="btn-secondary" style={{ width: '100%', marginTop: '1rem' }} onClick={addTier}>
-                Add reward tier
+                {t('createCampaign.addRewardTier')}
               </button>
             )}
 

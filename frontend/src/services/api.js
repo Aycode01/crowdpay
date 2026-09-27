@@ -217,6 +217,10 @@ export const api = {
     const res = await apiClient.get(`/creator/campaigns/${campaignId}`);
     return res.data;
   },
+  async getCampaignBackerInsights(campaignId) {
+    const res = await apiClient.get(`/campaigns/${campaignId}/backer-insights`);
+    return res.data;
+  },
   async exportCreatorCampaignData(campaignId) {
     const res = await apiClient.get(`/creator/campaigns/${campaignId}/export`, { responseType: 'blob' });
     const disposition = res.headers['content-disposition'] || '';

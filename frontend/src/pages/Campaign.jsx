@@ -464,7 +464,7 @@ export default function Campaign() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
   const toast = useToast();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const currentLocale = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
 
   const [campaign, setCampaign] = useState(null);
@@ -705,6 +705,20 @@ export default function Campaign() {
         setAnalyticsBackersLoading(false);
       })
       .catch((err) => setLoadError(err.message || 'Could not load campaign.'));
+  
+  // Load backer insights when analytics tab is 'backers'
+  useEffect(() => {
+    if (!id || analyticsTab !== 'backers') {
+      setBackersAnalytics(null);
+      return;
+    }
+    setAnalyticsBackersLoading(true);
+    api
+      .getCampaignBackerInsights(id)
+      .then(setBackersAnalytics)
+      .catch(() => setBackersAnalytics(null))
+      .finally(() => setAnalyticsBackersLoading(false));
+  }, [id, analyticsTab]);
 
     api
       .getContributions(id, { limit: showAll ? 100 : 10, offset: 0 })
@@ -1405,8 +1419,7 @@ export default function Campaign() {
     >
       {showCreatedBanner && (
         <div className="alert alert--success" style={{ marginBottom: '1.25rem' }} role="status">
-          <strong>Campaign is live.</strong> Share the link — contributors can fund in XLM or USDC
-          when conversion paths are available.
+          <strong>{t('campaign.createdBanner')}</strong> {t('campaign.createdBannerBody')}
           <button
             type="button"
             onClick={() => setShowCreatedBanner(false)}
@@ -1420,31 +1433,28 @@ export default function Campaign() {
               minHeight: 'auto',
             }}
           >
-            Dismiss
+            {t('common.dismiss')}
           </button>
         </div>
       )}
       {coverUploadError && (
         <div className="alert alert--warning" style={{ marginBottom: '1.25rem' }} role="status">
-          <strong>Cover image upload failed:</strong> {coverUploadError}
+          <strong>{t('campaign.coverUploadFailed')}</strong> {coverUploadError}
         </div>
       )}
       {campaign.status === 'funded' && (
         <div className="alert alert--success" style={{ marginBottom: '1.25rem' }} role="status">
-          <strong>Goal reached.</strong> This campaign has met its funding target. Contributions may
-          still be open until the creator closes the campaign.
+          <strong>{t('campaign.goalReached')}</strong> {t('campaign.goalReachedBody')}
         </div>
       )}
       {campaign.status === 'failed' && (
         <div className="alert alert--error" style={{ marginBottom: '1.25rem' }} role="status">
-          <strong>Campaign ended.</strong> This campaign did not reach its goal. Contributions are
-          closed and refunds can be requested.
+          <strong>{t('campaign.campaignEnded')}</strong> {t('campaign.campaignEndedBody')}
         </div>
       )}
       {campaign.status === 'refunded' && (
         <div className="alert alert--success" style={{ marginBottom: '1.25rem' }} role="status">
-          <strong>Campaign refunded.</strong> This campaign was refunded — all contributions have
-          been returned to their original senders.
+          <strong>{t('campaign.campaignRefunded')}</strong> {t('campaign.campaignRefundedBody')}
         </div>
       )}
       {campaign.status === 'failed' && user && user.id === campaign.creator_id && (
@@ -1465,8 +1475,7 @@ export default function Campaign() {
               lineHeight: 1.55,
             }}
           >
-            This campaign did not reach its goal. You can refund all contributors — this will build
-            and sign a Stellar transaction that returns each contributor&apos;s exact amount.
+            {t('campaign.campaignEndedBody')}
           </p>
           {refundError && (
             <p
@@ -1498,14 +1507,13 @@ export default function Campaign() {
               fontSize: '0.9rem',
             }}
           >
-            {refundBusy ? 'Processing refund…' : 'Refund contributors'}
+            {refundBusy ? t('campaign.processingRefund') : t('campaign.refundContributors')}
           </button>
         </div>
       )}
       {campaign.creator_kyc_status !== 'verified' && (
         <div className="alert alert--warning" style={{ marginBottom: '1.25rem' }} role="status">
-          <strong>Legacy campaign:</strong> this campaign was created before creator identity
-          verification was required.
+          <strong>{t('campaign.legacyCampaign')}</strong> {t('campaign.legacyCampaignDescription')}
         </div>
       )}
       {editSuccess && (
@@ -1518,7 +1526,7 @@ export default function Campaign() {
       )}
       {!campaign.cover_image_url && (
         <div style={styles.detailCoverPlaceholder} aria-hidden="true">
-          <span style={styles.detailCoverPlaceholderText}>No campaign image yet</span>
+          <span style={styles.detailCoverPlaceholderText}>{t('campaign.noImage')}</span>
         </div>
       )}
       <div style={styles.header}>
@@ -1560,7 +1568,7 @@ export default function Campaign() {
             role="status"
             style={{ marginBottom: '1rem', display: 'grid', gap: '0.5rem' }}
           >
-            <strong>This campaign has an open dispute.</strong>
+            <strong>{t('campaign.openDispute')}</strong>
             <span style={{ fontSize: '0.85rem' }}>
               New contributions are paused and the escrow is frozen while the platform reviews
               the case.
@@ -1677,7 +1685,7 @@ export default function Campaign() {
           <div style={{ textAlign: 'right' }}>
             <div style={styles.big}>{pct}%</div>
             <div style={styles.small}>
-              funded by <strong>{campaign.contributor_count || 0}</strong> backers
+              {t('campaign.fundedByBackers', { count: campaign.contributor_count || 0 })}
             </div>
           </div>
         </div>
@@ -1702,12 +1710,11 @@ export default function Campaign() {
 
         {campaign.status === 'refunded' ? (
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
-            This campaign has been <strong>refunded</strong>. All contributions were returned to
-            their original senders.
+            {t('campaign.refundedCampaignNotice')}
           </p>
         ) : ['failed', 'closed', 'withdrawn'].includes(campaign.status) ? (
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
-            Contributions are closed while this campaign is <strong>{campaign.status}</strong>.
+            {t('campaign.contributionsClosedStatus', { status: campaign.status })}
           </p>
         ) : user ? (
           <>
@@ -3004,7 +3011,13 @@ export default function Campaign() {
           )}
 
           {analyticsTab === 'backers' && (
-            <p style={{ color: 'var(--color-text-muted)' }}>Backer insights coming soon.</p>
+            <React.Suspense fallback={<p style={{ color: 'var(--color-text-muted)' }}>Loading backer insights...</p>}>
+              {analyticsBackersLoading ? (
+                <p style={{ color: 'var(--color-text-muted)' }}>Loading backer insights...</p>
+              ) : (
+                <BackerInsightsCard data={backersAnalytics} assetType={campaign.asset_type} />
+              )}
+            </React.Suspense>
           )}
 
           {analyticsTab === 'referrals' && (
