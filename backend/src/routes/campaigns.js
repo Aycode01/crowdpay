@@ -2,6 +2,7 @@ const router = require('express').Router();
 const multer = require('multer');
 const rateLimit = require('express-rate-limit');
 const { ipKeyGenerator } = rateLimit;
+const { impactStatsLimiter } = require('../middleware/rateLimiter');
 const Sentry = require('@sentry/node');
 const db = require('../config/database');
 const logger = require('../config/logger');
@@ -89,15 +90,6 @@ const { generateCampaignOgImage } = require('../services/ogImageService');
 const crypto = require('crypto');
 
 const IMPACT_CACHE_TTL_MS = 60_000;
-const impactLimiter = rateLimit({
-  windowMs: IMPACT_CACHE_TTL_MS,
-  max: process.env.NODE_ENV === 'test' ? 100000 : 60,
-  message: { error: 'Too many requests, please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => ipKeyGenerator(req.ip),
-  skip: () => process.env.NODE_ENV === 'test',
-});
 
 async function computeCampaignImpact(campaignId) {
   const { rows } = await db.query(
@@ -1149,7 +1141,7 @@ router.get('/:id/contract-status', asyncHandler(async (req, res) => {
   }
 }));
 
-router.get('/:id/impact', impactLimiter, asyncHandler(async (req, res) => {
+router.get('/:id/impact', impactStatsLimiter, asyncHandler(async (req, res) => {
   const campaignId = req.params.id;
   const impact = await campaignsCache.wrap(
     `impact:${campaignId}`,
