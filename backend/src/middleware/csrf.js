@@ -12,6 +12,7 @@ const CSRF_EXEMPT_PATHS = new Set([
   '/api/webhooks/kyc',
   '/api/webhooks/incoming',
   '/api/anchor/callbacks',
+  '/api/anchor/callbacks/sep24',
   '/api/anchor/sep24',
 ]);
 
