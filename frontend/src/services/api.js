@@ -536,6 +536,22 @@ export const api = {
   retryGovernanceSyncRun: (runId) =>
     apiClient.post(`/governance/sync/runs/${runId}/retry`).then((r) => r.data),
 
+  // --- Campaign templates ---
+  getCampaignTemplates: () =>
+    apiClient.get('/campaign-templates').then((r) => r.data),
+
+  adminGetCampaignTemplates: () =>
+    apiClient.get('/campaign-templates/admin').then((r) => r.data),
+
+  adminCreateCampaignTemplate: (data) =>
+    apiClient.post('/campaign-templates/admin', data).then((r) => r.data),
+
+  adminUpdateCampaignTemplate: (id, data) =>
+    apiClient.patch(`/campaign-templates/admin/${id}`, data).then((r) => r.data),
+
+  adminDeleteCampaignTemplate: (id) =>
+    apiClient.delete(`/campaign-templates/admin/${id}`).then((r) => r.data),
+
   getEligibleRefunds: (campaignId) =>
     apiClient.get(`/campaigns/${campaignId}/refunds/eligible`).then((r) => r.data),
 

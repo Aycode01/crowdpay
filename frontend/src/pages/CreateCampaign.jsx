@@ -251,7 +251,6 @@ export default function CreateCampaign() {
   }, [user, updateUser]);
 
   useEffect(() => {
-    if (typeof api.getCampaignTemplates !== 'function') return;
     let cancelled = false;
     api.getCampaignTemplates()
       .then((result) => {
