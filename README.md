@@ -352,3 +352,8 @@ Flags are fetched once on app load and cached. Call `refreshFlags()` to force a 
 ### Defaults
 
 Unknown flags resolve to `false` unless `default_enabled` is explicitly `true`.
+Standardized error handling formats across all transaction endpoints.
+​Reinforced security policies covering secret keys and webhook validation.
+​Resolved markdown formatting inconsistencies across repository documentation.
+​Outlined detailed setup instructions for staging environment deployments.
+​Updated automated system monitoring and status health checks.
