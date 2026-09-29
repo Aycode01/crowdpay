@@ -197,6 +197,59 @@ test('GET /:id?locale=fr returns translated fields when available', async () => 
   assert.equal(res.body.locale, 'fr');
 });
 
+test('POST /:campaignId/translations rejects conflicting locale aliases before database writes', async () => {
+  let writes = 0;
+  const app = buildTranslationsApp(async () => {
+    writes += 1;
+    return { rows: [] };
+  });
+  const res = await request(app)
+    .post(`/api/campaigns/${CAMPAIGN_ID}/translations`)
+    .send({ locale: 'fr-CA', language: 'es', title: 'Titre' });
+
+  assert.equal(res.status, 400);
+  assert.equal(writes, 0);
+});
+
+test('POST /:campaignId/translations rejects malformed milestone title JSON', async () => {
+  let writes = 0;
+  const app = buildTranslationsApp(async () => {
+    writes += 1;
+    return { rows: [] };
+  });
+  const res = await request(app)
+    .post(`/api/campaigns/${CAMPAIGN_ID}/translations`)
+    .send({ locale: 'fr', title: 'Titre', milestone_titles: '{bad json' });
+
+  assert.equal(res.status, 400);
+  assert.equal(writes, 0);
+});
+
+test('GET /:id?locale=fr-CA resolves to the base French translation', async () => {
+  const app = buildCampaignsApp(async (text, params) => {
+    if (text.includes('FROM campaigns c') && text.includes('JOIN users u')) {
+      return { rows: [{ id: CAMPAIGN_ID, creator_id: CREATOR_ID, title: 'Original', description: 'Default', status: 'active', target_amount: 1000 }] };
+    }
+    if (text.includes('FROM campaign_translations')) {
+      assert.equal(params[1], 'fr');
+      return { rows: [{ title: 'Titre français', description: 'Description française', locale: 'fr' }] };
+    }
+    return { rows: [] };
+  });
+
+  const res = await request(app).get(`/api/campaigns/${CAMPAIGN_ID}?locale=fr-CA`);
+  assert.equal(res.status, 200);
+  assert.equal(res.body.title, 'Titre français');
+  assert.equal(res.body.locale, 'fr');
+});
+
+test('GET campaign rejects unsupported locales deterministically', async () => {
+  const app = buildCampaignsApp(async () => ({ rows: [] }));
+  const res = await request(app).get(`/api/campaigns/${CAMPAIGN_ID}?locale=xx-ZZ`);
+  assert.equal(res.status, 400);
+  assert.equal(res.body.error, 'Unsupported campaign locale');
+});
+
 test('GET /:id?locale=es falls back to original language when translation is unavailable', async () => {
   const app = buildCampaignsApp(async (text, _params) => {
     if (text.includes('FROM campaigns c') && text.includes('JOIN users u')) {

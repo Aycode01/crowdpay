@@ -1564,7 +1564,7 @@ export default function Campaign() {
         </div>
         <LanguageToggle
           campaignId={campaign.id}
-          defaultLanguage="en"
+          defaultLanguage={campaign.locale || currentLocale}
           defaultTitle={campaign.title}
           defaultDescription={campaign.description || ''}
           onTranslationChange={setTranslation}

@@ -4,28 +4,42 @@ const { requireAuth } = require('../middleware/auth');
 const { validateRequest } = require('../middleware/validation');
 const asyncHandler = require('../utils/asyncHandler');
 const db = require('../config/database');
+const { resolveCampaignLanguage, SUPPORTED_LANGUAGES } = require('../utils/campaignLocale');
 
 const router = express.Router();
 
-const VALID_LANGUAGES = [
-  'en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh',
-  'ar', 'hi', 'bn', 'pa', 'tr', 'nl', 'pl', 'sv', 'da', 'fi',
-];
+const VALID_LANGUAGES = [...SUPPORTED_LANGUAGES];
 
 const upsertValidation = [
   param('campaignId').isUUID().withMessage('Valid campaign ID is required'),
-  body('locale').optional().isIn(VALID_LANGUAGES).withMessage(`Locale must be one of: ${VALID_LANGUAGES.join(', ')}`),
-  body('language').optional().isIn(VALID_LANGUAGES).withMessage(`Language must be one of: ${VALID_LANGUAGES.join(', ')}`),
+  body('locale').optional().custom((value) => Boolean(resolveCampaignLanguage(value))).withMessage(`Locale must resolve to one of: ${VALID_LANGUAGES.join(', ')}`),
+  body('language').optional().custom((value) => Boolean(resolveCampaignLanguage(value))).withMessage(`Language must resolve to one of: ${VALID_LANGUAGES.join(', ')}`),
   body().custom((val) => {
     const loc = val && (val.locale || val.language);
     if (!loc) {
       throw new Error('Either locale or language is required');
     }
+    if (val.locale && val.language && resolveCampaignLanguage(val.locale) !== resolveCampaignLanguage(val.language)) {
+      throw new Error('Locale and language must match');
+    }
     return true;
   }),
   body('title').trim().isLength({ min: 1, max: 255 }).withMessage('Title is required (max 255 chars)'),
   body('description').optional().trim(),
-  body('milestone_titles').optional(),
+  body('milestone_titles').optional().custom((value) => {
+    let titles = value;
+    if (typeof titles === 'string') {
+      try { titles = JSON.parse(titles); } catch { throw new Error('Milestone titles must be valid JSON'); }
+    }
+    if (!titles || typeof titles !== 'object' || (!Array.isArray(titles) && Object.getPrototypeOf(titles) !== Object.prototype)) {
+      throw new Error('Milestone titles must be an array or object');
+    }
+    const values = Array.isArray(titles) ? titles : Object.values(titles);
+    if (values.length > 100 || values.some((title) => typeof title !== 'string' || title.length > 255)) {
+      throw new Error('Milestone titles must contain at most 100 strings of 255 characters or fewer');
+    }
+    return true;
+  }),
 ];
 
 // GET /:campaignId/translations — list all translations for a campaign
@@ -47,7 +61,9 @@ router.get(
 router.get(
   '/:campaignId/translations/:locale',
   asyncHandler(async (req, res) => {
-    const { campaignId, locale } = req.params;
+    const { campaignId } = req.params;
+    const locale = resolveCampaignLanguage(req.params.locale);
+    if (!locale) return res.status(400).json({ success: false, error: 'Unsupported campaign locale' });
     const { rows } = await db.query(
       `SELECT id, campaign_id, language, COALESCE(locale, language) AS locale, title, description, milestone_titles, created_at, updated_at
        FROM campaign_translations
@@ -70,7 +86,7 @@ router.post(
   validateRequest,
   asyncHandler(async (req, res) => {
     const { campaignId } = req.params;
-    const targetLocale = (req.body.locale || req.body.language).toLowerCase();
+    const targetLocale = resolveCampaignLanguage(req.body.locale || req.body.language);
     const { title, description } = req.body;
     const userId = req.user.userId || req.user.id;
 
@@ -113,7 +129,9 @@ router.delete(
   '/:campaignId/translations/:locale',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { campaignId, locale } = req.params;
+    const { campaignId } = req.params;
+    const locale = resolveCampaignLanguage(req.params.locale);
+    if (!locale) return res.status(400).json({ success: false, error: 'Unsupported campaign locale' });
     const userId = req.user.userId || req.user.id;
 
     const { rows: campaigns } = await db.query(

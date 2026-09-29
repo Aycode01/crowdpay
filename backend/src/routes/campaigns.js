@@ -16,6 +16,7 @@ const {
 } = require('../services/stellarService');
 const { sendAlert } = require('../services/alerting');
 const cache = require('../utils/cache');
+const { resolveCampaignLanguage } = require('../utils/campaignLocale');
 const { Keypair } = require('@stellar/stellar-sdk');
 const { encryptSecret } = require('../services/walletService');
 const { watchCampaignWallet, addSSEClient, removeSSEClient, cleanupStreamForWallet } = require('../services/ledgerMonitor');
@@ -610,6 +611,12 @@ router.delete('/drafts/:id', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 router.get('/:id/milestones', asyncHandler(async (req, res) => {
+  const rawLocale = req.query.locale || req.query.lang;
+  const requestedLocale = rawLocale ? resolveCampaignLanguage(rawLocale) : null;
+  if (rawLocale && !requestedLocale) {
+    return res.status(400).json({ error: 'Unsupported campaign locale' });
+  }
+
   const { rows } = await db.query(
     `SELECT m.*, (c.milestones_contract_id IS NOT NULL) AS on_chain
      FROM milestones m
@@ -619,7 +626,6 @@ router.get('/:id/milestones', asyncHandler(async (req, res) => {
     [req.params.id]
   );
 
-  const requestedLocale = (req.query.locale || req.query.lang || '').trim().toLowerCase();
   if (requestedLocale && rows.length > 0) {
     try {
       const { rows: transRows } = await db.query(
@@ -1201,6 +1207,12 @@ router.get('/:id/og-image.png', serveOgImage);
 router.get('/:id/og-image', serveOgImage);
 
 router.get('/:id', asyncHandler(async (req, res) => {
+  const rawLocale = req.query.locale || req.query.lang;
+  const requestedLocale = rawLocale ? resolveCampaignLanguage(rawLocale) : null;
+  if (rawLocale && !requestedLocale) {
+    return res.status(400).json({ error: 'Unsupported campaign locale' });
+  }
+
   /**
    * @openapi
    * /api/campaigns/{id}:
@@ -1271,7 +1283,6 @@ router.get('/:id', asyncHandler(async (req, res) => {
   const campaign = rows[0];
   
   // Handle locale translation if requested (#753)
-  const requestedLocale = (req.query.locale || req.query.lang || '').trim().toLowerCase();
   if (requestedLocale) {
     try {
       const { rows: translationRows } = await db.query(
