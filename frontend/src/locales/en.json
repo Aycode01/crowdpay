@@ -714,5 +714,24 @@
     "raised": "raised",
     "removeFromList": "Remove from reading list",
     "view": "View →"
+  },
+  "teamFundraising": {
+    "title": "Fundraising teams",
+    "loading": "Loading team…",
+    "loadError": "Could not load the team page.",
+    "teamTotal": "Team total",
+    "totals": "{{raised}} raised across {{members}} members — {{pct}}% of {{target}}",
+    "raisedOf": "{{raised}} raised of {{target}} goal",
+    "lead": "lead",
+    "remove": "Remove from team",
+    "empty": "This campaign has no team members yet.",
+    "emptyOwner": "This campaign has no team members yet. Add one of your other campaigns below to group them under this page.",
+    "addTitle": "Add a campaign to this team",
+    "add": "Add",
+    "adding": "Adding…",
+    "noneAvailable": "None of your other campaigns are available to add.",
+    "loadingYours": "Loading your campaigns…",
+    "addError": "Could not add the team member.",
+    "removeError": "Could not remove the team member."
   }
 }

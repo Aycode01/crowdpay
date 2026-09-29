@@ -12,6 +12,17 @@ vi.mock('../services/api', () => ({
   },
 }));
 
+// Identity-style t() so assertions can use translation keys directly.
+// t is created once in the factory so its reference is stable across
+// renders — a fresh t per render would retrigger effects that depend on it.
+vi.mock('react-i18next', () => {
+  const t = (key, opts) => (opts ? `${key}:${JSON.stringify(opts)}` : key);
+  return {
+    useTranslation: () => ({ t }),
+    Trans: ({ children }) => children,
+  };
+});
+
 const TEAM_PAYLOAD = {
   members: [
     {
@@ -51,7 +62,9 @@ describe('TeamCampaignsSection (#952)', () => {
         return Promise.resolve({ data: TEAM_PAYLOAD });
       }
       if (url === '/campaigns/mine') {
-        return Promise.resolve({ data: { campaigns: [{ id: 'c9', title: 'My Other Campaign' }] } });
+        return Promise.resolve({
+          data: { campaigns: [{ id: 'c9', title: 'My Other Campaign' }] },
+        });
       }
       return Promise.resolve({ data: {} });
     });
@@ -63,11 +76,23 @@ describe('TeamCampaignsSection (#952)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('team-totals')).toBeInTheDocument();
     });
-    expect(screen.getByText(/240.*raised/i)).toBeInTheDocument();
     expect(screen.getAllByTestId('team-member-card')).toHaveLength(2);
-    // Non-managers get no remove buttons and no picker.
     expect(screen.queryAllByTestId('team-member-remove')).toHaveLength(0);
     expect(screen.queryByTestId('team-add-picker')).toBeNull();
+  });
+
+  it('renders translated amounts in the rollup and member cards', async () => {
+    render(<TeamCampaignsSection campaignId="parent-1" canManage={false} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('team-totals')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('team-totals').textContent).toContain(
+      '"members":2'
+    );
+    expect(screen.getAllByTestId('team-member-card')[0].textContent).toContain(
+      'teamFundraising.raisedOf'
+    );
   });
 
   it('shows the empty state when there are no members', async () => {
@@ -82,9 +107,12 @@ describe('TeamCampaignsSection (#952)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('team-section-empty')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('team-section-empty').textContent).toBe(
+      'teamFundraising.empty'
+    );
   });
 
-  it('propagates load failures as an alert', async () => {
+  it('propagates load failures as an alert with the server message', async () => {
     apiClient.get.mockImplementation((url) =>
       url.endsWith('/team')
         ? Promise.reject({ response: { data: { error: 'Database down' } } })
@@ -117,8 +145,8 @@ describe('TeamCampaignsSection (#952)', () => {
         { member_campaign_id: 'c9' }
       );
     });
-    // Team reloaded after the add.
-    expect(apiClient.get).toHaveBeenCalledTimes(2);
+    // Initial team load + reload after add + the owner /mine fetch.
+    expect(apiClient.get).toHaveBeenCalledTimes(3);
   });
 
   it('removes a member and refreshes the team', async () => {

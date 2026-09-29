@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiClient } from '../services/api';
 
 // Team fundraising pages under a parent campaign (#952). Renders the
@@ -12,6 +13,7 @@ function formatAmount(value, assetType) {
 }
 
 function TeamMemberCard({ member, onRemove, canManage }) {
+  const { t } = useTranslation();
   return (
     <div
       style={{
@@ -35,13 +37,15 @@ function TeamMemberCard({ member, onRemove, canManage }) {
             style={{ fontSize: '0.7rem', color: 'var(--color-text-hint)' }}
             data-testid="team-member-role"
           >
-            lead
+            {t('teamFundraising.lead')}
           </span>
         )}
       </div>
       <div style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)', margin: '0.25rem 0 0.5rem' }}>
-        {formatAmount(member.raised_amount, member.asset_type)} raised of{' '}
-        {formatAmount(member.target_amount, member.asset_type)} goal
+        {t('teamFundraising.raisedOf', {
+          raised: formatAmount(member.raised_amount, member.asset_type),
+          target: formatAmount(member.target_amount, member.asset_type),
+        })}
       </div>
       <div
         role="progressbar"
@@ -79,7 +83,7 @@ function TeamMemberCard({ member, onRemove, canManage }) {
           }}
           data-testid="team-member-remove"
         >
-          Remove from team
+          {t('teamFundraising.remove')}
         </button>
       )}
     </div>
@@ -95,6 +99,7 @@ function TeamMemberCard({ member, onRemove, canManage }) {
  * team members, and per-member remove buttons wired to the DELETE endpoint.
  */
 export default function TeamCampaignsSection({ campaignId, canManage }) {
+  const { t } = useTranslation();
   const [team, setTeam] = useState(null);
   const [teamError, setTeamError] = useState('');
   const [myCampaigns, setMyCampaigns] = useState(null);
@@ -108,10 +113,10 @@ export default function TeamCampaignsSection({ campaignId, canManage }) {
       setTeam(data);
     } catch (error) {
       setTeamError(
-        error?.response?.data?.error || 'Could not load the team page.'
+        error?.response?.data?.error || t('teamFundraising.loadError')
       );
     }
-  }, [campaignId]);
+  }, [campaignId, t]);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -148,7 +153,7 @@ export default function TeamCampaignsSection({ campaignId, canManage }) {
       await loadTeam();
     } catch (error) {
       setActionError(
-        error?.response?.data?.error || 'Could not add the team member.'
+        error?.response?.data?.error || t('teamFundraising.addError')
       );
     } finally {
       setAddBusyId(null);
@@ -164,7 +169,7 @@ export default function TeamCampaignsSection({ campaignId, canManage }) {
       await loadTeam();
     } catch (error) {
       setActionError(
-        error?.response?.data?.error || 'Could not remove the team member.'
+        error?.response?.data?.error || t('teamFundraising.removeError')
       );
     }
   };
@@ -188,22 +193,36 @@ export default function TeamCampaignsSection({ campaignId, canManage }) {
 
   if (!team) {
     return (
-      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-hint)' }} data-testid="team-section-loading">
-        Loading team…
+      <div
+        style={{ fontSize: '0.85rem', color: 'var(--color-text-hint)' }}
+        data-testid="team-section-loading"
+      >
+        {t('teamFundraising.loading')}
       </div>
-      );
+    );
   }
 
   if (!team.members?.length) {
     return (
-      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-hint)' }} data-testid="team-section-empty">
-        This campaign has no team members yet.{' '}
+      <div
+        style={{ fontSize: '0.85rem', color: 'var(--color-text-hint)' }}
+        data-testid="team-section-empty"
+      >
         {canManage
-          ? 'Add one of your other campaigns below to group them under this page.'
-          : ''}
+          ? t('teamFundraising.emptyOwner')
+          : t('teamFundraising.empty')}
       </div>
     );
   }
+
+  const firstAsset = team.members[0]?.asset_type;
+  const addable = myCampaigns
+    ? myCampaigns.filter(
+        (candidate) =>
+          candidate.id !== campaignId &&
+          !team.members.some((member) => member.id === candidate.id)
+      )
+    : null;
 
   return (
     <div data-testid="team-campaigns-section">
@@ -218,14 +237,15 @@ export default function TeamCampaignsSection({ campaignId, canManage }) {
         data-testid="team-totals"
       >
         <strong style={{ display: 'block', marginBottom: '0.4rem' }}>
-          Team total
+          {t('teamFundraising.teamTotal')}
         </strong>
         <div style={{ fontSize: '0.85rem', color: 'var(--color-text-hint)' }}>
-          {formatAmount(team.totals.raised_amount, team.members[0]?.asset_type)} raised
-          across {team.totals.member_count} member
-          {team.totals.member_count === 1 ? '' : 's'} —{' '}
-          {team.totals.progress_percent.toFixed(1)}% of{' '}
-          {formatAmount(team.totals.target_amount, team.members[0]?.asset_type)}
+          {t('teamFundraising.totals', {
+            raised: formatAmount(team.totals.raised_amount, firstAsset),
+            target: formatAmount(team.totals.target_amount, firstAsset),
+            members: team.totals.member_count,
+            pct: team.totals.progress_percent.toFixed(1),
+          })}
         </div>
       </div>
 
@@ -256,60 +276,55 @@ export default function TeamCampaignsSection({ campaignId, canManage }) {
           data-testid="team-add-picker"
         >
           <strong style={{ display: 'block', marginBottom: '0.5rem' }}>
-            Add a campaign to this team
+            {t('teamFundraising.addTitle')}
           </strong>
           {actionError && (
-            <div role="alert" style={{ color: 'var(--color-danger, #b00)', fontSize: '0.8rem' }} data-testid="team-action-error">
+            <div
+              role="alert"
+              style={{ color: 'var(--color-danger, #b00)', fontSize: '0.8rem' }}
+              data-testid="team-action-error"
+            >
               {actionError}
             </div>
           )}
-          {!myCampaigns ? (
+          {!addable ? (
             <div style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)' }}>
-              Loading your campaigns…
+              {t('teamFundraising.loadingYours')}
             </div>
           ) : (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-              {myCampaigns
-                .filter(
-                  (candidate) =>
-                    candidate.id !== campaignId &&
-                    !team.members.some((member) => member.id === candidate.id)
-                )
-                .slice(0, 8)
-                .map((candidate) => (
-                  <li
-                    key={candidate.id}
+              {addable.slice(0, 8).map((candidate) => (
+                <li
+                  key={candidate.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.4rem 0',
+                  }}
+                >
+                  <span style={{ fontSize: '0.85rem' }}>{candidate.title}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleAdd(candidate.id)}
+                    disabled={addBusyId === candidate.id}
                     style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.4rem 0',
+                      fontSize: '0.75rem',
+                      padding: '0.25rem 0.6rem',
+                      cursor: 'pointer',
                     }}
+                    data-testid="team-add-button"
                   >
-                    <span style={{ fontSize: '0.85rem' }}>{candidate.title}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleAdd(candidate.id)}
-                      disabled={addBusyId === candidate.id}
-                      style={{
-                        fontSize: '0.75rem',
-                        padding: '0.25rem 0.6rem',
-                        cursor: 'pointer',
-                      }}
-                      data-testid="team-add-button"
-                    >
-                      {addBusyId === candidate.id ? 'Adding…' : 'Add'}
-                    </button>
-                  </li>
-                ))}
-              {myCampaigns.filter(
-                (candidate) =>
-                  candidate.id !== campaignId &&
-                  !team.members.some((member) => member.id === candidate.id)
-              ).length === 0 && (
+                    {addBusyId === candidate.id
+                      ? t('teamFundraising.adding')
+                      : t('teamFundraising.add')}
+                  </button>
+                </li>
+              ))}
+              {addable.length === 0 && (
                 <li style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)' }}>
-                  None of your other campaigns are available to add.
+                  {t('teamFundraising.noneAvailable')}
                 </li>
               )}
             </ul>
