@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const proxyquire = require('proxyquire').noCallThru();
 const { buildUnsubscribeUrl, verifyUnsubscribeToken } = require('../utils/unsubscribeToken');
 
-function buildService({ queryImpl } = {}) {
+function buildService({ queryImpl, logger } = {}) {
   const sent = [];
   const dedupeKeys = new Set();
   const db = {
@@ -42,9 +42,10 @@ function buildService({ queryImpl } = {}) {
   const service = proxyquire('./emailService', {
     nodemailer: nodemailerStub,
     '../config/database': db,
+    ...(logger ? { '../config/logger': logger } : {}),
   });
 
-  return { service, sent };
+  return { service, sent, db };
 }
 
 test('sendWelcomeEmail sends html and text and is idempotent per recipient', async () => {
@@ -120,4 +121,71 @@ test('unsubscribe token validation works', async () => {
   
   const isInvalid = verifyUnsubscribeToken({ email: 'test@test.com', category: 'refund', sig: 'fake' });
   assert.equal(isInvalid, false);
+});
+
+function unconfiguredEnv() {
+  const saved = {
+    SMTP_HOST: process.env.SMTP_HOST,
+    EMAIL_SERVICE_API_KEY: process.env.EMAIL_SERVICE_API_KEY,
+    DISABLE_EMAILS: process.env.DISABLE_EMAILS,
+  };
+  delete process.env.SMTP_HOST;
+  delete process.env.EMAIL_SERVICE_API_KEY;
+  delete process.env.DISABLE_EMAILS;
+  return () => {
+    for (const [k, v] of Object.entries(saved)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  };
+}
+
+test('unconfigured: warns only once per process and reports not configured', async () => {
+  const restore = unconfiguredEnv();
+  try {
+    const warns = [];
+    const { service } = buildService({
+      logger: { info: () => {}, error: () => {}, warn: (m) => warns.push(m) },
+    });
+    assert.equal(service.isEmailConfigured(), false);
+    await service.sendEmail({ to: 'a@test.com', subject: 's1' });
+    await service.sendEmail({ to: 'a@test.com', subject: 's2' });
+    assert.equal(warns.length, 1);
+  } finally {
+    restore();
+  }
+});
+
+test('unconfigured: sendIdempotent does not write a sent_emails row', async () => {
+  const restore = unconfiguredEnv();
+  try {
+    const inserts = [];
+    const { service } = buildService({
+      logger: { info: () => {}, error: () => {}, warn: () => {} },
+      queryImpl: (text) => {
+        if (text.includes('INSERT INTO sent_emails')) inserts.push(text);
+        return undefined;
+      },
+    });
+    await service.sendIdempotent({
+      dedupeKey: 'k1', to: 'a@test.com', subject: 's', text: 't', html: 'h',
+    });
+    assert.equal(inserts.length, 0);
+  } finally {
+    restore();
+  }
+});
+
+test('configured: isEmailConfigured is true and sendIdempotent still dedupes', async () => {
+  process.env.SMTP_HOST = 'smtp.test';
+  try {
+    const { service, sent } = buildService();
+    assert.equal(service.isEmailConfigured(), true);
+    const mail = { dedupeKey: 'k2', to: 'a@test.com', subject: 's', text: 't', html: 'h' };
+    await service.sendIdempotent(mail);
+    await service.sendIdempotent(mail);
+    assert.equal(sent.length, 1);
+  } finally {
+    delete process.env.SMTP_HOST;
+  }
 });

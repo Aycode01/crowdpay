@@ -141,7 +141,7 @@ cd frontend && npm run dev   # http://localhost:5173
 | `WALLET_ENCRYPTION_KEY` | Base64 or hex-encoded 32-byte encryption key used by backend wallet recovery |
 | `WALLET_SECRET_LOCAL_KEK` | Base64-encoded 32-byte key-encryption key for stored secrets |
 | `FRONTEND_URL` | Allowed CORS origin (dev: `http://localhost:5173`) |
-| `SMTP_HOST` / `EMAIL_SERVICE_API_KEY` | Email delivery (optional in dev) |
+| `SMTP_HOST` / `EMAIL_SERVICE_API_KEY` | Email delivery. **Required in production** — boot fails without one of them unless `DISABLE_EMAILS=true` is set as an explicit opt-out (which logs a warning). Optional in dev. `/health` reports `email: "ready" \| "unconfigured"`. |
 | `PERSONA_API_KEY` / `PERSONA_TEMPLATE_ID` | KYC provider (optional in dev) |
 | `AWS_ACCESS_KEY_ID` + S3 vars | Image uploads (optional in dev) |
 | `FEATURE_FLAG_PROVIDER` | Feature flag backend: `env` (default), `unleash`, or `launchdarkly` |
