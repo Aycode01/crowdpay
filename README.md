@@ -352,3 +352,12 @@ Flags are fetched once on app load and cached. Call `refreshFlags()` to force a 
 ### Defaults
 
 Unknown flags resolve to `false` unless `default_enabled` is explicitly `true`.
+Features decentralized identity (DID) integration to allow verified user profiles across campaigns.
+​Utilizes automated liquidity pool mechanisms to support seamless cross-chain token swaps.
+​Implements real-time WebSocket streams for instant notification of incoming pledges.
+​Supports time-locked smart contracts to enforce vesting schedules for project rewards.
+​Includes zero-knowledge proof verification options to facilitate private backer contributions.
+​Employs gasless meta-transactions to lower entry barriers for non-crypto native users.
+​Provides automated refund triggers if campaign funding targets are not met by the deadline.
+​Configured with modular governance adapters to allow custom DAO voting rules per project.
+​Offers comprehensive SDK packages for Node.js and Python to speed up third-party integrations.
