@@ -67,6 +67,36 @@ test('GET /api/v1/campaigns is public', async () => {
   assert.equal(res.body.campaigns.length, 1);
 });
 
+test('GET /api/v1/changelog is public', async () => {
+  const app = buildApp({ authError: 'Missing token', queryImpl: async () => ({ rows: [] }) });
+  const res = await request(app).get('/api/v1/changelog');
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.api_version, 'v1');
+  assert.ok(res.body.entries.length > 0);
+});
+
+test('public API deprecation headers require a valid deprecation and sunset date', async () => {
+  const previousDeprecation = process.env.PUBLIC_API_DEPRECATION_DATE;
+  const previousSunset = process.env.PUBLIC_API_SUNSET_DATE;
+  process.env.PUBLIC_API_DEPRECATION_DATE = '2027-01-01T00:00:00.000Z';
+  process.env.PUBLIC_API_SUNSET_DATE = '2027-07-01T00:00:00.000Z';
+
+  try {
+    const app = buildApp({ authError: 'Missing token', queryImpl: async () => ({ rows: [] }) });
+    const res = await request(app).get('/api/v1/changelog');
+
+    assert.equal(res.headers.deprecation, '@1798761600');
+    assert.equal(res.headers.sunset, 'Thu, 01 Jul 2027 00:00:00 GMT');
+    assert.match(res.headers.link, /\/api\/v1\/changelog>; rel="deprecation"/);
+  } finally {
+    if (previousDeprecation === undefined) delete process.env.PUBLIC_API_DEPRECATION_DATE;
+    else process.env.PUBLIC_API_DEPRECATION_DATE = previousDeprecation;
+    if (previousSunset === undefined) delete process.env.PUBLIC_API_SUNSET_DATE;
+    else process.env.PUBLIC_API_SUNSET_DATE = previousSunset;
+  }
+});
+
 test('GET /api/v1/users/me returns 401 without auth', async () => {
   const app = buildApp({ authError: 'Missing token', queryImpl: async () => ({ rows: [] }) });
   const res = await request(app).get('/api/v1/users/me');

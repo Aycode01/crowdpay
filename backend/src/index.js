@@ -60,6 +60,7 @@ app.use('/api/campaigns', require('./routes/bulkCampaigns'));
 app.use('/api/campaigns', require('./routes/payoutSchedules'));
 app.use('/api/campaigns', require('./routes/campaignComments'));
 app.use('/api/campaigns', require('./routes/campaignFollowers'));
+app.use('/api/campaigns', require('./routes/campaignActivity'));
 app.use('/api/campaigns/:campaignId/contribution/preview', require('./routes/pathPaymentPreview'));
 app.use('/api/campaigns', require('./routes/campaigns'));
 app.use('/api/campaigns', require('./routes/campaignUpdates'));

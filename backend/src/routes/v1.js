@@ -10,6 +10,17 @@ const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
 
+router.use((req, res, next) => {
+  const deprecationDate = Date.parse(process.env.PUBLIC_API_DEPRECATION_DATE || '');
+  const sunsetDate = Date.parse(process.env.PUBLIC_API_SUNSET_DATE || '');
+  if (Number.isFinite(deprecationDate) && Number.isFinite(sunsetDate) && sunsetDate > deprecationDate) {
+    res.set('Deprecation', `@${Math.floor(deprecationDate / 1000)}`);
+    res.set('Sunset', new Date(sunsetDate).toUTCString());
+    res.set('Link', `<${req.baseUrl}/changelog>; rel="deprecation"`);
+  }
+  next();
+});
+
 const isTest = process.env.NODE_ENV === 'test';
 const apiKeyRateLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -22,6 +33,16 @@ const apiKeyRateLimiter = rateLimit({
 });
 
 router.use(apiKeyRateLimiter);
+
+router.get('/changelog', (_req, res) => {
+  res.json({
+    api_version: 'v1',
+    entries: [{
+      date: '2026-09-29',
+      changes: ['Added the public API changelog and configurable lifecycle headers.'],
+    }],
+  });
+});
 
 async function assertCampaignCreator(req, campaignId) {
   const { rows } = await db.query('SELECT creator_id FROM campaigns WHERE id = $1', [campaignId]);
