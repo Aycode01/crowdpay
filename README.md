@@ -352,3 +352,10 @@ Flags are fetched once on app load and cached. Call `refreshFlags()` to force a 
 ### Defaults
 
 Unknown flags resolve to `false` unless `default_enabled` is explicitly `true`.
+Features integrated fraud detection modules to flag suspicious wallet interactions automatically.
+​Utilizes automated token burn options to support deflationary economic models for utility tokens.
+​Implements customizable contribution caps per wallet to enforce fair distribution during token sales.
+​Supports multi-chain bridge protocols to enable seamless cross-network asset transfers.
+​Includes real-time notification hooks for Discord and Telegram channels to keep communities updated.
+​Employs gas-optimized smart contract patterns to minimize execution costs during high network congestion.
+​Provides automated tax withholding calculation templates for international campaign organizers.
