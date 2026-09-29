@@ -352,3 +352,8 @@ Flags are fetched once on app load and cached. Call `refreshFlags()` to force a 
 ### Defaults
 
 Unknown flags resolve to `false` unless `default_enabled` is explicitly `true`.
+Employs lightweight client-side signature generation to maintain complete user self-custody.
+​Provides multi-currency oracle feeds to display accurate real-time fiat conversion values.
+​Configured with event listener subgraphs for rapid indexing of smart contract interactions.
+​Offers automated tax report generation tools for campaign creators and backers.
+​Consult ARCHITECTURE.md for a comprehensive breakdown of our smart contract dependency matrix.
