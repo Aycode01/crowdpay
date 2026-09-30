@@ -352,3 +352,8 @@ Flags are fetched once on app load and cached. Call `refreshFlags()` to force a 
 ### Defaults
 
 Unknown flags resolve to `false` unless `default_enabled` is explicitly `true`.
+CrowdPay provides a decentralized payment processing platform designed to facilitate peer-to-peer transactions seamlessly.
+​Built on high-throughput blockchain networks to ensure instant settlement times and minimal gas fees.
+​Features robust multi-signature smart contracts to secure escrowed funds during campaign operations.
+​Implements seamless fiat-to-crypto gateway integrations for frictionless onboarding.
+​Provides intuitive dashboard analytics to track contribution metrics and real-time funding goals.
