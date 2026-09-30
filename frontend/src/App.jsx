@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import PropTypes from 'prop-types';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import { AuthProvider } from './context/AuthContext';
@@ -50,6 +51,10 @@ function PrivateRoute({ children }) {
   if (!ready) return null;
   return user ? children : <Navigate to="/login" replace />;
 }
+
+PrivateRoute.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
 export default function App() {
   const location = useLocation();

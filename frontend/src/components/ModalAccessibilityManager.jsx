@@ -1,3 +1,4 @@
+/* global HTMLElement, MutationObserver */
 import { useEffect } from 'react';
 
 const FOCUSABLE = [
