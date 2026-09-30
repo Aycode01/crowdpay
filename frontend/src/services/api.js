@@ -636,4 +636,56 @@ export const api = {
 
   processRefund: (campaignId, payload) =>
     apiClient.post(`/campaigns/${campaignId}/refunds`, payload).then((r) => r.data),
+
+  // --- Per-campaign contributor communication preferences (#961) ---
+  // Effective preferences; the API resolves to the defaults when the
+  // contributor has never overridden anything for this campaign, so callers
+  // never have to handle a missing record.
+  getCampaignCommunicationPreferences: (campaignId) =>
+    apiClient.get(`/campaigns/${campaignId}/communication-preferences`).then((r) => r.data),
+
+  // Partial patch: only the channels present in `patch` are written.
+  setCampaignCommunicationPreferences: (campaignId, patch) =>
+    apiClient.put(`/campaigns/${campaignId}/communication-preferences`, patch).then((r) => r.data),
+
+  resetCampaignCommunicationPreferences: (campaignId) =>
+    apiClient.delete(`/campaigns/${campaignId}/communication-preferences`).then((r) => r.data),
+
+  getCommunicationPreferenceChannels: () =>
+    apiClient.get('/campaigns/communication-preferences/channels').then((r) => r.data),
+
+  getMyCommunicationPreferences: () =>
+    apiClient.get('/users/me/communication-preferences').then((r) => r.data),
+
+  resetMyCommunicationPreferences: () =>
+    apiClient.delete('/users/me/communication-preferences').then((r) => r.data),
+
+  // --- Beneficiary outcome surveys (#960) ---
+  // Public read. Returns `{ survey, response_count, my_response }`; `survey` is
+  // null (not an error) when the campaign has no survey yet.
+  getOutcomeSurvey: (campaignId) =>
+    apiClient.get(`/campaigns/${campaignId}/outcome-survey`).then((r) => r.data),
+
+  createOutcomeSurvey: (campaignId, payload) =>
+    apiClient.post(`/campaigns/${campaignId}/outcome-survey`, payload).then((r) => r.data),
+
+  updateOutcomeSurvey: (campaignId, payload) =>
+    apiClient.put(`/campaigns/${campaignId}/outcome-survey`, payload).then((r) => r.data),
+
+  openOutcomeSurvey: (campaignId, payload = {}) =>
+    apiClient.post(`/campaigns/${campaignId}/outcome-survey/open`, payload).then((r) => r.data),
+
+  closeOutcomeSurvey: (campaignId) =>
+    apiClient.post(`/campaigns/${campaignId}/outcome-survey/close`).then((r) => r.data),
+
+  submitOutcomeSurveyResponse: (campaignId, answers) =>
+    apiClient
+      .post(`/campaigns/${campaignId}/outcome-survey/respond`, { answers })
+      .then((r) => r.data),
+
+  getOutcomeSurveyResults: (campaignId) =>
+    apiClient.get(`/campaigns/${campaignId}/outcome-survey/results`).then((r) => r.data),
+
+  getOutcomeSurveyEvents: (campaignId) =>
+    apiClient.get(`/campaigns/${campaignId}/outcome-survey/events`).then((r) => r.data),
 };

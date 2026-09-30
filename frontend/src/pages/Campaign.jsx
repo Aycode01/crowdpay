@@ -208,6 +208,9 @@ import { isConnected, getPublicKey } from '@stellar/freighter-api';
 const BackerInsightsCard = React.lazy(() => import('../components/BackerInsightsCard'));
 import CampaignComments from '../components/CampaignComments';
 import FollowCampaignButton from '../components/FollowCampaignButton';
+import CampaignCommunicationPreferences from '../components/CampaignCommunicationPreferences';
+import OutcomeSurveyPanel from '../components/campaign/OutcomeSurveyPanel';
+import OutcomeSurveyEditor from '../components/campaign/OutcomeSurveyEditor';
 import PoolManager from '../components/PoolManager';
 import SponsorMatchingPanel from '../components/SponsorMatchingPanel';
 import LanguageToggle from '../components/LanguageToggle';
@@ -2993,6 +2996,23 @@ export default function Campaign() {
       <div style={{ marginTop: '2rem', marginBottom: '2rem' }} data-no-print>
         <CampaignComments campaignId={campaign.id} campaign={campaign} />
       </div>
+
+      {/* Beneficiary outcome survey (#960) and per-campaign communication
+          preferences (#961). The creator/manager sees the editor, everybody
+          else sees the backer panel. */}
+      <div style={{ marginBottom: '2rem' }} data-no-print>
+        {canManageTeam ? (
+          <OutcomeSurveyEditor campaignId={campaign.id} />
+        ) : (
+          <OutcomeSurveyPanel campaignId={campaign.id} canRespond={Boolean(user)} />
+        )}
+      </div>
+
+      {user && !canManageTeam && (
+        <div style={{ marginBottom: '2rem' }} data-no-print>
+          <CampaignCommunicationPreferences campaignId={campaign.id} />
+        </div>
+      )}
 
       {/* Analytics Section */}
       {canViewAnalytics && (canManageTeam ? activeTab === 'analytics' : true) && (

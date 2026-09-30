@@ -47,6 +47,47 @@ test('notifyFollowers rejects a preference column that does not exist', async ()
   );
 });
 
+test('notifyFollowers excludes followers who muted the matching per-campaign channel (#961)', async () => {
+  const calls = [];
+  const notified = [];
+  const service = buildService({
+    queryImpl: async (text, params) => {
+      calls.push({ text, params });
+      return { rows: [{ user_id: 'follower-1' }] };
+    },
+    onBulkNotification: userIds => notified.push(...userIds),
+  });
+
+  await service.notifyFollowers(CAMPAIGN_ID, 'notify_milestones', {
+    type: 'milestone_released',
+    title: 'Released',
+  });
+
+  const sql = calls[0].text;
+  assert.match(sql, /NOT EXISTS \(/);
+  assert.match(sql, /FROM campaign_communication_preferences p/);
+  assert.match(sql, /p\.campaign_id = f\.campaign_id/);
+  assert.match(sql, /p\.user_id = f\.user_id/);
+  assert.match(sql, /p\.milestones = FALSE/);
+  assert.deepEqual(notified, ['follower-1']);
+});
+
+test('CHANNEL_FOR_PREFERENCE maps every follower preference onto a real channel', () => {
+  const service = buildService({ queryImpl: async () => ({ rows: [] }) });
+  assert.deepEqual(service.CHANNEL_FOR_PREFERENCE, {
+    notify_updates: 'updates',
+    notify_milestones: 'milestones',
+    notify_funding: 'funding_updates',
+  });
+  for (const channel of Object.values(service.CHANNEL_FOR_PREFERENCE)) {
+    assert.match(
+      channel,
+      /^[a-z_]+$/,
+      `${channel} must be a bare column name for SQL interpolation`
+    );
+  }
+});
+
 test('notifyFollowers passes all follower IDs to bulk notification', async () => {
   const notified = [];
   const service = buildService({

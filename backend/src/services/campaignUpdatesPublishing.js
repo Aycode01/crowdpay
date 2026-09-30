@@ -3,6 +3,7 @@ const logger = require('../config/logger');
 const { sendCampaignUpdatePostedEmail } = require('./emailService');
 const { createNotification } = require('./notifications');
 const { notifyFollowers } = require('./campaignFollowService');
+const { filterEnabledUsers } = require('./communicationPreferenceService');
 
 function frontendBaseUrl() {
   return (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
@@ -10,6 +11,10 @@ function frontendBaseUrl() {
 
 /**
  * Dispatches notifications and emails to campaign followers and contributors.
+ *
+ * Contributors who muted the `updates` channel for this specific campaign
+ * (#961) are filtered out before any notification or email is created, so the
+ * per-campaign preference beats the global category default.
  *
  * @param {Object} params
  * @param {string} params.campaignId
@@ -32,6 +37,25 @@ async function sendCampaignUpdateNotifications({ campaignId, campaignTitle, upda
       [campaignId]
     );
 
+    // Per-campaign opt-out (#961). A failure here must not silently mute
+    // everyone, so fall back to the full contributor list.
+    let reachable = contributors;
+    try {
+      const enabled = await filterEnabledUsers(
+        campaignId,
+        'updates',
+        contributors.map(contributor => contributor.id)
+      );
+      const enabledSet = new Set(enabled);
+      reachable = contributors.filter(contributor => enabledSet.has(contributor.id));
+    } catch (err) {
+      logger.error('Failed to apply per-campaign update preferences', {
+        campaignId,
+        updateId: update.id,
+        error: err.message,
+      });
+    }
+
     await notifyFollowers(
       campaignId,
       'notify_updates',
@@ -41,7 +65,7 @@ async function sendCampaignUpdateNotifications({ campaignId, campaignTitle, upda
         body: updateExcerpt,
         link: `/campaigns/${campaignId}`,
       },
-      [authorId, ...contributors.map(c => c.id)]
+      [authorId, ...reachable.map(c => c.id)]
     ).catch(err => {
       logger.error('Failed to notify campaign followers of update', {
         campaignId,
@@ -51,7 +75,7 @@ async function sendCampaignUpdateNotifications({ campaignId, campaignTitle, upda
     });
 
     await Promise.allSettled(
-      contributors.map(async contributor => {
+      reachable.map(async contributor => {
         await createNotification(contributor.id, {
           type: 'campaign_update',
           title: `${campaignTitle}: ${update.title}`,

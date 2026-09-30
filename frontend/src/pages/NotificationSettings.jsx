@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../services/api';
@@ -68,6 +69,7 @@ function SectionCard({ title, description, children }) {
 
 export default function NotificationSettings() {
   const { user, ready } = useAuth();
+  const { t } = useTranslation();
   const toast = useToast();
   const [searchParams] = useSearchParams();
 
@@ -79,6 +81,11 @@ export default function NotificationSettings() {
     milestones: true,
     marketing: false,
   });
+  // Per-campaign overrides (#961). `campaignOverrides` only ever holds rows for
+  // campaigns the caller actually muted something for.
+  const [campaignOverrides, setCampaignOverrides] = useState([]);
+  const [overridesLoading, setOverridesLoading] = useState(true);
+  const [resetting, setResetting] = useState(false);
 
   const loadPreferences = useCallback(async () => {
     try {
@@ -123,6 +130,39 @@ export default function NotificationSettings() {
     } catch (err) {
       toast(err.message || 'Failed to save preference', 'error');
       setPrefs(prefs); // revert
+    }
+  };
+
+  // Per-campaign overrides are a separate resource from the account-level
+  // switches, so they load (and fail) independently of `prefs`.
+  useEffect(() => {
+    let active = true;
+    api
+      .getMyCommunicationPreferences()
+      .then((data) => {
+        if (active) setCampaignOverrides(data?.campaigns || []);
+      })
+      .catch(() => {
+        if (active) setCampaignOverrides([]);
+      })
+      .finally(() => {
+        if (active) setOverridesLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleResetCampaignOverrides = async () => {
+    setResetting(true);
+    try {
+      await api.resetMyCommunicationPreferences();
+      setCampaignOverrides([]);
+      toast(t('communicationPreferences.reset'), 'success');
+    } catch (err) {
+      toast(err.message || t('communicationPreferences.saveError'), 'error');
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -269,6 +309,69 @@ export default function NotificationSettings() {
             </div>
           ))}
         </div>
+      </SectionCard>
+
+      {/* Per-campaign overrides (#961). Empty until the caller mutes a channel
+          on a specific campaign, which is why this is its own section rather
+          than another row in the table above. */}
+      <SectionCard
+        title={t('communicationPreferences.title')}
+        description={t('communicationPreferences.subtitle')}
+      >
+        {overridesLoading ? (
+          <p role="status" style={{ color: 'var(--color-text-hint)' }}>
+            {t('communicationPreferences.loading')}
+          </p>
+        ) : campaignOverrides.length === 0 ? (
+          <p style={{ color: 'var(--color-text-hint)' }}>{t('common.no')}</p>
+        ) : (
+          <div style={{ display: 'grid', gap: '0.75rem' }}>
+            {campaignOverrides.map((row) => {
+              const muted = [
+                'updates',
+                'milestones',
+                'funding_updates',
+                'messages',
+                'surveys',
+              ].filter((channel) => row[channel] === false);
+              return (
+                <div
+                  key={row.campaign_id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <Link
+                    to={`/campaigns/${row.campaign_id}`}
+                    style={{ color: 'var(--color-accent)', fontWeight: 600 }}
+                  >
+                    {row.title}
+                  </Link>
+                  <span style={{ color: 'var(--color-text-hint)', fontSize: '0.8rem' }}>
+                    {muted
+                      .map((channel) => t(`communicationPreferences.channels.${channel}`))
+                      .join(', ')}
+                  </span>
+                </div>
+              );
+            })}
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleResetCampaignOverrides}
+              disabled={resetting}
+              style={{ justifySelf: 'start' }}
+            >
+              {resetting
+                ? t('communicationPreferences.resetting')
+                : t('communicationPreferences.reset')}
+            </button>
+          </div>
+        )}
       </SectionCard>
     </main>
   );
