@@ -180,6 +180,26 @@ function CommentItem({ comment, replies, campaignId, isModerator, currentUserId,
               Creator
             </span>
           )}
+          {comment.is_supporter && !isCreator && (
+            <span
+              className="supporter-badge"
+              data-testid="supporter-badge"
+              title="This backer contributed to the campaign"
+              style={{
+                backgroundColor: 'var(--color-accent-soft, rgba(37, 99, 235, 0.12))',
+                color: 'var(--color-accent, #2563eb)',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                padding: '0.15rem 0.5rem',
+                borderRadius: '999px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+              }}
+            >
+              Backer
+            </span>
+          )}
         </div>
         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-hint, #6b7280)' }}>
           {timeAgo(comment.created_at)}
