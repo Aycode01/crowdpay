@@ -10,6 +10,7 @@ import { OfflineBanner } from './components/OfflineBanner';
 import ImpersonationBanner from './components/ImpersonationBanner';
 import AnnouncementBanner from './components/AnnouncementBanner';
 import { useAuth } from './context/AuthContext';
+import ModalAccessibilityManager from './components/ModalAccessibilityManager';
 
 const Landing = lazy(() => import('./pages/Landing'));
 const Home = lazy(() => import('./pages/Home'));
@@ -63,6 +64,7 @@ export default function App() {
       <AuthProvider>
         <ToastProvider>
           <NetworkStatusProvider>
+            <ModalAccessibilityManager />
             <OfflineBanner />
             {!hideNavbar && <ImpersonationBanner />}
             {!hideNavbar && <AnnouncementBanner />}

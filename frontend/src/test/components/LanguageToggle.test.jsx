@@ -97,4 +97,43 @@ describe('LanguageToggle component', () => {
       );
     });
   });
+
+  it('uses the campaign locale when the browser language has no translation', async () => {
+    apiMocks.getCampaignTranslations.mockResolvedValueOnce([
+      { locale: 'fr', title: 'Titre traduit', description: 'Description traduite' },
+    ]);
+    const onTranslationChange = vi.fn();
+
+    render(
+      <LanguageToggle
+        campaignId="c1"
+        defaultLanguage="fr-CA"
+        defaultTitle="Titre par défaut"
+        defaultDescription="Description par défaut"
+        onTranslationChange={onTranslationChange}
+      />
+    );
+
+    await waitFor(() => {
+      expect(onTranslationChange).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'Titre traduit',
+        description: 'Description traduite',
+        language: 'fr',
+      }));
+    });
+  });
+
+  it('keeps the campaign content available and shows a status when translations fail to load', async () => {
+    apiMocks.getCampaignTranslations.mockRejectedValueOnce(new Error('network error'));
+    render(
+      <LanguageToggle
+        campaignId="c1"
+        defaultLanguage="en"
+        defaultTitle="English Title"
+        defaultDescription="English description"
+      />
+    );
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/showing campaign default/i);
+  });
 });

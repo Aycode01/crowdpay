@@ -45,7 +45,8 @@ apiClient.interceptors.request.use((config) => {
 // Idempotent GET requests that fail with a network error while the app is
 // offline are queued here and replayed when connectivity returns
 // (NetworkStatusContext calls retryQueuedRequests on reconnect).
-const retryQueue = [];
+const MAX_RETRY_QUEUE_SIZE = 100;
+const retryQueue = new Map();
 
 apiClient.interceptors.response.use(
   (response) => response,
@@ -53,18 +54,42 @@ apiClient.interceptors.response.use(
     const config = error.config;
     if (!error.response && config && config.method === 'get' && !config._retried) {
       config._retried = true;
-      retryQueue.push(() => apiClient.request(config));
+      const key = JSON.stringify([config.baseURL, config.url, config.params]);
+      return new Promise((resolve, reject) => {
+        const existing = retryQueue.get(key);
+        if (existing) {
+          existing.waiters.push({ resolve, reject });
+          return;
+        }
+        if (retryQueue.size >= MAX_RETRY_QUEUE_SIZE) {
+          const oldestKey = retryQueue.keys().next().value;
+          const oldest = retryQueue.get(oldestKey);
+          retryQueue.delete(oldestKey);
+          oldest.waiters.forEach((waiter) => waiter.reject(normalizeError(oldest.error)));
+        }
+        retryQueue.set(key, { config, error, waiters: [{ resolve, reject }] });
+      });
     }
     return Promise.reject(normalizeError(error));
   }
 );
 
 export function retryQueuedRequests() {
-  const queue = [...retryQueue];
-  retryQueue.length = 0;
-  for (const replay of queue) {
-    replay().catch(() => { /* replayed request failed again — drop it */ });
-  }
+  const queue = [...retryQueue.values()];
+  retryQueue.clear();
+  return Promise.allSettled(queue.map(({ config, waiters }) =>
+    apiClient.request(config).then(
+      (response) => {
+        waiters.forEach((waiter) => waiter.resolve(response));
+        return response;
+      },
+      (error) => {
+        const normalized = normalizeError(error);
+        waiters.forEach((waiter) => waiter.reject(normalized));
+        throw normalized;
+      }
+    )
+  ));
 }
 
 function normalizeError(error) {
@@ -543,6 +568,22 @@ export const api = {
 
   retryGovernanceSyncRun: (runId) =>
     apiClient.post(`/governance/sync/runs/${runId}/retry`).then((r) => r.data),
+
+  // --- Campaign templates ---
+  getCampaignTemplates: () =>
+    apiClient.get('/campaign-templates').then((r) => r.data),
+
+  adminGetCampaignTemplates: () =>
+    apiClient.get('/campaign-templates/admin').then((r) => r.data),
+
+  adminCreateCampaignTemplate: (data) =>
+    apiClient.post('/campaign-templates/admin', data).then((r) => r.data),
+
+  adminUpdateCampaignTemplate: (id, data) =>
+    apiClient.patch(`/campaign-templates/admin/${id}`, data).then((r) => r.data),
+
+  adminDeleteCampaignTemplate: (id) =>
+    apiClient.delete(`/campaign-templates/admin/${id}`).then((r) => r.data),
 
   getEligibleRefunds: (campaignId) =>
     apiClient.get(`/campaigns/${campaignId}/refunds/eligible`).then((r) => r.data),
