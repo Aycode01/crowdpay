@@ -91,6 +91,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/ops', require('./routes/ops'));
 app.use('/api/referrals', require('./routes/referrals'));
 app.use('/api/refunds', require('./routes/creatorRefunds'));
+app.use('/api/refund-requests', require('./routes/refundRequests'));
 app.use('/api/sessions', require('./routes/sessions'));
 app.use('/api/sponsor-matching', require('./routes/sponsorMatching'));
 app.use('/api/stellar-transactions', require('./routes/stellarTransactions'));
@@ -110,7 +111,7 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
   const { startBackgroundWorkers, stopBackgroundWorkers } = require('./worker');
-  
+
   const server = app.listen(PORT, async () => {
     logger.info(`Server running on port ${PORT}`);
     await startBackgroundWorkers();

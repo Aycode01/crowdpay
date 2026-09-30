@@ -68,31 +68,44 @@ async function listRefunds(campaignId, options = {}) {
 }
 
 async function processRefund(contributionId, amount, service = stellarService) {
+  if (contributionId && typeof contributionId === 'object') {
+    const options = contributionId;
+    contributionId = options.contributionId;
+    amount = options.amount;
+    service = options.service || service;
+  }
   const numericAmount = Number(amount);
   if (isNaN(numericAmount) || numericAmount <= 0) {
-    throw new Error('Invalid refund amount');
+    const error = new Error('Invalid refund amount');
+    error.status = 400;
+    throw error;
   }
 
-  const client = await db.pool.connect();
+  const client = await (typeof db.connect === 'function' ? db.connect() : db.pool.connect());
   try {
     await client.query('BEGIN');
 
     const { rows: contribRows } = await client.query(
-      `SELECT id, campaign_id, sender_public_key, amount, refunded_amount
-       FROM contributions
-       WHERE id = $1 FOR UPDATE`,
+      `SELECT id, campaign_id, sender_public_key, amount, refunded_amount,
+              c.wallet_public_key, c.creator_id
+       FROM contributions JOIN campaigns c ON c.id = contributions.campaign_id
+       WHERE contributions.id = $1 FOR UPDATE`,
       [contributionId]
     );
 
     if (!contribRows.length) {
-      throw new Error('Contribution not found');
+      const error = new Error('Contribution not found');
+      error.status = 404;
+      throw error;
     }
 
     const contrib = contribRows[0];
     const remaining = Number(contrib.amount) - Number(contrib.refunded_amount || 0);
 
     if (numericAmount > remaining) {
-      throw new Error('Refund amount exceeds remaining contribution balance');
+      const error = new Error('Refund amount exceeds remaining contribution balance');
+      error.status = 422;
+      throw error;
     }
 
     let txHash = null;
@@ -102,14 +115,21 @@ async function processRefund(contributionId, amount, service = stellarService) {
         destinationKey: contrib.sender_public_key,
         amount: numericAmount,
       });
-      if (result && result.txHash) {
-        txHash = result.txHash;
-      }
+      txHash = result?.txHash || result?.hash || null;
+    } else if (service && typeof service.submitDisputeRefund === 'function') {
+      const result = await service.submitDisputeRefund({
+        campaignWalletPublicKey: contrib.wallet_public_key,
+        creatorId: contrib.creator_id,
+        refunds: [{ walletPublicKey: contrib.sender_public_key, amount: numericAmount }],
+      });
+      txHash = result?.txHash || result?.hash || null;
     }
 
     if (!txHash) {
       await client.query('ROLLBACK');
-      throw new Error('On-chain refund transaction failed or missing transaction hash');
+      const error = new Error('On-chain refund transaction failed or missing transaction hash');
+      error.status = 502;
+      throw error;
     }
 
     const { rows: refundRows } = await client.query(
