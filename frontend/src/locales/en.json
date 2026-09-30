@@ -768,6 +768,7 @@
     "saveError": "Could not save that preference.",
     "reset": "Reset to default",
     "resetting": "Resetting…",
+    "noOverrides": "You have not muted anything on an individual campaign yet. Open any campaign you support and use the communication panel there to change that.",
     "channels": {
       "updates": "Campaign updates",
       "updatesHelp": "Progress notes and announcements from the creator.",

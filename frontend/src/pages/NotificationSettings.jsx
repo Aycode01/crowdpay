@@ -323,7 +323,9 @@ export default function NotificationSettings() {
             {t('communicationPreferences.loading')}
           </p>
         ) : campaignOverrides.length === 0 ? (
-          <p style={{ color: 'var(--color-text-hint)' }}>{t('common.no')}</p>
+          <p style={{ color: 'var(--color-text-hint)' }}>
+            {t('communicationPreferences.noOverrides')}
+          </p>
         ) : (
           <div style={{ display: 'grid', gap: '0.75rem' }}>
             {campaignOverrides.map((row) => {

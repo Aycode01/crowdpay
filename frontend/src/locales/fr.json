@@ -768,6 +768,7 @@
     "saveError": "Impossible d'enregistrer cette préférence.",
     "reset": "Réinitialiser",
     "resetting": "Réinitialisation…",
+    "noOverrides": "Vous n'avez encore coupé quoi que ce soit sur une campagne précise. Ouvrez une campagne que vous soutenez et utilisez le panneau de communication qui s'y trouve pour la modifier.",
     "channels": {
       "updates": "Mises à jour de la campagne",
       "updatesHelp": "Notes de progression et annonces du créateur.",
