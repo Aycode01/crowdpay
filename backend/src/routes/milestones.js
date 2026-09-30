@@ -49,10 +49,7 @@ async function requirePlatformApproverAuth(userId) {
     err.status = 403;
     throw err;
   }
-  const { rows } = await db.query(
-    "SELECT role, is_admin FROM users WHERE id = $1",
-    [userId]
-  );
+  const { rows } = await db.query('SELECT role, is_admin FROM users WHERE id = $1', [userId]);
   if (!rows.length || (rows[0].role !== 'admin' && !rows[0].is_admin)) {
     const err = new Error('Account no longer has platform authorization');
     err.status = 403;
@@ -110,7 +107,7 @@ async function notifyAdminsOnEvidenceSubmitted({ milestone, campaignTitle, creat
   );
 
   await Promise.all(
-    adminRows.map(async (admin) => {
+    adminRows.map(async admin => {
       await createNotification(admin.id, {
         type: 'milestone_evidence_submitted',
         title: 'Milestone evidence submitted',
@@ -128,7 +125,9 @@ async function notifyAdminsOnEvidenceSubmitted({ milestone, campaignTitle, creat
           evidenceDescription: milestone.evidence_description,
           creatorName,
           adminUrl,
-        }).catch((err) => logger.error('Milestone evidence admin email failed', { error: err.message }));
+        }).catch(err =>
+          logger.error('Milestone evidence admin email failed', { error: err.message })
+        );
       }
     })
   );
@@ -213,12 +212,21 @@ async function getMilestoneVoteTally(milestoneId, userId) {
   };
 }
 
-async function logWithdrawalEvent(client, { withdrawalRequestId, actorUserId, action, note, metadata }) {
+async function logWithdrawalEvent(
+  client,
+  { withdrawalRequestId, actorUserId, action, note, metadata }
+) {
   await client.query(
     `INSERT INTO withdrawal_approval_events
        (withdrawal_request_id, actor_user_id, action, note, metadata)
      VALUES ($1, $2, $3, $4, $5::jsonb)`,
-    [withdrawalRequestId, actorUserId || null, action, note || null, metadata ? JSON.stringify(metadata) : null]
+    [
+      withdrawalRequestId,
+      actorUserId || null,
+      action,
+      note || null,
+      metadata ? JSON.stringify(metadata) : null,
+    ]
   );
 }
 
@@ -247,18 +255,21 @@ async function setCampaignStatusFromMilestoneProgress(client, campaignId) {
   return updated[0] || null;
 }
 
-router.get('/campaign/:campaignId', asyncHandler(async (req, res) => {
-  const { rows } = await db.query(
-    `SELECT m.*, 
+router.get(
+  '/campaign/:campaignId',
+  asyncHandler(async (req, res) => {
+    const { rows } = await db.query(
+      `SELECT m.*, 
             (c.milestones_contract_id IS NOT NULL) AS on_chain
      FROM milestones m
      JOIN campaigns c ON c.id = m.campaign_id
      WHERE m.campaign_id = $1
      ORDER BY m.sort_order ASC, m.created_at ASC`,
-    [req.params.campaignId]
-  );
-  res.json(rows);
-}));
+      [req.params.campaignId]
+    );
+    res.json(rows);
+  })
+);
 
 router.post('/', requireAuth, async (req, res) => {
   const {
@@ -269,8 +280,11 @@ router.post('/', requireAuth, async (req, res) => {
     sort_order: sortOrder,
   } = req.body || {};
 
-  if (!campaignId || !title || releasePercentage == null) { // eslint-disable-line eqeqeq
-    return res.status(400).json({ error: 'campaign_id, title and release_percentage are required' });
+  if (!campaignId || !title || releasePercentage == null) {
+    // eslint-disable-line eqeqeq
+    return res
+      .status(400)
+      .json({ error: 'campaign_id, title and release_percentage are required' });
   }
 
   const percentage = Number(releasePercentage);
@@ -304,7 +318,9 @@ router.post('/', requireAuth, async (req, res) => {
     );
     if ((stats[0]?.count || 0) >= MILESTONE_LIMIT) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: `Campaigns can define at most ${MILESTONE_LIMIT} milestones` });
+      return res
+        .status(400)
+        .json({ error: `Campaigns can define at most ${MILESTONE_LIMIT} milestones` });
     }
 
     const newTotal = Number(stats[0]?.total_percentage || 0) + percentage;
@@ -317,7 +333,13 @@ router.post('/', requireAuth, async (req, res) => {
       `INSERT INTO milestones (campaign_id, title, description, release_percentage, sort_order)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [campaignId, String(title).trim(), String(description || '').trim() || null, percentage.toFixed(4), Number.isFinite(Number(sortOrder)) ? Number(sortOrder) : stats[0]?.count || 0]
+      [
+        campaignId,
+        String(title).trim(),
+        String(description || '').trim() || null,
+        percentage.toFixed(4),
+        Number.isFinite(Number(sortOrder)) ? Number(sortOrder) : stats[0]?.count || 0,
+      ]
     );
     await client.query('COMMIT');
     res.status(201).json(rows[0]);
@@ -342,7 +364,11 @@ router.post('/:id/submit', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'destination_key must be a valid Stellar public key' });
   }
 
-  const { safe: urlSafe, reason: urlReason, normalized: normalizedUrl } = validateRenderUrl(evidenceUrl);
+  const {
+    safe: urlSafe,
+    reason: urlReason,
+    normalized: normalizedUrl,
+  } = validateRenderUrl(evidenceUrl);
   if (!urlSafe) {
     return res.status(422).json({ error: `evidence_url is not valid: ${urlReason}` });
   }
@@ -360,7 +386,8 @@ router.post('/:id/submit', requireAuth, async (req, res) => {
 
   if (milestone.migration_in_progress) {
     return res.status(503).json({
-      error: 'Milestone submissions are temporarily paused while this campaign\'s contract is being upgraded',
+      error:
+        "Milestone submissions are temporarily paused while this campaign's contract is being upgraded",
       code: 'CAMPAIGN_MIGRATION_IN_PROGRESS',
     });
   }
@@ -371,16 +398,24 @@ router.post('/:id/submit', requireAuth, async (req, res) => {
     return res.status(err.status || 403).json({ error: err.message });
   }
   if (!['funded', 'in_progress'].includes(milestone.campaign_status)) {
-    return res.status(409).json({ error: `Milestone submission is not available while campaign status is "${milestone.campaign_status}".` });
+    return res
+      .status(409)
+      .json({
+        error: `Milestone submission is not available while campaign status is "${milestone.campaign_status}".`,
+      });
   }
   if (milestone.status === 'released') {
     return res.status(409).json({ error: 'This milestone has already been released' });
   }
   if (milestone.status === 'pending_review') {
-    return res.status(409).json({ error: 'Evidence is already submitted and awaiting platform review' });
+    return res
+      .status(409)
+      .json({ error: 'Evidence is already submitted and awaiting platform review' });
   }
   if (!['pending', 'rejected'].includes(milestone.status)) {
-    return res.status(409).json({ error: `Cannot submit evidence while milestone status is "${milestone.status}"` });
+    return res
+      .status(409)
+      .json({ error: `Cannot submit evidence while milestone status is "${milestone.status}"` });
   }
 
   const client = await db.connect();
@@ -400,7 +435,7 @@ router.post('/:id/submit', requireAuth, async (req, res) => {
            completed_at = NOW()
        WHERE id = $4 AND status IN ('pending', 'rejected')
        RETURNING *`,
-       [
+      [
         normalizedUrl,
         String(evidenceDescription || '').trim() || null,
         destinationKey,
@@ -422,7 +457,10 @@ router.post('/:id/submit', requireAuth, async (req, res) => {
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');
-    logger.error('Milestone evidence submission failed', { milestone_id: milestone.id, error: err.message });
+    logger.error('Milestone evidence submission failed', {
+      milestone_id: milestone.id,
+      error: err.message,
+    });
     return res.status(500).json({ error: 'Could not submit milestone evidence' });
   } finally {
     client.release();
@@ -447,7 +485,7 @@ router.post('/:id/submit', requireAuth, async (req, res) => {
       await withDecryptedWalletSecret(
         user.wallet_secret_encrypted,
         { userId: req.user.userId, walletPublicKey: user.wallet_public_key },
-        async (secret) => {
+        async secret => {
           await invokeContract({
             contractId,
             method: 'submit_milestone',
@@ -457,7 +495,10 @@ router.post('/:id/submit', requireAuth, async (req, res) => {
         }
       );
     } catch (err) {
-      logger.error('Soroban submit_milestone failed', { error: err.message, milestone_id: milestone.id });
+      logger.error('Soroban submit_milestone failed', {
+        error: err.message,
+        milestone_id: milestone.id,
+      });
     }
   }
 
@@ -470,7 +511,7 @@ router.post('/:id/submit', requireAuth, async (req, res) => {
           creatorName: creatorRows[0]?.name,
         })
       )
-      .catch((err) => logger.error('Milestone evidence admin notify failed', { error: err.message }));
+      .catch(err => logger.error('Milestone evidence admin notify failed', { error: err.message }));
 
     notifyFollowers(
       milestone.campaign_id,
@@ -482,132 +523,162 @@ router.post('/:id/submit', requireAuth, async (req, res) => {
         link: `/campaigns/${milestone.campaign_id}`,
       },
       req.user.userId
-    ).catch((err) => logger.error('Milestone follower notify failed', { error: err.message }));
+    ).catch(err => logger.error('Milestone follower notify failed', { error: err.message }));
   });
 
-  evaluateCampaign(milestone.campaign_id).catch(err => logger.error('Fraud evaluate failed in milestone submit', { error: err.message }));
+  evaluateCampaign(milestone.campaign_id).catch(err =>
+    logger.error('Fraud evaluate failed in milestone submit', { error: err.message })
+  );
 
   res.json(updatedMilestone);
 });
 
-router.post('/:id/upload-evidence', requireAuth, evidenceUpload.single('evidence_file'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'evidence_file is required' });
-  }
+router.post(
+  '/:id/upload-evidence',
+  requireAuth,
+  evidenceUpload.single('evidence_file'),
+  async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: 'evidence_file is required' });
+    }
 
-  const { rows: milestones } = await db.query(
-    `SELECT m.*, c.creator_id, c.status AS campaign_status
+    const { rows: milestones } = await db.query(
+      `SELECT m.*, c.creator_id, c.status AS campaign_status
      FROM milestones m
      JOIN campaigns c ON c.id = m.campaign_id
      WHERE m.id = $1`,
-    [req.params.id]
-  );
-  if (!milestones.length) return res.status(404).json({ error: 'Milestone not found' });
-  const milestone = milestones[0];
+      [req.params.id]
+    );
+    if (!milestones.length) return res.status(404).json({ error: 'Milestone not found' });
+    const milestone = milestones[0];
 
-  try {
-    await assertCanSubmitMilestone(milestone, req.user.userId, req.user.role);
-  } catch (err) {
-    return res.status(err.status || 403).json({ error: err.message });
-  }
-  if (milestone.status === 'released' || milestone.status === 'pending_review') {
-    return res.status(409).json({ error: 'Cannot upload evidence for this milestone in its current state' });
-  }
+    try {
+      await assertCanSubmitMilestone(milestone, req.user.userId, req.user.role);
+    } catch (err) {
+      return res.status(err.status || 403).json({ error: err.message });
+    }
+    if (milestone.status === 'released' || milestone.status === 'pending_review') {
+      return res
+        .status(409)
+        .json({ error: 'Cannot upload evidence for this milestone in its current state' });
+    }
 
-  try {
-    const evidenceUrl = await uploadMilestoneEvidence(milestone.id, req.file);
-    res.json({ evidence_url: evidenceUrl });
-  } catch (err) {
-    logger.error('Milestone evidence upload failed', { milestone_id: milestone.id, error: err.message });
-    res.status(500).json({ error: 'Could not upload evidence file' });
+    try {
+      const evidenceUrl = await uploadMilestoneEvidence(milestone.id, req.file);
+      res.json({ evidence_url: evidenceUrl });
+    } catch (err) {
+      logger.error('Milestone evidence upload failed', {
+        milestone_id: milestone.id,
+        error: err.message,
+      });
+      res.status(500).json({ error: 'Could not upload evidence file' });
+    }
   }
-});
+);
 
-router.get('/:id/events', requireAuth, asyncHandler(async (req, res) => {
-  const { rows: milestones } = await db.query(
-    `SELECT m.*, c.creator_id
+router.get(
+  '/:id/events',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { rows: milestones } = await db.query(
+      `SELECT m.*, c.creator_id
      FROM milestones m
      JOIN campaigns c ON c.id = m.campaign_id
      WHERE m.id = $1`,
-    [req.params.id]
-  );
-  if (!milestones.length) return res.status(404).json({ error: 'Milestone not found' });
-  const milestone = milestones[0];
+      [req.params.id]
+    );
+    if (!milestones.length) return res.status(404).json({ error: 'Milestone not found' });
+    const milestone = milestones[0];
 
-  const isCreator = milestone.creator_id === req.user.userId;
-  const canPlatform = canPerformPlatformSignature(req.user.userId);
-  if (!isCreator && !canPlatform && req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Not authorized to view milestone audit trail' });
-  }
+    const isCreator = milestone.creator_id === req.user.userId;
+    const canPlatform = canPerformPlatformSignature(req.user.userId);
+    if (!isCreator && !canPlatform && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized to view milestone audit trail' });
+    }
 
-  const { rows } = await db.query(
-    `SELECT e.*, u.name AS actor_name
+    const { rows } = await db.query(
+      `SELECT e.*, u.name AS actor_name
      FROM milestone_events e
      LEFT JOIN users u ON u.id = e.actor_id
      WHERE e.milestone_id = $1
      ORDER BY e.created_at ASC`,
-    [req.params.id]
-  );
-  res.json(rows);
-}));
+      [req.params.id]
+    );
+    res.json(rows);
+  })
+);
 
-router.get('/:id/votes', requireAuth, asyncHandler(async (req, res) => {
-  const context = await getMilestoneVoteContext(req.params.id, req.user.userId);
-  if (!context) return res.status(404).json({ error: 'Milestone not found' });
+router.get(
+  '/:id/votes',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const context = await getMilestoneVoteContext(req.params.id, req.user.userId);
+    if (!context) return res.status(404).json({ error: 'Milestone not found' });
 
-  const canPlatform = canPerformPlatformSignature(req.user.userId);
-  if (!context.isContributor && !context.isCreator && !canPlatform && req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Not authorized to view milestone votes' });
-  }
+    const canPlatform = canPerformPlatformSignature(req.user.userId);
+    if (!context.isContributor && !context.isCreator && !canPlatform && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized to view milestone votes' });
+    }
 
-  const tally = await getMilestoneVoteTally(req.params.id, req.user.userId);
-  res.json({
-    milestone_id: req.params.id,
-    ...tally,
-  });
-}));
+    const tally = await getMilestoneVoteTally(req.params.id, req.user.userId);
+    res.json({
+      milestone_id: req.params.id,
+      ...tally,
+    });
+  })
+);
 
-router.post('/:id/votes', requireAuth, asyncHandler(async (req, res) => {
-  const vote = String(req.body?.vote || '').trim().toLowerCase();
-  const note = String(req.body?.note || '').trim() || null;
-  if (!['approve', 'reject'].includes(vote)) {
-    return res.status(400).json({ error: 'vote must be approve or reject' });
-  }
+router.post(
+  '/:id/votes',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const vote = String(req.body?.vote || '')
+      .trim()
+      .toLowerCase();
+    const note = String(req.body?.note || '').trim() || null;
+    if (!['approve', 'reject'].includes(vote)) {
+      return res.status(400).json({ error: 'vote must be approve or reject' });
+    }
 
-  const context = await getMilestoneVoteContext(req.params.id, req.user.userId);
-  if (!context) return res.status(404).json({ error: 'Milestone not found' });
-  if (!context.isContributor) {
-    return res.status(403).json({ error: 'Only contributors can vote on milestone approval' });
-  }
-  if (context.isCreator) {
-    return res.status(403).json({ error: 'Campaign creators cannot vote on their own milestone approval' });
-  }
-  if (context.milestone.status !== 'pending_review') {
-    return res.status(409).json({ error: 'Milestone voting is only open while evidence is awaiting review' });
-  }
+    const context = await getMilestoneVoteContext(req.params.id, req.user.userId);
+    if (!context) return res.status(404).json({ error: 'Milestone not found' });
+    if (!context.isContributor) {
+      return res.status(403).json({ error: 'Only contributors can vote on milestone approval' });
+    }
+    if (context.isCreator) {
+      return res
+        .status(403)
+        .json({ error: 'Campaign creators cannot vote on their own milestone approval' });
+    }
+    if (context.milestone.status !== 'pending_review') {
+      return res
+        .status(409)
+        .json({ error: 'Milestone voting is only open while evidence is awaiting review' });
+    }
 
-  await db.query(
-    `INSERT INTO milestone_votes (milestone_id, user_id, vote, note)
+    await db.query(
+      `INSERT INTO milestone_votes (milestone_id, user_id, vote, note)
      VALUES ($1, $2, $3, $4)
      ON CONFLICT (milestone_id, user_id)
      DO UPDATE SET vote = EXCLUDED.vote, note = EXCLUDED.note, updated_at = NOW()`,
-    [req.params.id, req.user.userId, vote, note]
-  );
+      [req.params.id, req.user.userId, vote, note]
+    );
 
-  await logMilestoneEvent(null, {
-    milestoneId: req.params.id,
-    actorUserId: req.user.userId,
-    action: 'contributor_voted',
-    note,
-    metadata: { vote },
-  });
+    await logMilestoneEvent(null, {
+      milestoneId: req.params.id,
+      actorUserId: req.user.userId,
+      action: 'contributor_voted',
+      note,
+      metadata: { vote },
+    });
 
-  const tally = await getMilestoneVoteTally(req.params.id, req.user.userId);
-  res.json({
-    milestone_id: req.params.id,
-    ...tally,
-  });
-}));
+    const tally = await getMilestoneVoteTally(req.params.id, req.user.userId);
+    res.json({
+      milestone_id: req.params.id,
+      ...tally,
+    });
+  })
+);
 
 router.post('/:id/reject', requireAuth, async (req, res) => {
   try {
@@ -659,11 +730,16 @@ router.post('/:id/reject', requireAuth, async (req, res) => {
         signerSecret: process.env.PLATFORM_SECRET_KEY,
       });
     } catch (err) {
-      logger.error('Soroban reject_milestone failed', { error: err.message, milestone_id: req.params.id });
+      logger.error('Soroban reject_milestone failed', {
+        error: err.message,
+        milestone_id: req.params.id,
+      });
     }
   }
 
-  evaluateCampaign(rows[0].campaign_id).catch(err => logger.error('Fraud evaluate failed in milestone reject', { error: err.message }));
+  evaluateCampaign(rows[0].campaign_id).catch(err =>
+    logger.error('Fraud evaluate failed in milestone reject', { error: err.message })
+  );
 
   if (campaignRows[0]?.creator_id) {
     setImmediate(() => {
@@ -671,7 +747,9 @@ router.post('/:id/reject', requireAuth, async (req, res) => {
         milestone: rows[0],
         campaign_id: rows[0].campaign_id,
         reason,
-      }).catch((err) => logger.error('Milestone rejected webhook emit failed', { error: err.message }));
+      }).catch(err =>
+        logger.error('Milestone rejected webhook emit failed', { error: err.message })
+      );
     });
   }
 
@@ -702,16 +780,26 @@ const approveMilestoneReleaseHandler = async (req, res) => {
   const milestone = milestoneRows[0];
 
   if (!['funded', 'in_progress'].includes(milestone.campaign_status)) {
-    return res.status(409).json({ error: `Milestone approval is not available while campaign status is "${milestone.campaign_status}".` });
+    return res
+      .status(409)
+      .json({
+        error: `Milestone approval is not available while campaign status is "${milestone.campaign_status}".`,
+      });
   }
   if (milestone.status !== 'pending_review') {
-    return res.status(409).json({ error: 'Milestone must be in pending_review before platform approval' });
+    return res
+      .status(409)
+      .json({ error: 'Milestone must be in pending_review before platform approval' });
   }
   if (!milestone.evidence_url) {
-    return res.status(409).json({ error: 'Creator must submit milestone evidence before approval' });
+    return res
+      .status(409)
+      .json({ error: 'Creator must submit milestone evidence before approval' });
   }
   if (!milestone.destination_key || !validatePublicKey(milestone.destination_key)) {
-    return res.status(409).json({ error: 'Creator must provide a valid payout destination before approval' });
+    return res
+      .status(409)
+      .json({ error: 'Creator must provide a valid payout destination before approval' });
   }
   if (milestone.status === 'released') {
     return res.status(409).json({ error: 'Milestone already released' });
@@ -744,7 +832,9 @@ const approveMilestoneReleaseHandler = async (req, res) => {
     );
     if (!claimedRows.length) {
       await claimClient.query('ROLLBACK');
-      return res.status(409).json({ error: 'Milestone is already being processed or has been claimed' });
+      return res
+        .status(409)
+        .json({ error: 'Milestone is already being processed or has been claimed' });
     }
     await claimClient.query('COMMIT');
   } catch (claimErr) {
@@ -771,15 +861,20 @@ const approveMilestoneReleaseHandler = async (req, res) => {
         userId: milestone.creator_id,
         walletPublicKey: milestone.creator_wallet_public_key,
       },
-      async (creatorSecret) =>
+      async creatorSecret =>
         signTransactionXdr({
           xdr: unsignedXdr,
           signerSecret: creatorSecret,
         })
     );
   } catch (err) {
-    logger.error('Milestone creator signature failed', { milestone_id: milestone.id, error: err.message });
-    return res.status(503).json({ error: 'Creator signature could not be produced for this milestone release.' });
+    logger.error('Milestone creator signature failed', {
+      milestone_id: milestone.id,
+      error: err.message,
+    });
+    return res
+      .status(503)
+      .json({ error: 'Creator signature could not be produced for this milestone release.' });
   }
 
   const fullySignedXdr = signTransactionXdr({
@@ -788,15 +883,23 @@ const approveMilestoneReleaseHandler = async (req, res) => {
   });
 
   if (signatureCountFromXdr(fullySignedXdr) < 2) {
-    return res.status(422).json({ error: 'Milestone release requires both creator and platform signatures' });
+    return res
+      .status(422)
+      .json({ error: 'Milestone release requires both creator and platform signatures' });
   }
 
   let txHash;
   try {
     txHash = await submitSignedWithdrawal({ xdr: fullySignedXdr });
   } catch (err) {
-    logger.error('Milestone release submission failed', { milestone_id: milestone.id, error: err.message });
-    sendAlert('Milestone release submission failed', { milestone_id: milestone.id, error: err.message });
+    logger.error('Milestone release submission failed', {
+      milestone_id: milestone.id,
+      error: err.message,
+    });
+    sendAlert('Milestone release submission failed', {
+      milestone_id: milestone.id,
+      error: err.message,
+    });
     return res.status(502).json({
       error: 'Stellar network rejected the milestone release transaction',
       detail: err.message || String(err),
@@ -813,7 +916,9 @@ const approveMilestoneReleaseHandler = async (req, res) => {
     );
     if (existingRelease.length) {
       await client.query('ROLLBACK');
-      return res.status(409).json({ error: 'A release has already been recorded for this milestone' });
+      return res
+        .status(409)
+        .json({ error: 'A release has already been recorded for this milestone' });
     }
 
     const { rows: releaseRows } = await client.query(
@@ -839,7 +944,11 @@ const approveMilestoneReleaseHandler = async (req, res) => {
       actorUserId: req.user.userId,
       action: 'requested',
       note: 'Milestone release approved by platform',
-      metadata: { milestone_id: milestone.id, release_percentage: milestone.release_percentage, release_amount: releaseAmount },
+      metadata: {
+        milestone_id: milestone.id,
+        release_percentage: milestone.release_percentage,
+        release_amount: releaseAmount,
+      },
     });
     await logWithdrawalEvent(client, {
       withdrawalRequestId: withdrawalRequest.id,
@@ -936,7 +1045,10 @@ const approveMilestoneReleaseHandler = async (req, res) => {
       }
     }
 
-    const campaignStatus = await setCampaignStatusFromMilestoneProgress(client, milestone.campaign_id);
+    const campaignStatus = await setCampaignStatusFromMilestoneProgress(
+      client,
+      milestone.campaign_id
+    );
 
     await client.query('COMMIT');
 
@@ -946,26 +1058,25 @@ const approveMilestoneReleaseHandler = async (req, res) => {
         campaign_id: milestone.campaign_id,
         withdrawal_request_id: withdrawalRequest.id,
         tx_hash: txHash,
-      }).catch((e) => logger.error('Milestone webhook emit failed', { error: e.message }));
+      }).catch(e => logger.error('Milestone webhook emit failed', { error: e.message }));
 
       const campaignUrl = `${frontendBaseUrl()}/campaigns/${milestone.campaign_id}`;
-      db.query(
-        `SELECT u.email, u.name FROM users u WHERE u.id = $1`,
-        [milestone.creator_id]
-      ).then(({ rows: creatorRows }) => {
-        if (!creatorRows.length) return;
-        return sendMilestoneReleasedCreatorEmail({
-          to: creatorRows[0].email,
-          milestoneId: milestone.id,
-          creatorName: creatorRows[0].name,
-          campaignTitle: milestone.campaign_title,
-          campaignUrl,
-          milestoneTitle: milestone.title,
-          amount: releaseAmount,
-          asset: milestone.asset_type,
-          txHash,
-        });
-      }).catch((e) => logger.error('Milestone creator email failed', { error: e.message }));
+      db.query(`SELECT u.email, u.name FROM users u WHERE u.id = $1`, [milestone.creator_id])
+        .then(({ rows: creatorRows }) => {
+          if (!creatorRows.length) return;
+          return sendMilestoneReleasedCreatorEmail({
+            to: creatorRows[0].email,
+            milestoneId: milestone.id,
+            creatorName: creatorRows[0].name,
+            campaignTitle: milestone.campaign_title,
+            campaignUrl,
+            milestoneTitle: milestone.title,
+            amount: releaseAmount,
+            asset: milestone.asset_type,
+            txHash,
+          });
+        })
+        .catch(e => logger.error('Milestone creator email failed', { error: e.message }));
 
       db.query(
         `SELECT DISTINCT ON (u.id) u.id, u.email, u.name
@@ -974,21 +1085,23 @@ const approveMilestoneReleaseHandler = async (req, res) => {
          WHERE c.campaign_id = $1 AND u.email IS NOT NULL
          ORDER BY u.id, c.created_at ASC`,
         [milestone.campaign_id]
-      ).then(({ rows: contributors }) => {
-        notifyFollowers(
-          milestone.campaign_id,
-          'notify_milestones',
-          {
-            type: 'milestone_released',
-            title: `${milestone.campaign_title}: "${milestone.title}" released`,
-            body: `${releaseAmount} ${milestone.asset_type} has been released to the creator.`,
-            link: `/campaigns/${milestone.campaign_id}`,
-          },
-          [req.user.userId, ...contributors.map((contributor) => contributor.id)]
-        ).catch((e) => logger.error('Milestone follower notify failed', { error: e.message }));
+      )
+        .then(({ rows: contributors }) => {
+          notifyFollowers(
+            milestone.campaign_id,
+            'notify_milestones',
+            {
+              type: 'milestone_released',
+              title: `${milestone.campaign_title}: "${milestone.title}" released`,
+              body: `${releaseAmount} ${milestone.asset_type} has been released to the creator.`,
+              link: `/campaigns/${milestone.campaign_id}`,
+            },
+            [req.user.userId, ...contributors.map(contributor => contributor.id)]
+          ).catch(e => logger.error('Milestone follower notify failed', { error: e.message }));
 
-        return contributors;
-      }).catch((e) => logger.error('Milestone follower notify failed', { error: e.message }));
+          return contributors;
+        })
+        .catch(e => logger.error('Milestone follower notify failed', { error: e.message }));
 
       notifyContributorFundRelease({
         campaignId: milestone.campaign_id,
@@ -999,10 +1112,12 @@ const approveMilestoneReleaseHandler = async (req, res) => {
         usage: `Milestone "${milestone.title}" was approved and released.`,
         recipient: milestone.destination_key,
         excludeUserIds: [req.user.userId],
-      }).catch((e) => logger.error('Contributor fund release notify failed', { error: e.message }));
+      }).catch(e => logger.error('Contributor fund release notify failed', { error: e.message }));
     });
 
-    evaluateCampaign(milestone.campaign_id).catch(err => logger.error('Fraud evaluate failed in milestone approve', { error: err.message }));
+    evaluateCampaign(milestone.campaign_id).catch(err =>
+      logger.error('Fraud evaluate failed in milestone approve', { error: err.message })
+    );
 
     res.json({
       milestone: updatedMilestones[0],
@@ -1021,7 +1136,9 @@ const approveMilestoneReleaseHandler = async (req, res) => {
       tx_hash: txHash,
       error: err.message,
     });
-    res.status(500).json({ error: 'Milestone release was submitted but could not be recorded cleanly' });
+    res
+      .status(500)
+      .json({ error: 'Milestone release was submitted but could not be recorded cleanly' });
   } finally {
     client.release();
   }

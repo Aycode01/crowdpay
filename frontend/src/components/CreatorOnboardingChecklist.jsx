@@ -55,8 +55,17 @@ export default function CreatorOnboardingChecklist({ user, campaigns = [], stats
       </div>
 
       <div className="creator-checklist__progress" aria-label={`${progress.percent}% complete`}>
-        <div className="progress-bar" role="progressbar" aria-valuenow={progress.percent} aria-valuemin={0} aria-valuemax={100}>
-          <div className="progress-bar-fill" style={{ width: `${progress.percent}%`, background: 'var(--color-accent)' }} />
+        <div
+          className="progress-bar"
+          role="progressbar"
+          aria-valuenow={progress.percent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div
+            className="progress-bar-fill"
+            style={{ width: `${progress.percent}%`, background: 'var(--color-accent)' }}
+          />
         </div>
         <span className="creator-checklist__percent">
           {progress.doneCount}/{progress.total} · {progress.percent}%
@@ -80,8 +89,7 @@ export default function CreatorOnboardingChecklist({ user, campaigns = [], stats
         ))}
       </ul>
       <p className="creator-checklist__hint">
-        You can reopen this checklist anytime from{' '}
-        <Link to="/profile">account settings</Link>.
+        You can reopen this checklist anytime from <Link to="/profile">account settings</Link>.
       </p>
     </section>
   );

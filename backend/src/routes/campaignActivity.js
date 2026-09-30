@@ -20,11 +20,15 @@ function csvCell(value) {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
-router.get('/:id/activity', requireAuth, requireCampaignCreator, asyncHandler(async (req, res) => {
-  const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 200);
-  const offset = Math.max(Number.parseInt(req.query.offset, 10) || 0, 0);
-  const { rows } = await db.query(
-    `SELECT event_type, event_id, occurred_at, summary, details
+router.get(
+  '/:id/activity',
+  requireAuth,
+  requireCampaignCreator,
+  asyncHandler(async (req, res) => {
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 200);
+    const offset = Math.max(Number.parseInt(req.query.offset, 10) || 0, 0);
+    const { rows } = await db.query(
+      `SELECT event_type, event_id, occurred_at, summary, details
      FROM (
        SELECT 'status' AS event_type, id::text AS event_id, created_at AS occurred_at,
               'Campaign status changed' AS summary,
@@ -48,25 +52,33 @@ router.get('/:id/activity', requireAuth, requireCampaignCreator, asyncHandler(as
      ) activity
      ORDER BY occurred_at DESC
      LIMIT $2 OFFSET $3`,
-    [req.params.id, limit, offset]
-  );
+      [req.params.id, limit, offset]
+    );
 
-  if (req.query.format === 'csv') {
-    const lines = [
-      ['event_type', 'event_id', 'occurred_at', 'summary', 'details'].join(','),
-      ...rows.map((row) => [
-        row.event_type,
-        row.event_id,
-        row.occurred_at?.toISOString?.() || row.occurred_at,
-        row.summary,
-        JSON.stringify(row.details || {}),
-      ].map(csvCell).join(',')),
-    ];
-    res.type('text/csv').attachment(`campaign-${req.params.id}-activity.csv`).send(lines.join('\n'));
-    return;
-  }
+    if (req.query.format === 'csv') {
+      const lines = [
+        ['event_type', 'event_id', 'occurred_at', 'summary', 'details'].join(','),
+        ...rows.map(row =>
+          [
+            row.event_type,
+            row.event_id,
+            row.occurred_at?.toISOString?.() || row.occurred_at,
+            row.summary,
+            JSON.stringify(row.details || {}),
+          ]
+            .map(csvCell)
+            .join(',')
+        ),
+      ];
+      res
+        .type('text/csv')
+        .attachment(`campaign-${req.params.id}-activity.csv`)
+        .send(lines.join('\n'));
+      return;
+    }
 
-  res.json({ data: rows, limit, offset });
-}));
+    res.json({ data: rows, limit, offset });
+  })
+);
 
 module.exports = router;

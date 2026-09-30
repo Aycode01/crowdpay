@@ -61,8 +61,8 @@ function buildApp({ queryImpl, authUser }) {
         status: 0,
         evidence_hash: null,
       }),
-      nativeToScVal: (v) => v,
-      scvAddressFromString: (s) => s,
+      nativeToScVal: v => v,
+      scvAddressFromString: s => s,
     },
     '../services/emailService': { sendEmail: async () => {} },
     '../services/alerting': { sendAlert: () => {} },
@@ -90,7 +90,7 @@ function buildApp({ queryImpl, authUser }) {
       getCampaignsValidation: [],
       validateRequest: (_req, _res, next) => next(),
     },
-    '../utils/asyncHandler': (fn) => (req, res, next) => fn(req, res, next).catch(next),
+    '../utils/asyncHandler': fn => (req, res, next) => fn(req, res, next).catch(next),
     '../middleware/auth': {
       requireAuth: (req, _res, next) => {
         req.user = authUser || { userId: 'user-1', role: 'creator' };
@@ -200,7 +200,7 @@ test('GET /api/campaigns/:id with ?source=twitter sets cp_share_source cookie', 
   const res = await request(app).get(`/api/campaigns/${CAMPAIGN_ID}?source=twitter`);
   assert.equal(res.status, 200);
   const cookies = res.headers['set-cookie'] || [];
-  const shareCookie = cookies.find((c) => c.startsWith(`cp_share_source_${CAMPAIGN_ID}`));
+  const shareCookie = cookies.find(c => c.startsWith(`cp_share_source_${CAMPAIGN_ID}`));
   assert.ok(shareCookie, 'cp_share_source cookie should be set');
   assert.ok(shareCookie.includes('twitter'));
 });

@@ -17,12 +17,14 @@ const CLOSURE_REASONS = {
 function ClosureNotice({ subscription }) {
   if (!subscription.periods_closed) return null;
   const reason = CLOSURE_REASONS[subscription.closure_reason] || CLOSURE_REASONS.campaign_closed;
-  const reclaimable = subscription.reclaimable_from && new Date(subscription.reclaimable_from) <= new Date();
+  const reclaimable =
+    subscription.reclaimable_from && new Date(subscription.reclaimable_from) <= new Date();
   return (
     <p className="alert alert--info" style={{ marginTop: '0.6rem', fontSize: '0.85rem' }}>
-      {subscription.periods_closed} remaining installment{subscription.periods_closed === 1 ? '' : 's'} (
-      {subscription.closed_amount} {subscription.asset}) will not be collected because {reason}. The funds
-      stay locked in their claimable balance{subscription.periods_closed === 1 ? '' : 's'} and{' '}
+      {subscription.periods_closed} remaining installment
+      {subscription.periods_closed === 1 ? '' : 's'} ({subscription.closed_amount}{' '}
+      {subscription.asset}) will not be collected because {reason}. The funds stay locked in their
+      claimable balance{subscription.periods_closed === 1 ? '' : 's'} and{' '}
       {reclaimable
         ? 'can now be reclaimed to your wallet.'
         : `become reclaimable to your wallet from ${formatDate(subscription.reclaimable_from)}.`}
@@ -74,12 +76,21 @@ function SubscriptionRow({ subscription, result, onCancelled }) {
           >
             {subscription.campaign_title}
           </Link>
-          <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>
+          <div
+            style={{
+              fontSize: '0.85rem',
+              color: 'var(--color-text-secondary)',
+              marginTop: '0.25rem',
+            }}
+          >
             {subscription.amount_per_period} {subscription.asset} ·{' '}
-            {PERIOD_LABELS[subscription.period_months] || `Every ${subscription.period_months} months`} ·{' '}
-            {subscription.periods_claimed}/{subscription.total_periods} paid
+            {PERIOD_LABELS[subscription.period_months] ||
+              `Every ${subscription.period_months} months`}{' '}
+            · {subscription.periods_claimed}/{subscription.total_periods} paid
           </div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--color-text-hint)', marginTop: '0.2rem' }}>
+          <div
+            style={{ fontSize: '0.85rem', color: 'var(--color-text-hint)', marginTop: '0.2rem' }}
+          >
             Next payment: {formatDate(subscription.next_payment_date)}
           </div>
         </div>

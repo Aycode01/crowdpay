@@ -1,75 +1,83 @@
 // Recurring monthly automated-billing notices (#738). Rendered by
 // emailService.sendRecurringContributionNoticeEmail.
-const { renderLayout, heading, paragraph, table } = require("./layout");
+const { renderLayout, heading, paragraph, table } = require('./layout');
 
-function buildUpcoming({ name, campaignTitle, amount, asset, scheduledAt, manageUrl, unsubscribeUrl }) {
-  const recipientName = name || "there";
+function buildUpcoming({
+  name,
+  campaignTitle,
+  amount,
+  asset,
+  scheduledAt,
+  manageUrl,
+  unsubscribeUrl,
+}) {
+  const recipientName = name || 'there';
   const subject = `Your monthly contribution to "${campaignTitle}" is scheduled`;
   const text = [
     `Hi ${recipientName},`,
-    "",
+    '',
     `Your recurring contribution of ${amount} ${asset} to "${campaignTitle}" will be processed shortly. We'll confirm once it clears on the Stellar network.`,
-    "",
+    '',
     `Scheduled for: ${new Date(scheduledAt).toUTCString()}`,
     `You can pause or cancel it any time: ${manageUrl}`,
-  ].join("\n");
+  ].join('\n');
 
   const html = renderLayout({
     previewText: `Your monthly ${amount} ${asset} contribution is scheduled.`,
     bodyHtml: [
-      heading("Recurring contribution scheduled"),
+      heading('Recurring contribution scheduled'),
       paragraph(
         `Hi ${recipientName}, your recurring contribution of ${amount} ${asset} to "${campaignTitle}" will be processed shortly. We'll confirm once it clears on the Stellar network.`
       ),
       table([
-        ["Campaign", campaignTitle],
-        ["Amount", `${amount} ${asset}`],
-        ["Date", new Date(scheduledAt).toUTCString()],
+        ['Campaign', campaignTitle],
+        ['Amount', `${amount} ${asset}`],
+        ['Date', new Date(scheduledAt).toUTCString()],
       ]),
       paragraph(`You can pause or cancel this recurring contribution any time: ${manageUrl}`),
-    ].join(""),
-    unsubscribeUrl
+    ].join(''),
+    unsubscribeUrl,
   });
 
   return { subject, text, html };
 }
 
 function buildCharged({ name, campaignTitle, amount, asset, txHash, campaignUrl, unsubscribeUrl }) {
-  const recipientName = name || "there";
+  const recipientName = name || 'there';
   const subject = `Your monthly contribution to "${campaignTitle}" was processed`;
   const text = `Hi ${recipientName}, your recurring contribution of ${amount} ${asset} to "${campaignTitle}" was processed successfully on the Stellar network. Transaction: ${txHash} — ${campaignUrl}`;
 
   const html = renderLayout({
     previewText: `Your monthly ${amount} ${asset} contribution was processed.`,
     bodyHtml: [
-      heading("Recurring contribution processed"),
+      heading('Recurring contribution processed'),
       paragraph(
         `Hi ${recipientName}, your recurring contribution of ${amount} ${asset} to "${campaignTitle}" was processed successfully on the Stellar network.`
       ),
       table([
-        ["Campaign", campaignTitle],
-        ["Amount", `${amount} ${asset}`],
+        ['Campaign', campaignTitle],
+        ['Amount', `${amount} ${asset}`],
       ]),
-    ].join(""),
-    unsubscribeUrl
+    ].join(''),
+    unsubscribeUrl,
   });
 
   return { subject, text, html };
 }
 
 function buildFailed({ name, campaignTitle, amount, asset, manageUrl, unsubscribeUrl }) {
-  const recipientName = name || "there";
+  const recipientName = name || 'there';
   const subject = `Your monthly contribution to "${campaignTitle}" couldn't be processed`;
   const text = [
     `Hi ${recipientName},`,
-    "",
+    '',
     `We weren't able to process your recurring contribution of ${amount} ${asset} to "${campaignTitle}".`,
-    "",
+    '',
     `This is usually a temporary Stellar network issue. We'll automatically retry shortly`,
     `and we'll let you know as soon as it goes through.`,
-    "",
+    '',
     `Manage your recurring contribution: ${manageUrl}`,
-  ].join("\n");
+  ].join('\n');
 
   const html = renderLayout({
     previewText: `We couldn't process your recurring ${amount} ${asset} contribution.`,
@@ -82,8 +90,8 @@ function buildFailed({ name, campaignTitle, amount, asset, manageUrl, unsubscrib
         "This is usually a temporary Stellar network issue. We'll automatically retry and let you know as soon as it goes through."
       ),
       paragraph(`Manage your recurring contribution: ${manageUrl}`),
-    ].join(""),
-    unsubscribeUrl
+    ].join(''),
+    unsubscribeUrl,
   });
 
   return { subject, text, html };

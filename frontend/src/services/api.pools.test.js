@@ -15,7 +15,9 @@ describe('api pool methods (#804)', () => {
   });
 
   it('createPool POSTs the pool fields to /campaign-pools', async () => {
-    const spy = vi.spyOn(apiClient, 'post').mockResolvedValue({ data: { success: true, data: { id: 'pool-1' } } });
+    const spy = vi
+      .spyOn(apiClient, 'post')
+      .mockResolvedValue({ data: { success: true, data: { id: 'pool-1' } } });
     await api.createPool({ campaign_id: 'campaign-1', title: 'Team Alpha', target_amount: 100 });
 
     expect(spy).toHaveBeenCalledWith('/campaign-pools', {

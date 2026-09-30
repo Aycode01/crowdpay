@@ -118,7 +118,9 @@ export default function PoolManager({ campaignId, campaignTitle }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">{t('poolManager.contributionPools')}</h3>
+        <h3 className="text-lg font-semibold text-gray-900">
+          {t('poolManager.contributionPools')}
+        </h3>
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
@@ -149,7 +151,9 @@ export default function PoolManager({ campaignId, campaignTitle }) {
           />
           <div className="flex gap-3 items-end">
             <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">{t('poolManager.targetAmount')}</label>
+              <label className="block text-xs text-gray-500 mb-1">
+                {t('poolManager.targetAmount')}
+              </label>
               <input
                 type="number"
                 step="0.01"
@@ -176,9 +180,7 @@ export default function PoolManager({ campaignId, campaignTitle }) {
       {loading ? (
         <div className="text-center text-gray-400 py-4 text-sm">{t('poolManager.loading')}</div>
       ) : pools.length === 0 ? (
-        <div className="text-center text-gray-400 py-8 text-sm">
-          {t('poolManager.noPools')}
-        </div>
+        <div className="text-center text-gray-400 py-8 text-sm">{t('poolManager.noPools')}</div>
       ) : (
         <div className="space-y-3">
           {pools.map((pool) => {
@@ -194,31 +196,45 @@ export default function PoolManager({ campaignId, campaignTitle }) {
                       <p className="text-sm text-gray-500 mt-1">{pool.description}</p>
                     )}
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                    pool.status === 'open' ? 'bg-green-100 text-green-800' :
-                    pool.status === 'submitted' ? 'bg-blue-100 text-blue-800' :
-                    pool.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
+                  <span
+                    className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      pool.status === 'open'
+                        ? 'bg-green-100 text-green-800'
+                        : pool.status === 'submitted'
+                          ? 'bg-blue-100 text-blue-800'
+                          : pool.status === 'cancelled'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
                     {t('poolManager.status.' + pool.status) || pool.status}
                   </span>
                 </div>
 
                 <div className="mt-3 flex items-center gap-4 text-sm text-gray-600">
-                  <span>{pool.member_count} {t('poolManager.member', { count: pool.member_count })}</span>
-                  <span>{t('poolManager.target')}: {parseFloat(pool.target_amount).toFixed(2)}</span>
+                  <span>
+                    {pool.member_count} {t('poolManager.member', { count: pool.member_count })}
+                  </span>
+                  <span>
+                    {t('poolManager.target')}: {parseFloat(pool.target_amount).toFixed(2)}
+                  </span>
                   {parseFloat(pool.raised_amount) > 0 && (
-                    <span>{t('poolManager.raised')}: {parseFloat(pool.raised_amount).toFixed(2)}</span>
+                    <span>
+                      {t('poolManager.raised')}: {parseFloat(pool.raised_amount).toFixed(2)}
+                    </span>
                   )}
                 </div>
 
                 {/* Actions */}
                 <div className="mt-3 flex gap-2">
-                  {pool.status === 'open' && !isLeader && (
-                    joinPoolId === pool.id ? (
+                  {pool.status === 'open' &&
+                    !isLeader &&
+                    (joinPoolId === pool.id ? (
                       <div className="flex gap-2 items-end flex-wrap">
                         <div>
-                          <label className="block text-xs text-gray-500">{t('poolManager.yourShare')}</label>
+                          <label className="block text-xs text-gray-500">
+                            {t('poolManager.yourShare')}
+                          </label>
                           <input
                             type="number"
                             step="0.01"
@@ -230,7 +246,9 @@ export default function PoolManager({ campaignId, campaignTitle }) {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-gray-500">{t('poolManager.displayName')}</label>
+                          <label className="block text-xs text-gray-500">
+                            {t('poolManager.displayName')}
+                          </label>
                           <input
                             type="text"
                             placeholder={t('poolManager.displayNamePlaceholder')}
@@ -248,7 +266,10 @@ export default function PoolManager({ campaignId, campaignTitle }) {
                           {joining ? t('poolManager.joining') : t('poolManager.confirm')}
                         </button>
                         <button
-                          onClick={() => { setJoinPoolId(null); setJoinAmount(''); }}
+                          onClick={() => {
+                            setJoinPoolId(null);
+                            setJoinAmount('');
+                          }}
                           className="px-3 py-1.5 text-gray-500 text-sm"
                         >
                           {t('common.cancel')}
@@ -261,8 +282,7 @@ export default function PoolManager({ campaignId, campaignTitle }) {
                       >
                         {t('poolManager.joinPool')}
                       </button>
-                    )
-                  )}
+                    ))}
                   {canSubmit && (
                     <button
                       onClick={() => handleSubmitPool(pool)}

@@ -88,7 +88,7 @@ export default function Developer() {
       const res = await fetch(`${V1_API_BASE}/docs/openapi.json`);
       if (!res.ok) throw new Error('Failed to fetch OpenAPI spec');
       const spec = await res.json();
-      
+
       const endpoints = [];
       for (const [path, methods] of Object.entries(spec.paths || {})) {
         for (const [method, operation] of Object.entries(methods)) {
@@ -154,7 +154,7 @@ export default function Developer() {
   useEffect(() => {
     if (!explorerEndpoint) return;
     localStorage.setItem('cp_explorer_endpoint', explorerEndpoint);
-    
+
     const savedParamsStr = localStorage.getItem(`cp_explorer_params_${explorerEndpoint}`);
     if (savedParamsStr) {
       try {
@@ -252,7 +252,12 @@ export default function Developer() {
   }
 
   async function rotateHook(id) {
-    if (!window.confirm('Rotate this webhook signing secret? The previous secret will remain valid for 24 hours.')) return;
+    if (
+      !window.confirm(
+        'Rotate this webhook signing secret? The previous secret will remain valid for 24 hours.'
+      )
+    )
+      return;
     setError('');
     try {
       const res = await api.rotateWebhook(id, { grace_period_hours: 24 });
@@ -271,10 +276,8 @@ export default function Developer() {
     setNewKeyScopes((cur) => (cur.includes(sc) ? cur.filter((x) => x !== sc) : [...cur, sc]));
   }
 
-  const selectedEndpoint =
-    v1Endpoints.find((e) => e.id === explorerEndpoint) ||
-    v1Endpoints[0] ||
-    {
+  const selectedEndpoint = v1Endpoints.find((e) => e.id === explorerEndpoint) ||
+    v1Endpoints[0] || {
       id: '',
       auth: false,
       method: 'GET',
@@ -304,11 +307,11 @@ export default function Developer() {
     if (!selectedEndpoint) return '';
     const url = buildExplorerUrl();
     let cmd = `curl -X ${selectedEndpoint.method} "${url}"`;
-    
+
     if (selectedEndpoint.auth && explorerApiKey) {
       cmd += ` \\\n  -H "Authorization: Bearer ${explorerApiKey}"`;
     }
-    
+
     if (selectedEndpoint.method !== 'GET' && selectedEndpoint.bodyTemplate !== null) {
       cmd += ` \\\n  -H "Content-Type: application/json"`;
       if (explorerBody) {
@@ -360,7 +363,13 @@ export default function Developer() {
       } catch {
         parsed = text;
       }
-      setExplorerResponse(JSON.stringify({ status: res.status, headers: Object.fromEntries(res.headers.entries()), body: parsed }, null, 2));
+      setExplorerResponse(
+        JSON.stringify(
+          { status: res.status, headers: Object.fromEntries(res.headers.entries()), body: parsed },
+          null,
+          2
+        )
+      );
     } catch (err) {
       setExplorerError(err.message || 'Request failed');
     } finally {
@@ -523,7 +532,9 @@ export default function Developer() {
             marginBottom: '1rem',
           }}
         >
-          <label htmlFor="new-key-label" className="sr-only">API key label</label>
+          <label htmlFor="new-key-label" className="sr-only">
+            API key label
+          </label>
           <input
             id="new-key-label"
             value={newKeyLabel}
@@ -616,7 +627,9 @@ export default function Developer() {
             marginBottom: '1rem',
           }}
         >
-          <label htmlFor="webhook-url" className="sr-only">Webhook URL</label>
+          <label htmlFor="webhook-url" className="sr-only">
+            Webhook URL
+          </label>
           <input
             id="webhook-url"
             value={hookUrl}
@@ -673,24 +686,24 @@ export default function Developer() {
                     {(h.events || []).join(', ')} · {h.secret_hint}
                   </div>
                 </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
-                      onClick={() => rotateHook(h.id)}
-                    >
-                      Rotate secret
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
-                      onClick={() => revokeHook(h.id)}
-                    >
-                      Remove
-                    </button>
-                  </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                    onClick={() => rotateHook(h.id)}
+                  >
+                    Rotate secret
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                    onClick={() => revokeHook(h.id)}
+                  >
+                    Remove
+                  </button>
+                </div>
               </li>
             ))}
         </ul>
@@ -742,7 +755,8 @@ export default function Developer() {
           Credential activity log
         </h2>
         <p style={{ color: 'var(--color-text-hint)', marginBottom: '1rem', fontSize: '0.85rem' }}>
-          Append-only record of your API key and webhook credential events. Secret material is redacted.
+          Append-only record of your API key and webhook credential events. Secret material is
+          redacted.
         </p>
         {credentialsActivity.length === 0 ? (
           <p style={{ color: 'var(--color-text-hint)' }}>No credential activity recorded yet.</p>
@@ -750,7 +764,9 @@ export default function Developer() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
-                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--color-border-light)' }}>
+                <tr
+                  style={{ textAlign: 'left', borderBottom: '1px solid var(--color-border-light)' }}
+                >
                   <th style={{ padding: '0.35rem' }}>Time</th>
                   <th>Action</th>
                   <th>Resource</th>
@@ -760,7 +776,10 @@ export default function Developer() {
               </thead>
               <tbody>
                 {credentialsActivity.map((event) => (
-                  <tr key={event.id} style={{ borderBottom: '1px solid var(--color-border-lightest)' }}>
+                  <tr
+                    key={event.id}
+                    style={{ borderBottom: '1px solid var(--color-border-lightest)' }}
+                  >
                     <td style={{ padding: '0.35rem', whiteSpace: 'nowrap' }}>
                       {new Date(event.createdAt).toLocaleString()}
                     </td>
@@ -769,7 +788,13 @@ export default function Developer() {
                     <td style={{ padding: '0.35rem', fontFamily: 'monospace', fontSize: '0.8rem' }}>
                       {event.resourceId || '—'}
                     </td>
-                    <td style={{ padding: '0.35rem', fontSize: '0.8rem', color: 'var(--color-text-hint)' }}>
+                    <td
+                      style={{
+                        padding: '0.35rem',
+                        fontSize: '0.8rem',
+                        color: 'var(--color-text-hint)',
+                      }}
+                    >
                       {event.metadata ? JSON.stringify(event.metadata) : '—'}
                     </td>
                   </tr>

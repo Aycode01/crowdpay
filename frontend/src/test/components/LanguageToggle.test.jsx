@@ -115,11 +115,13 @@ describe('LanguageToggle component', () => {
     );
 
     await waitFor(() => {
-      expect(onTranslationChange).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Titre traduit',
-        description: 'Description traduite',
-        language: 'fr',
-      }));
+      expect(onTranslationChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Titre traduit',
+          description: 'Description traduite',
+          language: 'fr',
+        })
+      );
     });
   });
 

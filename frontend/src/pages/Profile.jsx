@@ -30,9 +30,7 @@ export default function Profile() {
   const [twoFaError, setTwoFaError] = useState('');
   const [twoFaLoading, setTwoFaLoading] = useState(false);
   const [nftRewards, setNftRewards] = useState([]);
-  const [checklistDismissed, setChecklistDismissed] = useState(() =>
-    isCreatorChecklistDismissed()
-  );
+  const [checklistDismissed, setChecklistDismissed] = useState(() => isCreatorChecklistDismissed());
   const [dataExports, setDataExports] = useState([]);
   const [exportLoading, setExportLoading] = useState(false);
   const [exportError, setExportError] = useState('');
@@ -48,18 +46,18 @@ export default function Profile() {
 
   useEffect(() => {
     if (!user) return;
-    api.getMyNftRewards()
+    api
+      .getMyNftRewards()
       .then((data) => setNftRewards(Array.isArray(data?.rewards) ? data.rewards : []))
       .catch(() => setNftRewards([]));
 
     if (typeof api.getDataExports === 'function') {
-      api.getDataExports()
-        .then(setDataExports)
-        .catch(console.error);
+      api.getDataExports().then(setDataExports).catch(console.error);
     }
 
     if (typeof api.getContributorPrivacy === 'function') {
-      api.getContributorPrivacy()
+      api
+        .getContributorPrivacy()
         .then((data) => setContributorPrivacy(data.contributor_privacy || 'full'))
         .catch(() => setContributorPrivacy('full'));
     }
@@ -260,21 +258,42 @@ export default function Profile() {
         </h2>
         {nftRewards.length === 0 ? (
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: 0 }}>
-            NFT rewards appear here once a qualifying contribution is linked to a tier that includes one.
+            NFT rewards appear here once a qualifying contribution is linked to a tier that includes
+            one.
           </p>
         ) : (
           <div style={{ display: 'grid', gap: '0.75rem' }}>
             {nftRewards.map((reward) => (
-              <div key={reward.id} style={{ background: 'var(--color-surface)', borderRadius: '8px', padding: '0.85rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div
+                key={reward.id}
+                style={{
+                  background: 'var(--color-surface)',
+                  borderRadius: '8px',
+                  padding: '0.85rem',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: '0.75rem',
+                    flexWrap: 'wrap',
+                  }}
+                >
                   <strong>{reward.reward_tier_title || t('NFT reward')}</strong>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{reward.status || t('configured')}</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                    {reward.status || t('configured')}
+                  </span>
                 </div>
                 {reward.serial_number && (
-                  <p style={{ marginTop: '0.35rem', marginBottom: 0, fontSize: '0.9rem' }}>{t('Serial')}: {reward.serial_number}</p>
+                  <p style={{ marginTop: '0.35rem', marginBottom: 0, fontSize: '0.9rem' }}>
+                    {t('Serial')}: {reward.serial_number}
+                  </p>
                 )}
                 {reward.campaign_title && (
-                  <p style={{ marginTop: '0.35rem', marginBottom: 0, fontSize: '0.9rem' }}>{t('Campaign')}: {reward.campaign_title}</p>
+                  <p style={{ marginTop: '0.35rem', marginBottom: 0, fontSize: '0.9rem' }}>
+                    {t('Campaign')}: {reward.campaign_title}
+                  </p>
                 )}
               </div>
             ))}
@@ -293,7 +312,9 @@ export default function Profile() {
             marginBottom: '0.75rem',
           }}
         >
-          <h2 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>{t('Identity verification')}</h2>
+          <h2 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>
+            {t('Identity verification')}
+          </h2>
           <VerificationBadge status={kycStatus} tier={verificationTier} showTier />
         </div>
 
@@ -308,9 +329,17 @@ export default function Profile() {
             </p>
             {verificationTier !== 'enhanced' && kycRequired && (
               <div style={{ marginTop: '0.75rem' }}>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-                  {verificationTier === 'basic' && 'Upgrade to Standard (ID + address) to run campaigns up to $50,000.'}
-                  {verificationTier === 'standard' && 'Upgrade to Enhanced (ID + address + liveness) for unlimited campaign goals.'}
+                <p
+                  style={{
+                    color: 'var(--color-text-secondary)',
+                    fontSize: '0.85rem',
+                    marginBottom: '0.5rem',
+                  }}
+                >
+                  {verificationTier === 'basic' &&
+                    'Upgrade to Standard (ID + address) to run campaigns up to $50,000.'}
+                  {verificationTier === 'standard' &&
+                    'Upgrade to Enhanced (ID + address + liveness) for unlimited campaign goals.'}
                 </p>
                 <KycPrompt
                   onUserUpdate={updateUser}
@@ -387,16 +416,28 @@ export default function Profile() {
           <h2 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.5rem' }}>
             {t('Security Settings')}
           </h2>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+          <p
+            style={{
+              color: 'var(--color-text-secondary)',
+              fontSize: '0.9rem',
+              marginBottom: '1rem',
+            }}
+          >
             {t('Protect your account with Two-Factor Authentication (TOTP).')}
           </p>
 
           {user.totp_enabled ? (
-            <p className="alert alert--success">{t('Two-Factor Authentication is enabled on this account.')}</p>
+            <p className="alert alert--success">
+              {t('Two-Factor Authentication is enabled on this account.')}
+            </p>
           ) : (
             <>
-              {twoFaError && <p className="alert alert--error" style={{ marginBottom: '1rem' }}>{twoFaError}</p>}
-              
+              {twoFaError && (
+                <p className="alert alert--error" style={{ marginBottom: '1rem' }}>
+                  {twoFaError}
+                </p>
+              )}
+
               {setupStep === 0 && (
                 <button className="btn-primary" onClick={handleStart2FA} disabled={twoFaLoading}>
                   {twoFaLoading ? t('Setting up...') : t('Setup 2FA')}
@@ -404,22 +445,45 @@ export default function Profile() {
               )}
 
               {setupStep === 1 && (
-                <div style={{ background: 'var(--color-surface)', padding: '1rem', borderRadius: '8px' }}>
-                  <p>{t('1. Scan this QR code with your Authenticator app (like Google Authenticator or Authy):')}</p>
-                  <img src={qrCodeDataUrl} alt="2FA QR Code" style={{ display: 'block', margin: '1rem 0' }} />
-                  <p>{t('Or enter this secret manually:')} <strong>{totpSecret}</strong></p>
+                <div
+                  style={{
+                    background: 'var(--color-surface)',
+                    padding: '1rem',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <p>
+                    {t(
+                      '1. Scan this QR code with your Authenticator app (like Google Authenticator or Authy):'
+                    )}
+                  </p>
+                  <img
+                    src={qrCodeDataUrl}
+                    alt="2FA QR Code"
+                    style={{ display: 'block', margin: '1rem 0' }}
+                  />
+                  <p>
+                    {t('Or enter this secret manually:')} <strong>{totpSecret}</strong>
+                  </p>
                   <form onSubmit={handleVerify2FA} style={{ marginTop: '1rem' }}>
                     <div className="form-stack">
-                      <label className="label-strong">{t('2. Enter the 6-digit code from your app')}</label>
-                      <input 
-                        type="text" 
-                        value={totpCode} 
-                        onChange={(e) => setTotpCode(e.target.value)} 
-                        placeholder="000000" 
-                        required 
+                      <label className="label-strong">
+                        {t('2. Enter the 6-digit code from your app')}
+                      </label>
+                      <input
+                        type="text"
+                        value={totpCode}
+                        onChange={(e) => setTotpCode(e.target.value)}
+                        placeholder="000000"
+                        required
                       />
                     </div>
-                    <button type="submit" className="btn-primary" disabled={twoFaLoading} style={{ marginTop: '1rem' }}>
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      disabled={twoFaLoading}
+                      style={{ marginTop: '1rem' }}
+                    >
                       {twoFaLoading ? t('Verifying...') : t('Verify and Enable')}
                     </button>
                   </form>
@@ -429,10 +493,31 @@ export default function Profile() {
               {setupStep === 2 && (
                 <div className="alert alert--info">
                   <h3 style={{ marginTop: 0 }}>{t('2FA Enabled Successfully!')}</h3>
-                  <p>{t('Please save these backup codes in a secure location. You will not see them again.')}</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '1rem' }}>
+                  <p>
+                    {t(
+                      'Please save these backup codes in a secure location. You will not see them again.'
+                    )}
+                  </p>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '0.5rem',
+                      marginTop: '1rem',
+                    }}
+                  >
                     {backupCodes.map((code, idx) => (
-                      <code key={idx} style={{ background: '#fff', padding: '0.25rem 0.5rem', borderRadius: '4px', textAlign: 'center' }}>{code}</code>
+                      <code
+                        key={idx}
+                        style={{
+                          background: '#fff',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '4px',
+                          textAlign: 'center',
+                        }}
+                      >
+                        {code}
+                      </code>
                     ))}
                   </div>
                 </div>
@@ -442,13 +527,18 @@ export default function Profile() {
         </div>
       )}
 
-      
       {(user?.role === 'creator' || user?.role === 'admin') && (
         <div className="campaign-card" style={{ marginTop: '1.25rem' }}>
           <h2 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.5rem' }}>
             {t('Creator onboarding checklist')}
           </h2>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+          <p
+            style={{
+              color: 'var(--color-text-secondary)',
+              fontSize: '0.9rem',
+              marginBottom: '1rem',
+            }}
+          >
             {t('Show the setup checklist on your dashboard until you publish your first campaign.')}
           </p>
           {checklistDismissed ? (
@@ -481,16 +571,24 @@ export default function Profile() {
         <h2 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.5rem' }}>
           {t('Account Data Export')}
         </h2>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-          {t('Request a copy of your personal data and account activity. This may take a few minutes for large accounts.')}
+        <p
+          style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}
+        >
+          {t(
+            'Request a copy of your personal data and account activity. This may take a few minutes for large accounts.'
+          )}
         </p>
 
-        {exportError && <p className="alert alert--error" style={{ marginBottom: '1rem' }}>{exportError}</p>}
+        {exportError && (
+          <p className="alert alert--error" style={{ marginBottom: '1rem' }}>
+            {exportError}
+          </p>
+        )}
 
-        <button 
-          className="btn-primary" 
-          onClick={handleRequestExport} 
-          disabled={exportLoading || dataExports.some(e => e.status === 'pending')}
+        <button
+          className="btn-primary"
+          onClick={handleRequestExport}
+          disabled={exportLoading || dataExports.some((e) => e.status === 'pending')}
           style={{ marginBottom: '1rem' }}
         >
           {exportLoading ? t('Requesting...') : t('Request Data Export')}
@@ -498,11 +596,25 @@ export default function Profile() {
 
         {dataExports.length > 0 && (
           <div style={{ display: 'grid', gap: '0.75rem' }}>
-            {dataExports.map(exp => (
-              <div key={exp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface)', padding: '0.75rem', borderRadius: '8px' }}>
+            {dataExports.map((exp) => (
+              <div
+                key={exp.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  background: 'var(--color-surface)',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                }}
+              >
                 <div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{t('Exported')} {new Date(exp.created_at).toLocaleDateString()}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{t('Status')}: {exp.status}</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+                    {t('Exported')} {new Date(exp.created_at).toLocaleDateString()}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                    {t('Status')}: {exp.status}
+                  </div>
                 </div>
                 {exp.status === 'completed' && new Date(exp.expires_at) > new Date() && (
                   <button className="btn-secondary" onClick={() => handleDownloadExport(exp.id)}>
@@ -510,7 +622,9 @@ export default function Profile() {
                   </button>
                 )}
                 {exp.status === 'completed' && new Date(exp.expires_at) <= new Date() && (
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{t('Expired')}</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                    {t('Expired')}
+                  </span>
                 )}
               </div>
             ))}
@@ -522,11 +636,19 @@ export default function Profile() {
         <h2 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.5rem' }}>
           {t('Contributor Privacy Settings')}
         </h2>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-          {t('Control how your contributions appear on public campaign pages and in creator exports.')}
+        <p
+          style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}
+        >
+          {t(
+            'Control how your contributions appear on public campaign pages and in creator exports.'
+          )}
         </p>
 
-        {privacyError && <p className="alert alert--error" style={{ marginBottom: '1rem' }}>{privacyError}</p>}
+        {privacyError && (
+          <p className="alert alert--error" style={{ marginBottom: '1rem' }}>
+            {privacyError}
+          </p>
+        )}
 
         <div className="form-stack" style={{ marginBottom: '1.25rem' }}>
           <label htmlFor="contributor-privacy" className="label-strong">
@@ -540,20 +662,49 @@ export default function Profile() {
             style={{ maxWidth: '400px' }}
           >
             <option value="full">{t('Full - Show name, wallet, and amounts')}</option>
-            <option value="amount_only">{t('Amount only - Hide name and wallet, show amounts')}</option>
+            <option value="amount_only">
+              {t('Amount only - Hide name and wallet, show amounts')}
+            </option>
             <option value="anonymous">{t('Anonymous - Hide name, wallet, and amounts')}</option>
           </select>
         </div>
 
-        <div style={{ background: 'var(--color-surface)', padding: '1rem', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-          <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600 }}>{t('How this affects your contributions:')}</p>
+        <div
+          style={{
+            background: 'var(--color-surface)',
+            padding: '1rem',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            color: 'var(--color-text-secondary)',
+          }}
+        >
+          <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600 }}>
+            {t('How this affects your contributions:')}
+          </p>
           <ul style={{ margin: '0 0 0 1.5rem', padding: 0 }}>
-            <li style={{ marginBottom: '0.5rem' }}><strong>{t('Full:')}</strong> {t('Your display name, wallet address, and contribution amounts are visible on campaign pages and in creator exports.')}</li>
-            <li style={{ marginBottom: '0.5rem' }}><strong>{t('Amount only:')}</strong> {t('Your contribution amounts are shown, but your name and wallet address are hidden.')}</li>
-            <li style={{ marginBottom: '0' }}><strong>{t('Anonymous:')}</strong> {t('Only aggregate campaign totals are affected. Your individual contribution details are hidden from public view and creator exports.')}</li>
+            <li style={{ marginBottom: '0.5rem' }}>
+              <strong>{t('Full:')}</strong>{' '}
+              {t(
+                'Your display name, wallet address, and contribution amounts are visible on campaign pages and in creator exports.'
+              )}
+            </li>
+            <li style={{ marginBottom: '0.5rem' }}>
+              <strong>{t('Amount only:')}</strong>{' '}
+              {t(
+                'Your contribution amounts are shown, but your name and wallet address are hidden.'
+              )}
+            </li>
+            <li style={{ marginBottom: '0' }}>
+              <strong>{t('Anonymous:')}</strong>{' '}
+              {t(
+                'Only aggregate campaign totals are affected. Your individual contribution details are hidden from public view and creator exports.'
+              )}
+            </li>
           </ul>
           <p style={{ margin: '0.75rem 0 0 0', fontSize: '0.8rem' }}>
-            {t('Note: Campaign creators can still choose to hide all backer amounts regardless of your preference. The more restrictive setting is always applied.')}
+            {t(
+              'Note: Campaign creators can still choose to hide all backer amounts regardless of your preference. The more restrictive setting is always applied.'
+            )}
           </p>
         </div>
       </div>

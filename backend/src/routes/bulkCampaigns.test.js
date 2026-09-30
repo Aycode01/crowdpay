@@ -1,6 +1,7 @@
 process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgres://test:test@localhost:5432/test';
-process.env.USDC_ISSUER = process.env.USDC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
+process.env.USDC_ISSUER =
+  process.env.USDC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'testsecret123456789012345678901234567890';
 
 const test = require('node:test');
@@ -11,7 +12,10 @@ const proxyquire = require('proxyquire').noCallThru();
 
 const USER_ID = 'creator-uuid-1';
 
-function buildApp({ queryImpl = async () => ({ rows: [] }), user = { userId: USER_ID, role: 'creator' } } = {}) {
+function buildApp({
+  queryImpl = async () => ({ rows: [] }),
+  user = { userId: USER_ID, role: 'creator' },
+} = {}) {
   const calls = [];
 
   const service = proxyquire('../services/bulkCampaignService', {
@@ -73,9 +77,7 @@ test('POST /api/campaigns/bulk/validate validates fully valid CSV', async () => 
 "Valid Campaign 1","Desc 1",1000,USDC,2028-01-01T00:00:00Z,community,"https://example.com/img.png"
 "Valid Campaign 2","Desc 2",2500,XLM,,tech,`;
 
-  const res = await request(app)
-    .post('/api/campaigns/bulk/validate')
-    .send({ csv });
+  const res = await request(app).post('/api/campaigns/bulk/validate').send({ csv });
 
   assert.equal(res.status, 200);
   assert.equal(res.body.valid, true);
@@ -92,18 +94,16 @@ test('POST /api/campaigns/bulk/validate reports per-row validation errors for in
 "Invalid Asset","Desc",-50,INVALID_COIN,,,,""
 "Bad Milestone","Desc",500,USDC,,,,"[{""title"":""P1"",""release_percentage"":50}]"`;
 
-  const res = await request(app)
-    .post('/api/campaigns/bulk/validate')
-    .send({ csv });
+  const res = await request(app).post('/api/campaigns/bulk/validate').send({ csv });
 
   assert.equal(res.status, 200);
   assert.equal(res.body.valid, false);
   assert.equal(res.body.total_rows, 3);
   assert.equal(res.body.invalid_rows, 3);
-  assert.ok(res.body.errors.some((e) => e.row === 1 && e.field === 'title'));
-  assert.ok(res.body.errors.some((e) => e.row === 2 && e.field === 'target_amount'));
-  assert.ok(res.body.errors.some((e) => e.row === 2 && e.field === 'asset_type'));
-  assert.ok(res.body.errors.some((e) => e.row === 3 && e.field === 'milestones'));
+  assert.ok(res.body.errors.some(e => e.row === 1 && e.field === 'title'));
+  assert.ok(res.body.errors.some(e => e.row === 2 && e.field === 'target_amount'));
+  assert.ok(res.body.errors.some(e => e.row === 2 && e.field === 'asset_type'));
+  assert.ok(res.body.errors.some(e => e.row === 3 && e.field === 'milestones'));
 });
 
 test('POST /api/campaigns/bulk/import creates import job and is idempotent with idempotency key or content hash', async () => {
@@ -170,14 +170,16 @@ test('bulkCampaignService.executeImportJob executes atomically per row', async (
     queryImpl: async (text, params) => {
       if (text.includes('INSERT INTO campaigns')) {
         return {
-          rows: [{
-            id: 'camp-' + Math.random().toString(36).slice(2, 7),
-            title: params[1],
-            target_amount: params[3],
-            asset_type: params[4],
-            status: 'draft',
-            created_at: new Date().toISOString(),
-          }],
+          rows: [
+            {
+              id: 'camp-' + Math.random().toString(36).slice(2, 7),
+              title: params[1],
+              target_amount: params[3],
+              asset_type: params[4],
+              status: 'draft',
+              created_at: new Date().toISOString(),
+            },
+          ],
         };
       }
       if (text.includes('UPDATE bulk_campaign_imports')) {

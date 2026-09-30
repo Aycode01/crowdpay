@@ -29,8 +29,8 @@ function setupEnv(overrides = {}) {
     IMPACT_SIGNING_SECRET: 'test-impact-secret',
   };
   const merged = { ...base, ...overrides };
-  const removed = Object.keys(merged).filter((k) => merged[k] === undefined);
-  removed.forEach((k) => delete process.env[k]);
+  const removed = Object.keys(merged).filter(k => merged[k] === undefined);
+  removed.forEach(k => delete process.env[k]);
   for (const key of Object.keys(merged)) {
     if (merged[key] !== undefined) process.env[key] = merged[key];
   }
@@ -41,11 +41,11 @@ function captureStderrAndExit() {
   stderrChunks = [];
   originalExit = process.exit;
   originalStderrWrite = process.stderr.write;
-  process.exit = (code) => {
+  process.exit = code => {
     exitCalls.push(code);
     throw new Error('__EXIT__');
   };
-  process.stderr.write = (chunk) => {
+  process.stderr.write = chunk => {
     stderrChunks.push(String(chunk));
     return true;
   };

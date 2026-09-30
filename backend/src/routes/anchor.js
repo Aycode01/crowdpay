@@ -48,7 +48,9 @@ function verifyCallbackSignature(rawBody, headerSig) {
     // In test / development, skip verification when the secret is not set.
     const env = process.env.NODE_ENV || 'development';
     if (env === 'production') {
-      logger.error('ANCHOR_CALLBACK_HMAC_SECRET is not set — rejecting all callbacks in production');
+      logger.error(
+        'ANCHOR_CALLBACK_HMAC_SECRET is not set — rejecting all callbacks in production'
+      );
       return false;
     }
     logger.warn('ANCHOR_CALLBACK_HMAC_SECRET not set; skipping signature check (non-production)');
@@ -56,7 +58,9 @@ function verifyCallbackSignature(rawBody, headerSig) {
   }
 
   if (!headerSig) return false;
-  const provided = String(headerSig).replace(/^sha256=/i, '').trim();
+  const provided = String(headerSig)
+    .replace(/^sha256=/i, '')
+    .trim();
   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
 
   const expectedBuf = Buffer.from(expected, 'hex');
@@ -167,7 +171,11 @@ function validateCallbackPayload(rawBody) {
   }
 
   if (!transaction.id || typeof transaction.id !== 'string' || !transaction.id.trim()) {
-    return { valid: false, error: 'transaction.id is required and must be a non-empty string', field: 'id' };
+    return {
+      valid: false,
+      error: 'transaction.id is required and must be a non-empty string',
+      field: 'id',
+    };
   }
 
   if (!transaction.status || typeof transaction.status !== 'string') {
@@ -233,7 +241,7 @@ async function issueAnchorAuthToken({ anchor, user }) {
   return withDecryptedWalletSecret(
     user.wallet_secret_encrypted,
     { userId: user.id, walletPublicKey: user.wallet_public_key },
-    async (userSecret) =>
+    async userSecret =>
       authenticateWithAnchor({
         anchor,
         userPublicKey: user.wallet_public_key,
@@ -248,7 +256,11 @@ async function ensureAnchorAuth({ anchor, sessionRow, user }) {
     sessionRow.anchor_auth_expires_at &&
     new Date(sessionRow.anchor_auth_expires_at) > new Date(Date.now() + 30_000)
   ) {
-    return { token: sessionRow.anchor_auth_token, expiresAt: sessionRow.anchor_auth_expires_at, refreshed: false };
+    return {
+      token: sessionRow.anchor_auth_token,
+      expiresAt: sessionRow.anchor_auth_expires_at,
+      refreshed: false,
+    };
   }
 
   const auth = await issueAnchorAuthToken({ anchor, user });
@@ -294,7 +306,9 @@ router.post(
       return res.status(404).json({ error: 'Anchor not found' });
     }
     if (!isAnchorConfigured(anchor)) {
-      return res.status(503).json({ error: 'This anchor is not configured for the current backend environment' });
+      return res
+        .status(503)
+        .json({ error: 'This anchor is not configured for the current backend environment' });
     }
     if (!getSupportedAssetCodes().includes(anchor.assetCode)) {
       return res.status(409).json({
@@ -316,7 +330,7 @@ router.post(
       const session = await withDecryptedWalletSecret(
         user.wallet_secret_encrypted,
         { userId: user.id, walletPublicKey: user.wallet_public_key },
-        async (userSecret) => {
+        async userSecret => {
           await ensureCustodialAccountFundedAndTrusted({
             publicKey: user.wallet_public_key,
             secret: userSecret,
@@ -412,7 +426,9 @@ router.post(
       return res.status(404).json({ error: 'Anchor not found' });
     }
     if (!isAnchorConfigured(anchor)) {
-      return res.status(503).json({ error: 'This anchor is not configured for the current backend environment' });
+      return res
+        .status(503)
+        .json({ error: 'This anchor is not configured for the current backend environment' });
     }
     if (!getSupportedAssetCodes().includes(anchor.assetCode)) {
       return res.status(409).json({
@@ -433,7 +449,7 @@ router.post(
       const session = await withDecryptedWalletSecret(
         user.wallet_secret_encrypted,
         { userId: user.id, walletPublicKey: user.wallet_public_key },
-        async (userSecret) => {
+        async userSecret => {
           await ensureCustodialAccountFundedAndTrusted({
             publicKey: user.wallet_public_key,
             secret: userSecret,
@@ -516,7 +532,9 @@ router.get('/deposits/:id', requireAuth, async (req, res) => {
   let session = rows[0];
   const anchor = getAnchorById(session.anchor_id);
   if (!anchor) {
-    return res.status(503).json({ error: 'This anchor is no longer available in the current backend configuration' });
+    return res
+      .status(503)
+      .json({ error: 'This anchor is no longer available in the current backend configuration' });
   }
 
   const user = {
@@ -574,7 +592,12 @@ router.get('/deposits/:id', requireAuth, async (req, res) => {
       [localStatus, remoteStatus, JSON.stringify(remoteTx), session.id]
     );
 
-    session = { ...session, status: localStatus, last_anchor_status: remoteStatus, last_anchor_payload: remoteTx };
+    session = {
+      ...session,
+      status: localStatus,
+      last_anchor_status: remoteStatus,
+      last_anchor_payload: remoteTx,
+    };
 
     if (remoteStatus === 'completed' && !session.contribution_tx_hash && !session.contribution_id) {
       if (session.deposit_type === 'wallet') {
@@ -587,7 +610,10 @@ router.get('/deposits/:id', requireAuth, async (req, res) => {
         if (!campaign) {
           await db.query(
             `UPDATE anchor_deposits SET status = 'failed', last_error = $1, updated_at = NOW(), completed_at = COALESCE(completed_at, NOW()) WHERE id = $2`,
-            ['Deposit completed, but the campaign is no longer accepting contributions.', session.id]
+            [
+              'Deposit completed, but the campaign is no longer accepting contributions.',
+              session.id,
+            ]
           );
         } else {
           try {
@@ -627,7 +653,9 @@ router.get('/deposits/:id', requireAuth, async (req, res) => {
       }
     }
 
-    const { rows: refreshed } = await db.query('SELECT * FROM anchor_deposits WHERE id = $1', [session.id]);
+    const { rows: refreshed } = await db.query('SELECT * FROM anchor_deposits WHERE id = $1', [
+      session.id,
+    ]);
     return res.json(mapSessionForClient(refreshed[0]));
   } catch (err) {
     logger.error('Anchor deposit status sync failed', {
@@ -722,7 +750,9 @@ router.post('/callbacks/sep24', async (req, res) => {
 
     if (!rows.length) {
       // 4xx — we have no record of this transaction; no retry will help.
-      return res.status(404).json({ error: 'Anchor deposit session not found for this transaction ID' });
+      return res
+        .status(404)
+        .json({ error: 'Anchor deposit session not found for this transaction ID' });
     }
 
     const session = rows[0];
@@ -765,7 +795,10 @@ router.post('/callbacks/sep24', async (req, res) => {
           // 4xx — permanent; the campaign is gone and no retry will revive it.
           await db.query(
             `UPDATE anchor_deposits SET status = 'failed', last_error = $1, updated_at = NOW(), completed_at = COALESCE(completed_at, NOW()) WHERE id = $2`,
-            ['Deposit completed, but the campaign is no longer accepting contributions.', session.id]
+            [
+              'Deposit completed, but the campaign is no longer accepting contributions.',
+              session.id,
+            ]
           );
           return res.status(422).json({
             error: 'Deposit completed but the associated campaign is no longer active',

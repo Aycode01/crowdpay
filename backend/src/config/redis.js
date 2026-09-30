@@ -9,7 +9,7 @@ const redis = new Redis(redisUrl, {
   lazyConnect: true,
 });
 
-redis.on('error', (err) => {
+redis.on('error', err => {
   logger.error('Redis connection error', { error: err.message });
 });
 

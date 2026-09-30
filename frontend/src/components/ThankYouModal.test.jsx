@@ -44,7 +44,7 @@ describe('ThankYouModal Component', () => {
         contribution={null}
         onClose={mockOnClose}
         onSent={mockOnSent}
-      />,
+      />
     );
 
     expect(screen.getByText('Send Bulk Thank You')).toBeInTheDocument();
@@ -59,7 +59,7 @@ describe('ThankYouModal Component', () => {
         contribution={contribution}
         onClose={mockOnClose}
         onSent={mockOnSent}
-      />,
+      />
     );
 
     expect(screen.getByText('Send Thank You to Contributor')).toBeInTheDocument();
@@ -75,7 +75,7 @@ describe('ThankYouModal Component', () => {
         contribution={null}
         onClose={mockOnClose}
         onSent={mockOnSent}
-      />,
+      />
     );
 
     const textarea = screen.getByPlaceholderText('Write your thank you message...');
@@ -101,7 +101,7 @@ describe('ThankYouModal Component', () => {
         contribution={contribution}
         onClose={mockOnClose}
         onSent={mockOnSent}
-      />,
+      />
     );
 
     const textarea = screen.getByPlaceholderText('Write your thank you message...');
@@ -126,7 +126,7 @@ describe('ThankYouModal Component', () => {
         contribution={null}
         onClose={mockOnClose}
         onSent={mockOnSent}
-      />,
+      />
     );
 
     const textarea = screen.getByPlaceholderText('Write your thank you message...');

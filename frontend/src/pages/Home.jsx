@@ -77,7 +77,6 @@ export default function Home() {
     setFilters({ sort: newSort });
   };
 
-
   const hasActiveFilters =
     Boolean(search.trim()) ||
     Boolean(asset) ||
@@ -118,7 +117,9 @@ export default function Home() {
           .getRecommendedCampaigns({ limit: 6 })
           .then((data) => {
             const viewedIdSet = new Set(viewedIds);
-            setRecommended((Array.isArray(data) ? data : []).filter((c) => !viewedIdSet.has(c.id)).slice(0, 6));
+            setRecommended(
+              (Array.isArray(data) ? data : []).filter((c) => !viewedIdSet.has(c.id)).slice(0, 6)
+            );
           })
           .catch(() => {});
         return;
@@ -183,7 +184,20 @@ export default function Home() {
       })
       .catch(() => setListError(t('home.loadError')))
       .finally(() => setLoading(false));
-  }, [search, status, asset, category, minProgress, minFunding, maxFunding, deadlineWithin, creatorVerified, country, sort, requestVersion]);
+  }, [
+    search,
+    status,
+    asset,
+    category,
+    minProgress,
+    minFunding,
+    maxFunding,
+    deadlineWithin,
+    creatorVerified,
+    country,
+    sort,
+    requestVersion,
+  ]);
 
   async function loadMore() {
     if (loadingMore || !hasMore || paginationRequestRef.current) return;
@@ -286,7 +300,16 @@ export default function Home() {
         {user ? (
           <div className="hero-actions">
             {(user.role === 'creator' || user.role === 'admin') && (
-              <Link to="/campaigns/new" className="btn-primary" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem', width: '100%', textAlign: 'center' }}>
+              <Link
+                to="/campaigns/new"
+                className="btn-primary"
+                style={{
+                  fontSize: '1rem',
+                  padding: '0.75rem 1.5rem',
+                  width: '100%',
+                  textAlign: 'center',
+                }}
+              >
                 {t('home.startCampaign')}
               </Link>
             )}
@@ -294,10 +317,30 @@ export default function Home() {
           </div>
         ) : (
           <div className="hero-actions hero-actions--row-sm">
-            <Link to="/register" className="btn-primary" style={{ flex: '1 1 140px', minWidth: '140px', fontSize: '1rem', padding: '0.75rem 1.5rem', textAlign: 'center' }}>
+            <Link
+              to="/register"
+              className="btn-primary"
+              style={{
+                flex: '1 1 140px',
+                minWidth: '140px',
+                fontSize: '1rem',
+                padding: '0.75rem 1.5rem',
+                textAlign: 'center',
+              }}
+            >
               {t('home.createAccount')}
             </Link>
-            <Link to="/login" className="btn-secondary" style={{ flex: '1 1 140px', minWidth: '140px', fontSize: '1rem', padding: '0.75rem 1.5rem', textAlign: 'center' }}>
+            <Link
+              to="/login"
+              className="btn-secondary"
+              style={{
+                flex: '1 1 140px',
+                minWidth: '140px',
+                fontSize: '1rem',
+                padding: '0.75rem 1.5rem',
+                textAlign: 'center',
+              }}
+            >
               {t('login.title')}
             </Link>
           </div>
@@ -471,7 +514,14 @@ export default function Home() {
             </select>
           </label>
         )}
-        <label style={{ ...styles.filterItem, flexDirection: 'row', alignItems: 'center', gap: '0.4rem' }}>
+        <label
+          style={{
+            ...styles.filterItem,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: '0.4rem',
+          }}
+        >
           <input
             type="checkbox"
             checked={creatorVerified === 'true'}
@@ -497,7 +547,16 @@ export default function Home() {
         </label>
       </div>
 
-      {(search || status || asset || category || minProgress || minFunding || maxFunding || deadlineWithin || creatorVerified || country) && (
+      {(search ||
+        status ||
+        asset ||
+        category ||
+        minProgress ||
+        minFunding ||
+        maxFunding ||
+        deadlineWithin ||
+        creatorVerified ||
+        country) && (
         <div style={styles.activeFilters}>
           {search && (
             <button className="filter-chip" onClick={() => setFilters({ search: '' })}>
@@ -594,12 +653,18 @@ export default function Home() {
         </div>
       ) : listError ? (
         <div className="load-state load-state--error" role="alert">
-          <span className="load-state__icon" aria-hidden="true">!</span>
+          <span className="load-state__icon" aria-hidden="true">
+            !
+          </span>
           <div>
             <strong>{t('home.loadErrorTitle')}</strong>
             <p>{listError}</p>
           </div>
-          <button type="button" className="btn-secondary" onClick={() => setRequestVersion((value) => value + 1)}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setRequestVersion((value) => value + 1)}
+          >
             {t('home.tryAgain')}
           </button>
         </div>
@@ -649,7 +714,11 @@ export default function Home() {
             ))}
           </div>
           {loadingMore && (
-            <div aria-busy="true" aria-live="polite" style={{ ...styles.grid, marginTop: '1.25rem' }}>
+            <div
+              aria-busy="true"
+              aria-live="polite"
+              style={{ ...styles.grid, marginTop: '1.25rem' }}
+            >
               {Array.from({ length: 4 }, (_, i) => (
                 <CampaignCardSkeleton key={`pagination-skeleton-${i}`} />
               ))}

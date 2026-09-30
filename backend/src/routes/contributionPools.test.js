@@ -9,16 +9,16 @@ function buildApp({ userId = 'user-1', poolQueriesImpl = {} } = {}) {
   const calls = [];
   const poolQueriesStub = {
     listByCampaign: async () => [],
-    listByUser: async (id) => {
+    listByUser: async id => {
       calls.push(['listByUser', id]);
       return [];
     },
     getById: async () => ({ id: 'pool-1' }),
-    create: async (fields) => {
+    create: async fields => {
       calls.push(['create', fields]);
       return { id: 'pool-1', ...fields };
     },
-    join: async (fields) => {
+    join: async fields => {
       calls.push(['join', fields]);
       return { id: 'member-1', ...fields };
     },
@@ -94,7 +94,9 @@ test('POST /api/contribution-pools/:poolId/leave passes req.user.userId', async 
 
 test('PATCH /api/contribution-pools/:poolId passes req.user.userId', async () => {
   const { app, calls } = buildApp({ userId: 'user-42' });
-  const res = await request(app).patch(`/api/contribution-pools/${VALID_POOL_ID}`).send({ title: 'New title' });
+  const res = await request(app)
+    .patch(`/api/contribution-pools/${VALID_POOL_ID}`)
+    .send({ title: 'New title' });
   assert.equal(res.status, 200);
   assert.equal(calls[0][2], 'user-42');
 });
@@ -110,7 +112,9 @@ test('POST /api/contribution-pools/:poolId/submit propagates a poolQueries error
   const { app } = buildApp({
     poolQueriesImpl: {
       submitPool: async () => {
-        const err = new Error('Pool submission currently requires a custodial wallet for the leader');
+        const err = new Error(
+          'Pool submission currently requires a custodial wallet for the leader'
+        );
         err.statusCode = 422;
         throw err;
       },

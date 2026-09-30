@@ -15,7 +15,8 @@ export function initCrowdPayEmbed(scriptTag) {
   iframe.title = 'CrowdPay Campaign Widget';
   iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms');
   iframe.setAttribute('allow', 'payment');
-  iframe.style.cssText = 'width:100%;border:0;display:block;overflow:hidden;background:transparent;';
+  iframe.style.cssText =
+    'width:100%;border:0;display:block;overflow:hidden;background:transparent;';
 
   if (size === 'large') {
     iframe.style.minHeight = '300px';

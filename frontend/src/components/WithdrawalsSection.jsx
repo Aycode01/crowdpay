@@ -547,13 +547,20 @@ export default function WithdrawalsSection({ campaign, milestones = [], user, to
                     {row.destination_key.slice(0, 6)}…{row.destination_key.slice(-4)}
                   </code>
                 </div>
-                <div style={styles.meta}>{withdrawalsStatusLabel(row, expiredIds.has(row.id), t)}</div>
+                <div style={styles.meta}>
+                  {withdrawalsStatusLabel(row, expiredIds.has(row.id), t)}
+                </div>
                 {row.evidence && row.evidence.length > 0 && (
                   <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
                     <strong>{t('withdrawals.evidenceLabel')}</strong>{' '}
                     {row.evidence.map((ev, i) => (
                       <span key={i}>
-                        <a href={ev} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)' }}>
+                        <a
+                          href={ev}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: 'var(--color-accent)' }}
+                        >
                           {t('withdrawals.link', { num: i + 1 })}
                         </a>
                         {i < row.evidence.length - 1 ? ', ' : ''}
@@ -641,7 +648,9 @@ export default function WithdrawalsSection({ campaign, milestones = [], user, to
                           </strong>{' '}
                           to:
                         </p>
-                        <code style={{ fontSize: '0.75rem', wordBreak: 'break-all', color: '#555' }}>
+                        <code
+                          style={{ fontSize: '0.75rem', wordBreak: 'break-all', color: '#555' }}
+                        >
                           {row.destination_key}
                         </code>
                         <p style={{ fontSize: '0.78rem', color: '#b45309', marginTop: '0.4rem' }}>
@@ -661,7 +670,7 @@ export default function WithdrawalsSection({ campaign, milestones = [], user, to
                                 runAction(
                                   row.id,
                                   () => api.approveWithdrawalCreator(row.id),
-                                  'Withdrawal signed',
+                                  'Withdrawal signed'
                                 );
                               }
                             }}
@@ -687,7 +696,9 @@ export default function WithdrawalsSection({ campaign, milestones = [], user, to
                         style={{ fontSize: '0.8rem' }}
                         onClick={() => setConfirmingSignId(row.id)}
                       >
-                        {user?.wallet_type === 'freighter' ? 'Sign in Freighter' : 'Sign as creator'}
+                        {user?.wallet_type === 'freighter'
+                          ? 'Sign in Freighter'
+                          : 'Sign as creator'}
                       </button>
                     )}
                   </>

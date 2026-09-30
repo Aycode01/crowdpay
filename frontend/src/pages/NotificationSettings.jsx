@@ -5,11 +5,27 @@ import { useToast } from '../context/ToastContext';
 import { api } from '../services/api';
 
 const EVENT_TYPES = [
-  { id: 'campaign_updates', label: 'Campaign updates', description: 'New updates posted on campaigns you support' },
+  {
+    id: 'campaign_updates',
+    label: 'Campaign updates',
+    description: 'New updates posted on campaigns you support',
+  },
   { id: 'refunds', label: 'Refunds', description: 'Refunds and contribution receipts' },
-  { id: 'disputes', label: 'Dispute notifications', description: 'Disputes opened, updated, or resolved' },
-  { id: 'milestones', label: 'Milestone completions', description: 'Milestones reached or approved' },
-  { id: 'marketing', label: 'Marketing & Weekly digest', description: 'A summary of activity delivered once a week' },
+  {
+    id: 'disputes',
+    label: 'Dispute notifications',
+    description: 'Disputes opened, updated, or resolved',
+  },
+  {
+    id: 'milestones',
+    label: 'Milestone completions',
+    description: 'Milestones reached or approved',
+  },
+  {
+    id: 'marketing',
+    label: 'Marketing & Weekly digest',
+    description: 'A summary of activity delivered once a week',
+  },
 ];
 
 function Toggle({ checked, onChange, disabled, label, id }) {
@@ -83,14 +99,15 @@ export default function NotificationSettings() {
     const category = searchParams.get('category');
     const sig = searchParams.get('sig');
     const campaignId = searchParams.get('campaign_id');
-    
+
     if (email && category && sig) {
-      api.unsubscribeEmail({ email, category, sig, campaign_id: campaignId })
+      api
+        .unsubscribeEmail({ email, category, sig, campaign_id: campaignId })
         .then(() => {
           toast('Successfully unsubscribed', 'success');
           loadPreferences(); // reload to show new state
         })
-        .catch(err => {
+        .catch((err) => {
           toast(err.response?.data?.error || err.message || 'Failed to unsubscribe', 'error');
         });
     } else {
@@ -112,13 +129,31 @@ export default function NotificationSettings() {
   const handleQuickSetting = async (mode) => {
     let newPrefs;
     if (mode === 'everything') {
-      newPrefs = { campaign_updates: true, refunds: true, disputes: true, milestones: true, marketing: true };
+      newPrefs = {
+        campaign_updates: true,
+        refunds: true,
+        disputes: true,
+        milestones: true,
+        marketing: true,
+      };
     } else if (mode === 'important') {
-      newPrefs = { campaign_updates: true, refunds: true, disputes: true, milestones: true, marketing: false };
+      newPrefs = {
+        campaign_updates: true,
+        refunds: true,
+        disputes: true,
+        milestones: true,
+        marketing: false,
+      };
     } else if (mode === 'nothing') {
-      newPrefs = { campaign_updates: false, refunds: false, disputes: false, milestones: false, marketing: false };
+      newPrefs = {
+        campaign_updates: false,
+        refunds: false,
+        disputes: false,
+        milestones: false,
+        marketing: false,
+      };
     }
-    
+
     setPrefs(newPrefs);
     try {
       await api.updateNotificationPreference(newPrefs);
@@ -141,7 +176,11 @@ export default function NotificationSettings() {
     return (
       <main className="container page-narrow" style={{ paddingTop: '3rem' }}>
         <p className="alert alert--error">
-          Please <Link to="/login" style={{ color: 'var(--color-accent)', fontWeight: 600 }}>log in</Link> to manage notification settings.
+          Please{' '}
+          <Link to="/login" style={{ color: 'var(--color-accent)', fontWeight: 600 }}>
+            log in
+          </Link>{' '}
+          to manage notification settings.
         </p>
       </main>
     );
@@ -150,7 +189,9 @@ export default function NotificationSettings() {
   if (loading) {
     return (
       <main className="container page-narrow notif-settings" style={{ paddingTop: '3rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '1.5rem' }}>Notification Settings</h1>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '1.5rem' }}>
+          Notification Settings
+        </h1>
         <div className="campaign-card">
           <p style={{ color: 'var(--color-text-hint)' }}>Loading your preferences…</p>
         </div>
@@ -159,7 +200,10 @@ export default function NotificationSettings() {
   }
 
   return (
-    <main className="container page-narrow notif-settings" style={{ paddingTop: '3rem', paddingBottom: '4rem' }}>
+    <main
+      className="container page-narrow notif-settings"
+      style={{ paddingTop: '3rem', paddingBottom: '4rem' }}
+    >
       <div style={{ marginBottom: '1.5rem' }}>
         <Link
           to="/profile"
@@ -176,14 +220,17 @@ export default function NotificationSettings() {
         Control how and when you receive notifications from CrowdPay.
       </p>
 
-      <SectionCard
-        title="Quick Settings"
-        description="Quickly set your email preferences."
-      >
+      <SectionCard title="Quick Settings" description="Quickly set your email preferences.">
         <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-          <button className="btn-secondary" onClick={() => handleQuickSetting('everything')}>Email me everything</button>
-          <button className="btn-secondary" onClick={() => handleQuickSetting('important')}>Important only</button>
-          <button className="btn-secondary" onClick={() => handleQuickSetting('nothing')}>Email me nothing</button>
+          <button className="btn-secondary" onClick={() => handleQuickSetting('everything')}>
+            Email me everything
+          </button>
+          <button className="btn-secondary" onClick={() => handleQuickSetting('important')}>
+            Important only
+          </button>
+          <button className="btn-secondary" onClick={() => handleQuickSetting('nothing')}>
+            Email me nothing
+          </button>
         </div>
       </SectionCard>
 
@@ -193,9 +240,20 @@ export default function NotificationSettings() {
       >
         <div className="notif-settings__types-table">
           {EVENT_TYPES.map((evt) => (
-            <div key={evt.id} className="notif-settings__types-row" style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '1px solid #eceef1' }}>
+            <div
+              key={evt.id}
+              className="notif-settings__types-row"
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '1rem 0',
+                borderBottom: '1px solid #eceef1',
+              }}
+            >
               <div className="notif-settings__types-info">
-                <span style={{ fontWeight: 600, fontSize: '0.9rem', display: 'block' }}>{evt.label}</span>
+                <span style={{ fontWeight: 600, fontSize: '0.9rem', display: 'block' }}>
+                  {evt.label}
+                </span>
                 <span style={{ color: 'var(--color-text-hint)', fontSize: '0.8rem' }}>
                   {evt.description}
                 </span>

@@ -75,7 +75,7 @@ function buildApp({
 
   const totpService = {
     enforce2faCheck: async () => totp.enforceResult || { enforced: false },
-    generateFingerprint: (req) => `fp-${req.headers['user-agent'] || 'ua'}`,
+    generateFingerprint: req => `fp-${req.headers['user-agent'] || 'ua'}`,
     isDeviceTrusted: async () => Boolean(totp.deviceTrusted),
     verifyTotp: () => Boolean(totp.verifyTotpResult),
     verifyBackupCode: async () => ({ valid: Boolean(totp.backupValid), index: 0 }),
@@ -92,13 +92,13 @@ function buildApp({
       raw: ['AAAA-AAAA', 'BBBB-BBBB'],
       hashed: ['h-aaaa', 'h-bbbb'],
     }),
-    revokeAllDevices: async (userId) => {
+    revokeAllDevices: async userId => {
       calls.totpOps.push(['revokeAllDevices', userId]);
     },
     trustDevice: async (userId, fingerprint, _req) => {
       calls.totpOps.push(['trustDevice', userId, fingerprint]);
     },
-    getUserDevices: async (userId) => {
+    getUserDevices: async userId => {
       calls.totpOps.push(['getUserDevices', userId]);
       return [{ id: 1, fingerprint: 'fp-x' }];
     },
@@ -154,18 +154,18 @@ function buildApp({
     '../config/logger': { error: () => {}, warn: () => {}, info: () => {} },
     '../services/totpService': totpService,
     '../services/stellarService': {
-      ensureCustodialAccountFundedAndTrusted: async (opts) => {
+      ensureCustodialAccountFundedAndTrusted: async opts => {
         calls.funded.push(opts);
       },
     },
     '../services/emailService': {
-      sendEmail: async (opts) => {
+      sendEmail: async opts => {
         calls.emails.push(['sendEmail', opts]);
       },
-      sendWelcomeEmail: async (opts) => {
+      sendWelcomeEmail: async opts => {
         calls.emails.push(['sendWelcome', opts]);
       },
-      sendWalletFundingFailedEmail: async (opts) => {
+      sendWalletFundingFailedEmail: async opts => {
         calls.emails.push(['sendFundingFailed', opts]);
       },
     },
@@ -201,7 +201,7 @@ function buildApp({
       createUserSession: async (userId, refreshTokenId, _req) => {
         calls.sessions.push([userId, refreshTokenId]);
       },
-      recordLoginAttempt: async (opts) => {
+      recordLoginAttempt: async opts => {
         calls.loginAttempts.push(opts);
       },
       checkLoginAnomalies: async (userId, email, _req) => {
@@ -222,7 +222,7 @@ function buildApp({
 }
 
 function flushAsync() {
-  return new Promise((resolve) => setImmediate(resolve));
+  return new Promise(resolve => setImmediate(resolve));
 }
 
 // ---------------------------------------------------------------------------
@@ -241,15 +241,15 @@ test('POST /api/auth/register registers a custodial user and issues tokens', asy
   assert.equal(res.body.user.email, 'user@example.com');
   assert.equal(res.body.user.kyc_required_for_campaigns, false);
   assert.ok(
-    res.headers['set-cookie'].some((c) => c.startsWith('cp_token=')),
-    'sets access token cookie',
+    res.headers['set-cookie'].some(c => c.startsWith('cp_token=')),
+    'sets access token cookie'
   );
   assert.ok(
-    res.headers['set-cookie'].some((c) => c.startsWith('cp_refresh_token=')),
-    'sets refresh token cookie',
+    res.headers['set-cookie'].some(c => c.startsWith('cp_refresh_token=')),
+    'sets refresh token cookie'
   );
 
-  const insert = calls.db.find((q) => q.sql.includes('INSERT INTO users'));
+  const insert = calls.db.find(q => q.sql.includes('INSERT INTO users'));
   assert.ok(insert, 'user inserted');
   assert.equal(insert.params[0], 'user@example.com');
   assert.ok(insert.params[1].startsWith('$2'), 'password is bcrypt-hashed');
@@ -268,7 +268,7 @@ test('POST /api/auth/register registers a custodial user and issues tokens', asy
   assert.equal(calls.funded.length, 1, 'custodial wallet funded in background');
   assert.ok(
     calls.emails.some(([kind]) => kind === 'sendWelcome'),
-    'welcome email sent',
+    'welcome email sent'
   );
 });
 
@@ -316,19 +316,17 @@ test('POST /api/auth/register rejects an invalid email', async () => {
 test('POST /api/auth/register supports freighter (non-custodial) wallets', async () => {
   const { app, calls } = buildApp();
 
-  const res = await request(app)
-    .post('/api/auth/register')
-    .send({
-      email: 'user@example.com',
-      password: PASSWORD,
-      name: 'Test User',
-      wallet_type: 'freighter',
-      wallet_public_key: VALID_STELLAR_PUBLIC_KEY,
-    });
+  const res = await request(app).post('/api/auth/register').send({
+    email: 'user@example.com',
+    password: PASSWORD,
+    name: 'Test User',
+    wallet_type: 'freighter',
+    wallet_public_key: VALID_STELLAR_PUBLIC_KEY,
+  });
 
   assert.equal(res.status, 201);
 
-  const insert = calls.db.find((q) => q.sql.includes('INSERT INTO users'));
+  const insert = calls.db.find(q => q.sql.includes('INSERT INTO users'));
   assert.equal(insert.params[4], null, 'no secret encrypted for freighter wallet');
   assert.equal(insert.params[6], 'freighter');
   assert.ok(insert.params[7] instanceof Date, 'freighter wallet marked funded');
@@ -354,12 +352,12 @@ test('POST /api/auth/login logs in with valid credentials', async () => {
   assert.equal(res.body.user.email, 'user@example.com');
   assert.equal(res.body.user.role, 'contributor');
   assert.equal(res.body.user.kyc_required_for_campaigns, false);
-  assert.ok(res.headers['set-cookie'].some((c) => c.startsWith('cp_token=')));
-  assert.ok(res.headers['set-cookie'].some((c) => c.startsWith('cp_refresh_token=')));
+  assert.ok(res.headers['set-cookie'].some(c => c.startsWith('cp_token=')));
+  assert.ok(res.headers['set-cookie'].some(c => c.startsWith('cp_refresh_token=')));
 
   assert.equal(calls.sessions.length, 1, 'user session created');
   assert.equal(calls.anomalies.length, 1, 'login anomalies checked');
-  const success = calls.loginAttempts.filter((a) => a.success);
+  const success = calls.loginAttempts.filter(a => a.success);
   assert.equal(success.length, 1, 'successful login recorded');
 });
 
@@ -507,8 +505,8 @@ test('POST /api/auth/2fa/challenge accepts a valid TOTP code', async () => {
   assert.ok(res.body.token);
   assert.equal(res.body.device_trusted, false);
   assert.equal(res.body.user.email, 'user@example.com');
-  assert.ok(res.headers['set-cookie'].some((c) => c.startsWith('cp_token=')));
-  assert.ok(calls.totpAudit.some((a) => a.event === 'totp_challenge_success'));
+  assert.ok(res.headers['set-cookie'].some(c => c.startsWith('cp_token=')));
+  assert.ok(calls.totpAudit.some(a => a.event === 'totp_challenge_success'));
 });
 
 test('POST /api/auth/2fa/challenge records a failed attempt', async () => {
@@ -524,11 +522,11 @@ test('POST /api/auth/2fa/challenge records a failed attempt', async () => {
   assert.equal(res.status, 401);
   assert.deepEqual(res.body, { error: 'Invalid 2FA code' });
 
-  const update = calls.db.find((q) => q.sql.includes('UPDATE users SET totp_failed_attempts'));
+  const update = calls.db.find(q => q.sql.includes('UPDATE users SET totp_failed_attempts'));
   assert.equal(update.params[0], 1, 'consecutive failure counter incremented');
   assert.equal(update.params[1], null, 'not locked out yet');
   assert.equal(update.params[2], USER_ID);
-  assert.ok(calls.totpAudit.some((a) => a.event === 'totp_challenge_failed'));
+  assert.ok(calls.totpAudit.some(a => a.event === 'totp_challenge_failed'));
 });
 
 test('POST /api/auth/2fa/challenge locks the account after 10 consecutive failures', async () => {
@@ -543,7 +541,7 @@ test('POST /api/auth/2fa/challenge locks the account after 10 consecutive failur
 
   assert.equal(res.status, 401);
 
-  const update = calls.db.find((q) => q.sql.includes('UPDATE users SET totp_failed_attempts'));
+  const update = calls.db.find(q => q.sql.includes('UPDATE users SET totp_failed_attempts'));
   assert.equal(update.params[0], 0, 'counter reset on lockout');
   assert.ok(update.params[1] instanceof Date, 'lockout timestamp set');
 });
@@ -559,7 +557,7 @@ test('POST /api/auth/2fa/challenge resets the counter after a success', async ()
     .send({ email: 'user@example.com', password: PASSWORD, code: '123456' });
 
   assert.equal(res.status, 200);
-  const update = calls.db.find((q) => q.sql.includes('UPDATE users SET totp_failed_attempts = 0'));
+  const update = calls.db.find(q => q.sql.includes('UPDATE users SET totp_failed_attempts = 0'));
   assert.ok(update, 'failed counter cleared after success');
 });
 
@@ -575,8 +573,11 @@ test('POST /api/auth/2fa/challenge accepts a backup code', async () => {
 
   assert.equal(res.status, 200);
   assert.ok(res.body.token);
-  assert.ok(calls.totpOps.some(([op]) => op === 'removeBackupCode'), 'backup code consumed');
-  assert.ok(calls.totpAudit.some((a) => a.event === 'totp_challenge_success'));
+  assert.ok(
+    calls.totpOps.some(([op]) => op === 'removeBackupCode'),
+    'backup code consumed'
+  );
+  assert.ok(calls.totpAudit.some(a => a.event === 'totp_challenge_success'));
 });
 
 // ---------------------------------------------------------------------------
@@ -611,9 +612,9 @@ test('POST /api/auth/2fa/setup generates a secret for a creator', async () => {
   assert.equal(res.status, 200);
   assert.equal(res.body.secret, 'TESTSECRET');
   assert.ok(res.body.qrCodeDataUrl.startsWith('data:image/png'));
-  const update = calls.db.find((q) => q.sql.includes('UPDATE users SET totp_secret'));
+  const update = calls.db.find(q => q.sql.includes('UPDATE users SET totp_secret'));
   assert.equal(update.params[0], 'TESTSECRET');
-  assert.ok(calls.totpAudit.some((a) => a.event === 'totp_setup_initiated'));
+  assert.ok(calls.totpAudit.some(a => a.event === 'totp_setup_initiated'));
 });
 
 test('POST /api/auth/2fa/setup returns 401 without auth', async () => {
@@ -659,9 +660,9 @@ test('POST /api/auth/2fa/verify enables 2FA and returns backup codes', async () 
   assert.equal(res.status, 200);
   assert.equal(res.body.message, '2FA enabled successfully');
   assert.deepEqual(res.body.backupCodes, ['AAAA-AAAA', 'BBBB-BBBB']);
-  const update = calls.db.find((q) => q.sql.includes('UPDATE users SET totp_enabled = true'));
+  const update = calls.db.find(q => q.sql.includes('UPDATE users SET totp_enabled = true'));
   assert.deepEqual(update.params[0], ['h-aaaa', 'h-bbbb'], 'hashed backup codes stored');
-  assert.ok(calls.totpAudit.some((a) => a.event === 'totp_enabled'));
+  assert.ok(calls.totpAudit.some(a => a.event === 'totp_enabled'));
 });
 
 test('POST /api/auth/2fa/disable requires a code', async () => {
@@ -705,11 +706,11 @@ test('POST /api/auth/2fa/disable disables 2FA and revokes devices', async () => 
   assert.equal(res.status, 200);
   assert.equal(res.body.message, '2FA disabled successfully');
   const update = calls.db.find(
-    (q) => q.sql.includes('totp_enabled = false') && q.sql.includes('totp_secret = NULL'),
+    q => q.sql.includes('totp_enabled = false') && q.sql.includes('totp_secret = NULL')
   );
   assert.ok(update, 'totp fields cleared');
   assert.ok(calls.totpOps.some(([op]) => op === 'revokeAllDevices'));
-  assert.ok(calls.totpAudit.some((a) => a.event === 'totp_disabled'));
+  assert.ok(calls.totpAudit.some(a => a.event === 'totp_disabled'));
 });
 
 test('GET /api/auth/2fa/backup-codes requires 2FA enabled', async () => {
@@ -728,9 +729,9 @@ test('GET /api/auth/2fa/backup-codes regenerates backup codes', async () => {
 
   assert.equal(res.status, 200);
   assert.deepEqual(res.body.backupCodes, ['AAAA-AAAA', 'BBBB-BBBB']);
-  const update = calls.db.find((q) => q.sql.includes('UPDATE users SET backup_codes'));
+  const update = calls.db.find(q => q.sql.includes('UPDATE users SET backup_codes'));
   assert.deepEqual(update.params[0], ['h-aaaa', 'h-bbbb']);
-  assert.ok(calls.totpAudit.some((a) => a.event === 'backup_codes_regenerated'));
+  assert.ok(calls.totpAudit.some(a => a.event === 'backup_codes_regenerated'));
 });
 
 test('POST /api/auth/2fa/trust-device requires a code', async () => {
@@ -757,9 +758,9 @@ test('POST /api/auth/2fa/trust-device trusts the device with a valid code', asyn
   assert.equal(res.body.message, 'Device trusted successfully');
   assert.ok(
     calls.totpOps.some(([op]) => op === 'trustDevice'),
-    'device persisted as trusted',
+    'device persisted as trusted'
   );
-  assert.ok(calls.totpAudit.some((a) => a.event === 'device_trusted'));
+  assert.ok(calls.totpAudit.some(a => a.event === 'device_trusted'));
 });
 
 test('GET /api/auth/2fa/devices lists trusted devices', async () => {
@@ -793,7 +794,7 @@ test('DELETE /api/auth/2fa/devices/:id revokes a device', async () => {
 
   assert.equal(res.status, 200);
   assert.equal(res.body.message, 'Device removed');
-  assert.ok(calls.totpAudit.some((a) => a.event === 'device_revoked'));
+  assert.ok(calls.totpAudit.some(a => a.event === 'device_revoked'));
 });
 
 test('GET /api/auth/2fa/audit-log requires 2FA for non-admins', async () => {
@@ -875,18 +876,18 @@ test('POST /api/auth/refresh rotates the refresh token and issues a new access t
   assert.equal(res.body.user.email, 'user@example.com');
 
   const revoked = calls.db.some(
-    (q) => q.sql.includes('UPDATE refresh_tokens') && q.sql.includes('revoked_at = NOW()'),
+    q => q.sql.includes('UPDATE refresh_tokens') && q.sql.includes('revoked_at = NOW()')
   );
   assert.ok(revoked, 'old refresh token revoked');
   const inserted = calls.db.find(
-    (q) =>
+    q =>
       q.sql.includes('INSERT INTO refresh_tokens') &&
-      calls.db.indexOf(q) > calls.db.findIndex((x) => x.sql.includes('UPDATE refresh_tokens')),
+      calls.db.indexOf(q) > calls.db.findIndex(x => x.sql.includes('UPDATE refresh_tokens'))
   );
   assert.ok(inserted, 'new refresh token persisted');
   assert.ok(
-    res.headers['set-cookie'].some((c) => c.startsWith('cp_refresh_token=')),
-    'new refresh token cookie set',
+    res.headers['set-cookie'].some(c => c.startsWith('cp_refresh_token=')),
+    'new refresh token cookie set'
   );
 });
 
@@ -900,10 +901,10 @@ test('POST /api/auth/logout revokes the refresh token and clears cookies', async
   assert.equal(res.status, 200);
   assert.deepEqual(res.body, { ok: true });
   assert.ok(
-    calls.db.some((q) => q.sql.includes('UPDATE refresh_tokens') && q.sql.includes('revoked_at')),
-    'refresh token revoked',
+    calls.db.some(q => q.sql.includes('UPDATE refresh_tokens') && q.sql.includes('revoked_at')),
+    'refresh token revoked'
   );
-  const cleared = res.headers['set-cookie'].map((c) => c.split(';')[0].split('=')[0]);
+  const cleared = res.headers['set-cookie'].map(c => c.split(';')[0].split('=')[0]);
   for (const name of ['cp_token', 'cp_refresh_token', 'cp_csrf']) {
     assert.ok(cleared.includes(name), `${name} cookie cleared`);
   }
@@ -947,8 +948,8 @@ test('POST /api/auth/forgot-password emails a reset link for a known email', asy
     message: 'If that email exists, a password reset link has been sent.',
   });
 
-  const invalidated = calls.db.some((q) => q.sql.includes('UPDATE password_reset_tokens'));
-  const inserted = calls.db.find((q) => q.sql.includes('INSERT INTO password_reset_tokens'));
+  const invalidated = calls.db.some(q => q.sql.includes('UPDATE password_reset_tokens'));
+  const inserted = calls.db.find(q => q.sql.includes('INSERT INTO password_reset_tokens'));
   assert.ok(invalidated, 'previous unused tokens invalidated');
   assert.ok(inserted, 'new reset token inserted');
 
@@ -969,7 +970,10 @@ test('POST /api/auth/forgot-password returns the same message for unknown emails
   assert.deepEqual(res.body, {
     message: 'If that email exists, a password reset link has been sent.',
   });
-  assert.ok(!calls.emails.some(([kind]) => kind === 'sendEmail'), 'no reset email for unknown user');
+  assert.ok(
+    !calls.emails.some(([kind]) => kind === 'sendEmail'),
+    'no reset email for unknown user'
+  );
 });
 
 test('POST /api/auth/forgot-password validates the email', async () => {
@@ -990,11 +994,11 @@ test('POST /api/auth/reset-password resets the password with a valid token', asy
   assert.equal(res.status, 200);
   assert.deepEqual(res.body, { message: 'Password reset successfully' });
 
-  const update = calls.db.find((q) => q.sql.includes('UPDATE users SET password_hash'));
+  const update = calls.db.find(q => q.sql.includes('UPDATE users SET password_hash'));
   assert.ok(update.params[0].startsWith('$2'), 'new password bcrypt-hashed');
   assert.equal(update.params[1], USER_ID);
   const markedUsed = calls.db.some(
-    (q) => q.sql.includes('UPDATE password_reset_tokens') && q.sql.includes('used_at = NOW()'),
+    q => q.sql.includes('UPDATE password_reset_tokens') && q.sql.includes('used_at = NOW()')
   );
   assert.ok(markedUsed, 'reset token marked used');
 });

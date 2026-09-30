@@ -1,6 +1,7 @@
 process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgres://test:test@localhost:5432/test';
-process.env.USDC_ISSUER = process.env.USDC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
+process.env.USDC_ISSUER =
+  process.env.USDC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'testsecret123456789012345678901234567890';
 
 const CAMPAIGN_ID = '11111111-1111-1111-1111-111111111111';
@@ -49,7 +50,7 @@ function buildApp({ queryImpl } = {}) {
 test('GET /api/campaigns/:id/updates lists updates and respects unsubscribe suppression', async () => {
   const campaignId = '11111111-1111-1111-1111-111111111111';
   const { app, calls } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('SELECT')) {
         return { rows: [{ id: campaignId, creator_id: 'user-1' }] };
       }
@@ -64,12 +65,14 @@ test('GET /api/campaigns/:id/updates lists updates and respects unsubscribe supp
 test('POST /api/campaigns/:id/updates creates update', async () => {
   const campaignId = '11111111-1111-1111-1111-111111111111';
   const { app } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('SELECT')) {
         return { rows: [{ id: campaignId, creator_id: 'user-1' }] };
       }
       if (text.includes('INSERT')) {
-        return { rows: [{ id: 'up-1', campaign_id: campaignId, title: 'Update 1', content: 'Hello' }] };
+        return {
+          rows: [{ id: 'up-1', campaign_id: campaignId, title: 'Update 1', content: 'Hello' }],
+        };
       }
       return { rows: [] };
     },

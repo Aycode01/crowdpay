@@ -15,7 +15,7 @@ if (typeof global.localStorage === 'undefined') {
       delete _storage[key];
     },
     clear() {
-      Object.keys(_storage).forEach(k => delete _storage[k]);
+      Object.keys(_storage).forEach((k) => delete _storage[k]);
     },
   };
 }
@@ -43,7 +43,7 @@ describe('i18n key parity check', () => {
   it('ensures fr.json defines every key present in en.json', () => {
     const enKeys = getAllKeys(en);
     const frKeys = new Set(getAllKeys(fr));
-    const missing = enKeys.filter(key => !frKeys.has(key));
+    const missing = enKeys.filter((key) => !frKeys.has(key));
     expect(missing, `Missing translation keys in fr.json: ${missing.join(', ')}`).toEqual([]);
   });
 });
@@ -70,7 +70,9 @@ if (typeof window.matchMedia === 'undefined') {
 }
 
 function lookup(obj, path) {
-  return path.split('.').reduce((o, k) => (o && o[k] !== null && o[k] !== undefined ? o[k] : undefined), obj);
+  return path
+    .split('.')
+    .reduce((o, k) => (o && o[k] !== null && o[k] !== undefined ? o[k] : undefined), obj);
 }
 
 let currentLanguage = 'en';
@@ -89,10 +91,18 @@ vi.mock('react-i18next', () => ({
       );
     },
     i18n: {
-      get language() { return currentLanguage; },
-      set language(l) { currentLanguage = l; },
-      get resolvedLanguage() { return currentLanguage; },
-      changeLanguage: vi.fn(async (lng) => { currentLanguage = lng; }),
+      get language() {
+        return currentLanguage;
+      },
+      set language(l) {
+        currentLanguage = l;
+      },
+      get resolvedLanguage() {
+        return currentLanguage;
+      },
+      changeLanguage: vi.fn(async (lng) => {
+        currentLanguage = lng;
+      }),
     },
   }),
   Trans: ({ children }) => children,

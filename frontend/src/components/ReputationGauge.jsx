@@ -13,11 +13,11 @@
  */
 
 const TIERS = [
-  { label: 'Newcomer',    min: 0,   max: 99,   color: 'var(--color-text-hint)' },
-  { label: 'Contributor', min: 100, max: 299,  color: 'var(--color-accent)' },
-  { label: 'Trusted',     min: 300, max: 599,  color: 'var(--color-accent-light)' },
-  { label: 'Veteran',     min: 600, max: 849,  color: '#7c3aed' },
-  { label: 'Champion',    min: 850, max: 1000, color: 'var(--color-teal)' },
+  { label: 'Newcomer', min: 0, max: 99, color: 'var(--color-text-hint)' },
+  { label: 'Contributor', min: 100, max: 299, color: 'var(--color-accent)' },
+  { label: 'Trusted', min: 300, max: 599, color: 'var(--color-accent-light)' },
+  { label: 'Veteran', min: 600, max: 849, color: '#7c3aed' },
+  { label: 'Champion', min: 850, max: 1000, color: 'var(--color-teal)' },
 ];
 
 function getTier(score) {
@@ -44,18 +44,18 @@ export default function ReputationGauge({ score = 0, size = 160 }) {
 
   // Gauge sweeps 240° (from -120° to +120° relative to bottom, i.e. 120°–360°)
   const START_DEG = 120;
-  const END_DEG   = 420; // = 360 + 60, drawn as 420 for SVG arc maths
+  const END_DEG = 420; // = 360 + 60, drawn as 420 for SVG arc maths
   const TOTAL_DEG = END_DEG - START_DEG; // 300°
 
   const cx = size / 2;
   const cy = size / 2;
-  const r  = size * 0.38;
+  const r = size * 0.38;
   const strokeWidth = size * 0.09;
 
   const filledDeg = START_DEG + (clamped / 1000) * TOTAL_DEG;
 
   const trackPath = arcPath(cx, cy, r, START_DEG, END_DEG);
-  const fillPath  = clamped > 0 ? arcPath(cx, cy, r, START_DEG, filledDeg) : null;
+  const fillPath = clamped > 0 ? arcPath(cx, cy, r, START_DEG, filledDeg) : null;
 
   return (
     <div

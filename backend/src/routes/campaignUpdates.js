@@ -1,53 +1,51 @@
-const router = require("express").Router();
-const db = require("../config/database");
-const { requireAuth } = require("../middleware/auth");
-const asyncHandler = require("../utils/asyncHandler");
-const logger = require("../config/logger");
-const {
-  sendCampaignUpdateNotifications,
-} = require("../services/campaignUpdatesPublishing");
-const {
-  CAMPAIGN_UPDATE_BODY_MAX_LENGTH,
-} = require("../middleware/validation");
+const router = require('express').Router();
+const db = require('../config/database');
+const { requireAuth } = require('../middleware/auth');
+const asyncHandler = require('../utils/asyncHandler');
+const logger = require('../config/logger');
+const { sendCampaignUpdateNotifications } = require('../services/campaignUpdatesPublishing');
+const { CAMPAIGN_UPDATE_BODY_MAX_LENGTH } = require('../middleware/validation');
 
-function cleanText(value = "") {
+function cleanText(value = '') {
   return String(value)
-    .replace(/<[^>]*>/g, "")
+    .replace(/<[^>]*>/g, '')
     .trim();
 }
 
 function validateAttachments(attachments) {
   if (!attachments) return '[]';
   if (!Array.isArray(attachments)) {
-    const err = new Error("Attachments must be an array");
+    const err = new Error('Attachments must be an array');
     err.statusCode = 422;
     throw err;
   }
   if (attachments.length > 5) {
-    const err = new Error("Maximum 5 attachments allowed per update");
+    const err = new Error('Maximum 5 attachments allowed per update');
     err.statusCode = 422;
     throw err;
   }
   const validTypes = ['image', 'video', 'document'];
   for (const att of attachments) {
     if (!att.url || typeof att.url !== 'string') {
-      const err = new Error("Attachment must include url");
+      const err = new Error('Attachment must include url');
       err.statusCode = 422;
       throw err;
     }
     if (!validTypes.includes(att.type)) {
-      const err = new Error("Attachment type must be image, video, or document");
+      const err = new Error('Attachment type must be image, video, or document');
       err.statusCode = 422;
       throw err;
     }
     if (typeof att.size !== 'number') {
-      const err = new Error("Attachment must include numerical size");
+      const err = new Error('Attachment must include numerical size');
       err.statusCode = 422;
       throw err;
     }
     if (['image', 'video'].includes(att.type)) {
       if (!att.alt_text || typeof att.alt_text !== 'string' || att.alt_text.trim() === '') {
-        const err = new Error("Image and video attachments must include alt_text for accessibility");
+        const err = new Error(
+          'Image and video attachments must include alt_text for accessibility'
+        );
         err.statusCode = 422;
         throw err;
       }
@@ -59,18 +57,17 @@ function validateAttachments(attachments) {
 async function requireCampaignCreator(req, res, next) {
   const campaignId = req.params.id;
 
-  const { rows } = await db.query(
-    "SELECT id, creator_id, title FROM campaigns WHERE id = $1",
-    [campaignId],
-  );
+  const { rows } = await db.query('SELECT id, creator_id, title FROM campaigns WHERE id = $1', [
+    campaignId,
+  ]);
 
   if (!rows.length) {
-    return res.status(404).json({ error: "Campaign not found" });
+    return res.status(404).json({ error: 'Campaign not found' });
   }
 
-  if (rows[0].creator_id !== req.user.userId && req.user.role !== "admin") {
+  if (rows[0].creator_id !== req.user.userId && req.user.role !== 'admin') {
     return res.status(403).json({
-      error: "Only the campaign creator can manage updates",
+      error: 'Only the campaign creator can manage updates',
     });
   }
 
@@ -80,7 +77,7 @@ async function requireCampaignCreator(req, res, next) {
 
 // Public: list published updates newest first
 router.get(
-  "/:id/updates",
+  '/:id/updates',
   asyncHandler(async (req, res) => {
     const { rows } = await db.query(
       `SELECT cu.id,
@@ -99,16 +96,16 @@ router.get(
      WHERE cu.campaign_id = $1
        AND (cu.status = 'published' OR cu.status IS NULL)
      ORDER BY cu.created_at DESC`,
-      [req.params.id],
+      [req.params.id]
     );
 
     res.json(rows);
-  }),
+  })
 );
 
 // Creator only: create update (immediate or scheduled)
 router.post(
-  "/:id/updates",
+  '/:id/updates',
   requireAuth,
   requireCampaignCreator,
   asyncHandler(async (req, res) => {
@@ -123,8 +120,8 @@ router.post(
       return res.status(err.statusCode || 422).json({ error: err.message });
     }
 
-    if (!title) return res.status(422).json({ error: "Title is required" });
-    if (!body) return res.status(422).json({ error: "Body is required" });
+    if (!title) return res.status(422).json({ error: 'Title is required' });
+    if (!body) return res.status(422).json({ error: 'Body is required' });
     if (body.length > CAMPAIGN_UPDATE_BODY_MAX_LENGTH) {
       return res.status(422).json({
         error: `Update body must be ${CAMPAIGN_UPDATE_BODY_MAX_LENGTH} characters or fewer`,
@@ -137,10 +134,10 @@ router.post(
     if (rawScheduledFor) {
       const scheduledDate = new Date(rawScheduledFor);
       if (isNaN(scheduledDate.getTime())) {
-        return res.status(422).json({ error: "Invalid scheduled_for date format" });
+        return res.status(422).json({ error: 'Invalid scheduled_for date format' });
       }
       if (scheduledDate.getTime() <= Date.now()) {
-        return res.status(422).json({ error: "scheduled_for must be in the future" });
+        return res.status(422).json({ error: 'scheduled_for must be in the future' });
       }
       scheduledFor = scheduledDate.toISOString();
       status = 'scheduled';
@@ -150,7 +147,7 @@ router.post(
       `INSERT INTO campaign_updates (campaign_id, author_id, title, body, attachments, status, scheduled_for)
        VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)
        RETURNING id, campaign_id, author_id, title, body, attachments, status, scheduled_for, created_at, updated_at`,
-      [req.params.id, req.user.userId, title, body, attachmentsJson, status, scheduledFor],
+      [req.params.id, req.user.userId, title, body, attachmentsJson, status, scheduledFor]
     );
     const update = rows[0];
 
@@ -162,19 +159,19 @@ router.post(
           campaignTitle: req.campaign.title,
           update,
           authorId: req.user.userId,
-        }).catch((err) => {
-          logger.error("Failed to send update notifications", { error: err.message });
+        }).catch(err => {
+          logger.error('Failed to send update notifications', { error: err.message });
         });
       });
     }
 
     res.status(201).json(update);
-  }),
+  })
 );
 
 // Creator only: edit or reschedule update
 router.patch(
-  "/:id/updates/:updateId",
+  '/:id/updates/:updateId',
   requireAuth,
   requireCampaignCreator,
   asyncHandler(async (req, res) => {
@@ -192,10 +189,10 @@ router.patch(
     }
 
     if (req.body.title !== undefined && !title) {
-      return res.status(422).json({ error: "Title is required" });
+      return res.status(422).json({ error: 'Title is required' });
     }
     if (req.body.body !== undefined && !body) {
-      return res.status(422).json({ error: "Body is required" });
+      return res.status(422).json({ error: 'Body is required' });
     }
     if (body && body.length > CAMPAIGN_UPDATE_BODY_MAX_LENGTH) {
       return res.status(422).json({
@@ -212,7 +209,7 @@ router.patch(
     );
 
     if (!existingRows.length) {
-      return res.status(404).json({ error: "Update not found" });
+      return res.status(404).json({ error: 'Update not found' });
     }
 
     const existing = existingRows[0];
@@ -224,12 +221,12 @@ router.patch(
       const now = Date.now();
       if (now - createdAtTime > 24 * 60 * 60 * 1000) {
         return res.status(403).json({
-          error: "Update edit window has expired",
+          error: 'Update edit window has expired',
         });
       }
       if (rawScheduledFor !== undefined) {
         return res.status(422).json({
-          error: "Cannot set scheduled_for on an already published update",
+          error: 'Cannot set scheduled_for on an already published update',
         });
       }
     }
@@ -245,10 +242,10 @@ router.patch(
       } else {
         const scheduledDate = new Date(rawScheduledFor);
         if (isNaN(scheduledDate.getTime())) {
-          return res.status(422).json({ error: "Invalid scheduled_for date format" });
+          return res.status(422).json({ error: 'Invalid scheduled_for date format' });
         }
         if (scheduledDate.getTime() <= Date.now()) {
-          return res.status(422).json({ error: "scheduled_for must be in the future" });
+          return res.status(422).json({ error: 'scheduled_for must be in the future' });
         }
         newScheduledFor = scheduledDate.toISOString();
       }
@@ -256,7 +253,8 @@ router.patch(
 
     const finalTitle = title || existing.title;
     const finalBody = body || existing.body;
-    const finalAttachments = attachmentsJson !== undefined ? attachmentsJson : JSON.stringify(existing.attachments || []);
+    const finalAttachments =
+      attachmentsJson !== undefined ? attachmentsJson : JSON.stringify(existing.attachments || []);
 
     const { rows } = await db.query(
       `UPDATE campaign_updates
@@ -270,11 +268,20 @@ router.patch(
          AND campaign_id = $7
          AND author_id = $8
        RETURNING id, campaign_id, author_id, title, body, attachments, status, scheduled_for, created_at, updated_at`,
-      [finalTitle, finalBody, finalAttachments, newStatus, newScheduledFor, req.params.updateId, req.params.id, req.user.userId],
+      [
+        finalTitle,
+        finalBody,
+        finalAttachments,
+        newStatus,
+        newScheduledFor,
+        req.params.updateId,
+        req.params.id,
+        req.user.userId,
+      ]
     );
 
     if (!rows.length) {
-      return res.status(404).json({ error: "Update not found" });
+      return res.status(404).json({ error: 'Update not found' });
     }
 
     const updatedUpdate = rows[0];
@@ -292,12 +299,12 @@ router.patch(
     }
 
     res.json(updatedUpdate);
-  }),
+  })
 );
 
 // Creator only: delete / cancel update
 router.delete(
-  "/:id/updates/:updateId",
+  '/:id/updates/:updateId',
   requireAuth,
   requireCampaignCreator,
   asyncHandler(async (req, res) => {
@@ -306,15 +313,15 @@ router.delete(
        WHERE id = $1
          AND campaign_id = $2
          AND author_id = $3`,
-      [req.params.updateId, req.params.id, req.user.userId],
+      [req.params.updateId, req.params.id, req.user.userId]
     );
 
     if (!rowCount) {
-      return res.status(404).json({ error: "Update not found" });
+      return res.status(404).json({ error: 'Update not found' });
     }
 
     res.status(204).send();
-  }),
+  })
 );
 
 module.exports = router;

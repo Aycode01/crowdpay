@@ -41,7 +41,9 @@ function TeamMemberCard({ member, onRemove, canManage }) {
           </span>
         )}
       </div>
-      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)', margin: '0.25rem 0 0.5rem' }}>
+      <div
+        style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)', margin: '0.25rem 0 0.5rem' }}
+      >
         {t('teamFundraising.raisedOf', {
           raised: formatAmount(member.raised_amount, member.asset_type),
           target: formatAmount(member.target_amount, member.asset_type),
@@ -112,9 +114,7 @@ export default function TeamCampaignsSection({ campaignId, canManage }) {
       const { data } = await apiClient.get(`/campaigns/${campaignId}/team`);
       setTeam(data);
     } catch (error) {
-      setTeamError(
-        error?.response?.data?.error || t('teamFundraising.loadError')
-      );
+      setTeamError(error?.response?.data?.error || t('teamFundraising.loadError'));
     }
   }, [campaignId, t]);
 
@@ -152,9 +152,7 @@ export default function TeamCampaignsSection({ campaignId, canManage }) {
       });
       await loadTeam();
     } catch (error) {
-      setActionError(
-        error?.response?.data?.error || t('teamFundraising.addError')
-      );
+      setActionError(error?.response?.data?.error || t('teamFundraising.addError'));
     } finally {
       setAddBusyId(null);
     }
@@ -163,14 +161,10 @@ export default function TeamCampaignsSection({ campaignId, canManage }) {
   const handleRemove = async (member) => {
     setActionError('');
     try {
-      await apiClient.delete(
-        `/campaigns/${campaignId}/team/members/${member.id}`
-      );
+      await apiClient.delete(`/campaigns/${campaignId}/team/members/${member.id}`);
       await loadTeam();
     } catch (error) {
-      setActionError(
-        error?.response?.data?.error || t('teamFundraising.removeError')
-      );
+      setActionError(error?.response?.data?.error || t('teamFundraising.removeError'));
     }
   };
 
@@ -208,9 +202,7 @@ export default function TeamCampaignsSection({ campaignId, canManage }) {
         style={{ fontSize: '0.85rem', color: 'var(--color-text-hint)' }}
         data-testid="team-section-empty"
       >
-        {canManage
-          ? t('teamFundraising.emptyOwner')
-          : t('teamFundraising.empty')}
+        {canManage ? t('teamFundraising.emptyOwner') : t('teamFundraising.empty')}
       </div>
     );
   }
@@ -219,8 +211,7 @@ export default function TeamCampaignsSection({ campaignId, canManage }) {
   const addable = myCampaigns
     ? myCampaigns.filter(
         (candidate) =>
-          candidate.id !== campaignId &&
-          !team.members.some((member) => member.id === candidate.id)
+          candidate.id !== campaignId && !team.members.some((member) => member.id === candidate.id)
       )
     : null;
 

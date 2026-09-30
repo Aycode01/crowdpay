@@ -28,7 +28,10 @@ function mapContributionGateError(err, res) {
       missing: err.missing || [],
     });
   }
-  if (err.statusCode === 503 && (err.code === 'IDENTITY_UNAVAILABLE' || err.code === 'ATTESTATION_UNAVAILABLE')) {
+  if (
+    err.statusCode === 503 &&
+    (err.code === 'IDENTITY_UNAVAILABLE' || err.code === 'ATTESTATION_UNAVAILABLE')
+  ) {
     return res.status(503).json({ error: err.message, code: err.code });
   }
   throw err;
@@ -97,7 +100,11 @@ router.post(
       await assertContributionPolicy(campaign, amount, walletPublicKey);
       await assertContributorMeetsRequirements(walletPublicKey, campaign_id);
     } catch (err) {
-      if (err.code === 'CONTRIBUTOR_REQUIREMENTS_NOT_MET' || err.code === 'IDENTITY_UNAVAILABLE' || err.code === 'ATTESTATION_UNAVAILABLE') {
+      if (
+        err.code === 'CONTRIBUTOR_REQUIREMENTS_NOT_MET' ||
+        err.code === 'IDENTITY_UNAVAILABLE' ||
+        err.code === 'ATTESTATION_UNAVAILABLE'
+      ) {
         return mapContributionGateError(err, res);
       }
       return res.status(err.statusCode || 400).json({ error: err.message });
@@ -120,7 +127,10 @@ router.post(
         campaignId: campaign_id,
         sendAsset,
         amount,
-        selectedPathIndex: typeof selected_path_index === 'number' ? selected_path_index : Number(selected_path_index),
+        selectedPathIndex:
+          typeof selected_path_index === 'number'
+            ? selected_path_index
+            : Number(selected_path_index),
       });
     }
 
@@ -130,7 +140,10 @@ router.post(
       await client.query('BEGIN');
 
       if (tier_id) {
-        const reserved = await reserveTierSlot(client, { tierId: tier_id, campaignId: campaign_id });
+        const reserved = await reserveTierSlot(client, {
+          tierId: tier_id,
+          campaignId: campaign_id,
+        });
         if (!reserved) {
           await client.query('ROLLBACK');
           return res.status(409).json({ error: 'Reward tier is no longer available' });
@@ -147,7 +160,10 @@ router.post(
           campaignId: campaign_id,
           sendAsset,
           amount,
-          selectedPathIndex: typeof selected_path_index === 'number' ? selected_path_index : Number(selected_path_index),
+          selectedPathIndex:
+            typeof selected_path_index === 'number'
+              ? selected_path_index
+              : Number(selected_path_index),
         });
       }
 
@@ -199,7 +215,7 @@ router.post(
       return res.status(401).json({ error: 'Embed token required' });
     }
     /*
-     * Distinguish JWT-only format/expiry verification (embedTokenJwtService) 
+     * Distinguish JWT-only format/expiry verification (embedTokenJwtService)
      * from DB-backed revocation/existence checks (embedTokenService).
      * First verify token format and signature/expiry via JWT service.
      */
@@ -242,7 +258,11 @@ router.post(
       await assertUserKycVerified(userId);
       await assertContributorMeetsRequirements(user.wallet_public_key, campaign_id);
     } catch (err) {
-      if (err.code === 'CONTRIBUTOR_REQUIREMENTS_NOT_MET' || err.code === 'IDENTITY_UNAVAILABLE' || err.code === 'ATTESTATION_UNAVAILABLE') {
+      if (
+        err.code === 'CONTRIBUTOR_REQUIREMENTS_NOT_MET' ||
+        err.code === 'IDENTITY_UNAVAILABLE' ||
+        err.code === 'ATTESTATION_UNAVAILABLE'
+      ) {
         return mapContributionGateError(err, res);
       }
       if (err.code === 'KYC_REQUIRED' || err.statusCode === 403) {

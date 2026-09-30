@@ -117,9 +117,9 @@ function mockRes() {
 /** Runs requireAuth and resolves whether it calls next() or short-circuits via res.json(). */
 function runRequireAuth(requireAuth, req) {
   const res = mockRes();
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const originalJson = res.json.bind(res);
-    res.json = (body) => {
+    res.json = body => {
       originalJson(body);
       resolve(res);
     };
@@ -133,12 +133,12 @@ async function withServer(app, fn) {
   try {
     return await fn(`http://127.0.0.1:${port}`);
   } finally {
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise(resolve => server.close(resolve));
   }
 }
 
 test('POST /api/admin/impersonate/:userId returns a 15-minute impersonation token', async () => {
-  await withServer(buildApp(), async (baseUrl) => {
+  await withServer(buildApp(), async baseUrl => {
     const res = await fetch(`${baseUrl}/api/admin/impersonate/${targetUser.id}`, {
       method: 'POST',
     });
@@ -159,7 +159,7 @@ test('POST /api/admin/impersonate/:userId returns a 15-minute impersonation toke
     assert.equal(body.user.id, targetUser.id);
     assert.match(res.headers.get('set-cookie'), /cp_impersonation_token=/);
 
-    const auditCall = queryCalls.find((call) => call.params[1] === 'impersonate_start');
+    const auditCall = queryCalls.find(call => call.params[1] === 'impersonate_start');
     assert.ok(auditCall);
     assert.equal(auditCall.params[0], 'admin-1');
     assert.equal(auditCall.params[3], targetUser.id);
@@ -174,7 +174,7 @@ test('POST /api/admin/impersonate/exit clears cookie and logs the end event', as
     impersonated_by: 'admin-1',
   };
 
-  await withServer(buildApp({ user, impersonation }), async (baseUrl) => {
+  await withServer(buildApp({ user, impersonation }), async baseUrl => {
     const res = await fetch(`${baseUrl}/api/admin/impersonate/exit`, {
       method: 'POST',
     });
@@ -182,7 +182,7 @@ test('POST /api/admin/impersonate/exit clears cookie and logs the end event', as
     assert.equal(res.status, 200);
     assert.match(res.headers.get('set-cookie'), /cp_impersonation_token=/);
 
-    const auditCall = queryCalls.find((call) => call.params[1] === 'impersonate_end');
+    const auditCall = queryCalls.find(call => call.params[1] === 'impersonate_end');
     assert.ok(auditCall);
     assert.equal(auditCall.params[0], 'admin-1');
     assert.equal(auditCall.params[3], targetUser.id);
@@ -192,8 +192,10 @@ test('POST /api/admin/impersonate/exit clears cookie and logs the end event', as
 test('an impersonation token issued by admin.js authenticates against the real middleware, is scoped, and is audited', async () => {
   // Mint the token through the real route handler (not a hand-rolled jwt.sign call),
   // so this test would have caught the missing sub/iss/aud regression.
-  const mintedToken = await withServer(buildApp(), async (baseUrl) => {
-    const res = await fetch(`${baseUrl}/api/admin/impersonate/${targetUser.id}`, { method: 'POST' });
+  const mintedToken = await withServer(buildApp(), async baseUrl => {
+    const res = await fetch(`${baseUrl}/api/admin/impersonate/${targetUser.id}`, {
+      method: 'POST',
+    });
     const body = await res.json();
     return body.token;
   });
@@ -217,12 +219,16 @@ test('an impersonation token issued by admin.js authenticates against the real m
   };
   const readRes = await runRequireAuth(requireAuth, readReq);
 
-  assert.equal(readRes.statusCode, 0, 'requireAuth must call next(), not respond, for an allowed GET');
+  assert.equal(
+    readRes.statusCode,
+    0,
+    'requireAuth must call next(), not respond, for an allowed GET'
+  );
   assert.equal(readReq.user.userId, targetUser.id);
   assert.equal(readReq.user.is_admin, false, 'admin rights are stripped while impersonating');
   assert.deepEqual(readReq.impersonation, { adminUserId: 'admin-1', targetUserId: targetUser.id });
 
-  const auditCall2 = authQueryCalls.find((c) => c.params[1] === 'impersonated_request');
+  const auditCall2 = authQueryCalls.find(c => c.params[1] === 'impersonated_request');
   assert.ok(auditCall2, 'every impersonated request is audit-logged');
   assert.equal(auditCall2.params[0], 'admin-1');
   assert.equal(auditCall2.params[3], targetUser.id);

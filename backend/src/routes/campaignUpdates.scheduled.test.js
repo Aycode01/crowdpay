@@ -1,6 +1,7 @@
 process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgres://test:test@localhost:5432/test';
-process.env.USDC_ISSUER = process.env.USDC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
+process.env.USDC_ISSUER =
+  process.env.USDC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'testsecret123456789012345678901234567890';
 
 const test = require('node:test');
@@ -12,7 +13,10 @@ const proxyquire = require('proxyquire').noCallThru();
 const CAMPAIGN_ID = '11111111-1111-1111-1111-111111111111';
 const CREATOR_ID = 'creator-1';
 
-function buildApp({ queryImpl = async () => ({ rows: [] }), user = { userId: CREATOR_ID, role: 'creator' } } = {}) {
+function buildApp({
+  queryImpl = async () => ({ rows: [] }),
+  user = { userId: CREATOR_ID, role: 'creator' },
+} = {}) {
   const calls = [];
   const notificationsCalled = [];
 
@@ -30,7 +34,7 @@ function buildApp({ queryImpl = async () => ({ rows: [] }), user = { userId: CRE
       },
     },
     '../services/campaignUpdatesPublishing': {
-      sendCampaignUpdateNotifications: async (opts) => {
+      sendCampaignUpdateNotifications: async opts => {
         notificationsCalled.push(opts);
       },
     },
@@ -114,7 +118,7 @@ test('POST /api/campaigns/:id/updates with future scheduled_for creates schedule
 test('POST /api/campaigns/:id/updates rejects scheduled_for in the past with 422', async () => {
   const pastDate = new Date(Date.now() - 3600000).toISOString();
   const { app } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('SELECT id, creator_id, title FROM campaigns')) {
         return { rows: [{ id: CAMPAIGN_ID, creator_id: CREATOR_ID, title: 'My Campaign' }] };
       }
@@ -132,12 +136,10 @@ test('POST /api/campaigns/:id/updates rejects scheduled_for in the past with 422
 
 test('GET /api/campaigns/:id/updates only lists published updates', async () => {
   const { app, calls } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaign_updates')) {
         return {
-          rows: [
-            { id: 'upd-1', title: 'Published 1', status: 'published' },
-          ],
+          rows: [{ id: 'upd-1', title: 'Published 1', status: 'published' }],
         };
       }
       return { rows: [] };
@@ -148,7 +150,7 @@ test('GET /api/campaigns/:id/updates only lists published updates', async () => 
   assert.equal(res.status, 200);
   assert.equal(res.body.length, 1);
   assert.equal(res.body[0].id, 'upd-1');
-  const getQuery = calls.find((c) => c.text.includes('FROM campaign_updates'));
+  const getQuery = calls.find(c => c.text.includes('FROM campaign_updates'));
   assert.ok(getQuery.text.includes("status = 'published'"));
 });
 
@@ -163,30 +165,34 @@ test('PATCH /api/campaigns/:id/updates/:updateId allows rescheduling a scheduled
       }
       if (text.includes('SELECT id, campaign_id, author_id, title, body')) {
         return {
-          rows: [{
-            id: 'upd-sched',
-            campaign_id: CAMPAIGN_ID,
-            author_id: CREATOR_ID,
-            title: 'Initial Title',
-            body: 'Initial Body',
-            status: 'scheduled',
-            scheduled_for: futureDate1,
-            created_at: new Date(Date.now() - 100000).toISOString(),
-          }],
+          rows: [
+            {
+              id: 'upd-sched',
+              campaign_id: CAMPAIGN_ID,
+              author_id: CREATOR_ID,
+              title: 'Initial Title',
+              body: 'Initial Body',
+              status: 'scheduled',
+              scheduled_for: futureDate1,
+              created_at: new Date(Date.now() - 100000).toISOString(),
+            },
+          ],
         };
       }
       if (text.includes('UPDATE campaign_updates')) {
         return {
-          rows: [{
-            id: 'upd-sched',
-            campaign_id: CAMPAIGN_ID,
-            author_id: CREATOR_ID,
-            title: params[0],
-            body: params[1],
-            status: params[3],
-            scheduled_for: params[4],
-            updated_at: new Date().toISOString(),
-          }],
+          rows: [
+            {
+              id: 'upd-sched',
+              campaign_id: CAMPAIGN_ID,
+              author_id: CREATOR_ID,
+              title: params[0],
+              body: params[1],
+              status: params[3],
+              scheduled_for: params[4],
+              updated_at: new Date().toISOString(),
+            },
+          ],
         };
       }
       return { rows: [] };
@@ -205,7 +211,7 @@ test('PATCH /api/campaigns/:id/updates/:updateId allows rescheduling a scheduled
 
 test('DELETE /api/campaigns/:id/updates/:updateId cancels and removes update', async () => {
   const { app } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('SELECT id, creator_id, title FROM campaigns')) {
         return { rows: [{ id: CAMPAIGN_ID, creator_id: CREATOR_ID, title: 'My Campaign' }] };
       }
@@ -244,11 +250,13 @@ test('campaignUpdatesPublishing.publishDueCampaignUpdates publishes due updates 
         if (text.includes('UPDATE campaign_updates')) {
           updateCallCount++;
           return {
-            rows: [{
-              ...dueUpdates[0],
-              status: 'published',
-              updated_at: new Date().toISOString(),
-            }],
+            rows: [
+              {
+                ...dueUpdates[0],
+                status: 'published',
+                updated_at: new Date().toISOString(),
+              },
+            ],
           };
         }
         if (text.includes('SELECT DISTINCT ON (u.id) u.id, u.email, u.name')) {

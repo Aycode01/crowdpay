@@ -26,7 +26,7 @@ function buildApp(mockDb, mockSentryOverride = mockSentry, emailConfigured = tru
 
 test('GET /health returns pool stats and ok status when database is reachable', async () => {
   const mockDb = {
-    query: async (text) => {
+    query: async text => {
       assert.equal(text, 'SELECT 1');
       return { rows: [] };
     },
@@ -50,7 +50,7 @@ test('GET /health returns pool stats and ok status when database is reachable', 
   app.use('/health', router);
 
   const response = await request(app).get('/health');
-  
+
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
     status: 'ok',
@@ -97,7 +97,7 @@ test('GET /health returns 503 and error message when database query fails', asyn
   app.use('/health', router);
 
   const response = await request(app).get('/health');
-  
+
   assert.equal(response.status, 503);
   assert.deepEqual(response.body, {
     error: {
@@ -111,7 +111,7 @@ test('GET /health sends Sentry alert when pool utilisation exceeds 90%', async (
   const sentryMessages = [];
   const mockSentryCapture = {
     ...mockSentry,
-    captureMessage: (msg) => {
+    captureMessage: msg => {
       sentryMessages.push(msg);
     },
   };
@@ -138,7 +138,7 @@ test('GET /health sends Sentry alert when pool utilisation exceeds 90%', async (
   app.use('/health', router);
 
   const response = await request(app).get('/health');
-  
+
   assert.equal(response.status, 200);
   assert.equal(sentryMessages.length, 1);
   assert.match(sentryMessages[0], /Database pool utilisation exceeds 90%/i);

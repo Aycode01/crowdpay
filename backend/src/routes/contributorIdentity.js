@@ -27,7 +27,7 @@ function validateRequest(req, res, next) {
       error: {
         code: 'VALIDATION_ERROR',
         message: 'Invalid request parameters',
-        fields: Object.fromEntries(errors.array().map((e) => [e.path, e.msg])),
+        fields: Object.fromEntries(errors.array().map(e => [e.path, e.msg])),
       },
     });
   }
@@ -47,10 +47,7 @@ router.post(
     const { userId } = req.user;
 
     // Fetch the user's wallet public key
-    const { rows } = await db.query(
-      'SELECT wallet_public_key FROM users WHERE id = $1',
-      [userId]
-    );
+    const { rows } = await db.query('SELECT wallet_public_key FROM users WHERE id = $1', [userId]);
     if (!rows.length) {
       return res.status(404).json({ error: 'User not found' });
     }

@@ -53,7 +53,9 @@ describe('PoolManager', () => {
     useAuth.mockReturnValue({ user: null });
     render(<PoolManager campaignId={CAMPAIGN_ID} campaignTitle="Test Campaign" />);
 
-    expect(await screen.findByText(/Sign in to create or join a contribution pool/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Sign in to create or join a contribution pool/)
+    ).toBeInTheDocument();
   });
 
   it('lists pools returned by the API for a logged-in user', async () => {

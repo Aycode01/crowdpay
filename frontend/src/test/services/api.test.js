@@ -28,23 +28,25 @@ describe('API Service - CSRF Interceptor', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock document.cookie
     mockDocumentCookie = '';
     Object.defineProperty(document, 'cookie', {
       get: () => mockDocumentCookie,
-      set: (val) => { mockDocumentCookie = val; },
+      set: (val) => {
+        mockDocumentCookie = val;
+      },
       configurable: true,
     });
   });
 
   it('attaches CSRF token to mutating requests when cookie exists', async () => {
     mockDocumentCookie = 'cp_csrf=test-csrf-token';
-    
+
     axios.post.mockResolvedValue({ data: { success: true } });
-    
+
     await api.createCampaign({ title: 'Test' });
-    
+
     // Check that the request interceptor was called with the CSRF header
     const postCall = axios.post.mock.calls[0];
     const config = postCall[2];
@@ -53,11 +55,11 @@ describe('API Service - CSRF Interceptor', () => {
 
   it('does not attach CSRF token when cookie is missing', async () => {
     mockDocumentCookie = '';
-    
+
     axios.post.mockResolvedValue({ data: { success: true } });
-    
+
     await api.createCampaign({ title: 'Test' });
-    
+
     const postCall = axios.post.mock.calls[0];
     const config = postCall[2];
     expect(config.headers['x-csrf-token']).toBeUndefined();
@@ -65,11 +67,11 @@ describe('API Service - CSRF Interceptor', () => {
 
   it('does not attach CSRF token to GET requests', async () => {
     mockDocumentCookie = 'cp_csrf=test-csrf-token';
-    
+
     axios.get.mockResolvedValue({ data: { campaigns: [] } });
-    
+
     await api.getCampaigns({});
-    
+
     const getCall = axios.get.mock.calls[0];
     const config = getCall[1];
     expect(config.headers['x-csrf-token']).toBeUndefined();
@@ -77,11 +79,11 @@ describe('API Service - CSRF Interceptor', () => {
 
   it('attaches CSRF token to PUT requests', async () => {
     mockDocumentCookie = 'cp_csrf=test-csrf-token';
-    
+
     axios.put.mockResolvedValue({ data: { success: true } });
-    
+
     await api.updateCampaign('campaign-id', { title: 'Updated' });
-    
+
     const putCall = axios.put.mock.calls[0];
     const config = putCall[2];
     expect(config.headers['x-csrf-token']).toBe('test-csrf-token');
@@ -89,11 +91,11 @@ describe('API Service - CSRF Interceptor', () => {
 
   it('attaches CSRF token to PATCH requests', async () => {
     mockDocumentCookie = 'cp_csrf=test-csrf-token';
-    
+
     axios.patch.mockResolvedValue({ data: { success: true } });
-    
+
     await api.updateCampaign('campaign-id', { title: 'Updated' });
-    
+
     const patchCall = axios.patch.mock.calls[0];
     const config = patchCall[2];
     expect(config.headers['x-csrf-token']).toBe('test-csrf-token');
@@ -101,11 +103,11 @@ describe('API Service - CSRF Interceptor', () => {
 
   it('attaches CSRF token to DELETE requests', async () => {
     mockDocumentCookie = 'cp_csrf=test-csrf-token';
-    
+
     axios.delete.mockResolvedValue({ data: { success: true } });
-    
+
     await api.deleteApiKey('key-id');
-    
+
     const deleteCall = axios.delete.mock.calls[0];
     const config = deleteCall[2];
     expect(config.headers['x-csrf-token']).toBe('test-csrf-token');
@@ -201,9 +203,9 @@ describe('API Service - API Key requests bypass CSRF', () => {
 
   it('does not attach CSRF token to API key list request', async () => {
     axios.get.mockResolvedValue({ data: [] });
-    
+
     await api.listApiKeys();
-    
+
     const getCall = axios.get.mock.calls[0];
     const config = getCall[1];
     // API key requests use the shared client but don't mutate state
@@ -213,9 +215,9 @@ describe('API Service - API Key requests bypass CSRF', () => {
 
   it('does not attach CSRF token to API key create request (uses Bearer auth)', async () => {
     axios.post.mockResolvedValue({ data: { id: 'key-1', secret: 'cp_live_test' } });
-    
+
     await api.createApiKey({ label: 'Test', scopes: ['read'] });
-    
+
     const postCall = axios.post.mock.calls[0];
     const config = postCall[2];
     // API key requests should not use CSRF since they use API key auth

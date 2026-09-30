@@ -87,7 +87,7 @@ describe('Rate Limiter Middleware', () => {
         max: 2,
         standardHeaders: true,
         legacyHeaders: false,
-        keyGenerator: (req) => 'test-embed-window-reset',
+        keyGenerator: req => 'test-embed-window-reset',
         message: { error: 'Too many requests' },
       });
 
@@ -117,7 +117,7 @@ describe('Rate Limiter Middleware', () => {
         max: 2,
         standardHeaders: true,
         legacyHeaders: false,
-        keyGenerator: (req) => 'test-impact-window-reset',
+        keyGenerator: req => 'test-impact-window-reset',
         message: { error: 'Too many requests' },
       });
 

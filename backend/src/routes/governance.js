@@ -20,10 +20,7 @@ const {
 const governanceSyncRuns = require('../services/governanceSyncRuns');
 const { parsePagination } = require('../utils/pagination');
 const { validateSubmittedContractCallXdr } = require('../services/sorobanService');
-const {
-  getFeeRegistryInfo,
-  invalidateFeeCache,
-} = require('../services/feeRegistry');
+const { getFeeRegistryInfo, invalidateFeeCache } = require('../services/feeRegistry');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { withDecryptedWalletSecret } = require('../services/walletSecrets');
 const db = require('../config/database');
@@ -92,28 +89,25 @@ router.get('/proposals', async (req, res, next) => {
  * GET /api/governance/proposals/:id
  * Get single proposal detail with votes and outcome projection
  */
-router.get('/proposals/:id', 
-  param('id').isUUID(),
-  async (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    try {
-      const proposal = await getProposalById(req.params.id);
-      
-      if (!proposal) {
-        return res.status(404).json({ error: 'Proposal not found' });
-      }
-
-      res.json({ proposal });
-    } catch (error) {
-      logger.error('Failed to get proposal', { error: error.message, proposalId: req.params.id });
-      next(error);
-    }
+router.get('/proposals/:id', param('id').isUUID(), async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
   }
-);
+
+  try {
+    const proposal = await getProposalById(req.params.id);
+
+    if (!proposal) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+
+    res.json({ proposal });
+  } catch (error) {
+    logger.error('Failed to get proposal', { error: error.message, proposalId: req.params.id });
+    next(error);
+  }
+});
 
 /**
  * POST /api/governance/proposals/:id/vote
@@ -121,7 +115,8 @@ router.get('/proposals/:id',
  * Freighter wallets get back an unsigned XDR + prepare_token to sign in the
  * browser and finalize via POST /proposals/:id/vote/submit-signed.
  */
-router.post('/proposals/:id/vote',
+router.post(
+  '/proposals/:id/vote',
   requireAuth,
   attachWallet,
   param('id').isUUID(),
@@ -143,22 +138,33 @@ router.post('/proposals/:id/vote',
           inFavor: in_favor,
         });
         const prepareToken = jwt.sign(
-          { action: 'vote', sourcePublicKey: voterPublicKey, proposalId: req.params.id, inFavor: in_favor, unsignedXdr },
+          {
+            action: 'vote',
+            sourcePublicKey: voterPublicKey,
+            proposalId: req.params.id,
+            inFavor: in_favor,
+            unsignedXdr,
+          },
           process.env.JWT_SECRET,
           { expiresIn: GOVERNANCE_PREPARE_TOKEN_TTL }
         );
-        return res.status(200).json({ mode: 'prepare', unsigned_xdr: unsignedXdr, prepare_token: prepareToken });
+        return res
+          .status(200)
+          .json({ mode: 'prepare', unsigned_xdr: unsignedXdr, prepare_token: prepareToken });
       }
 
       const result = await withDecryptedWalletSecret(
         req.wallet.secretEncrypted,
         { userId: req.user.userId, walletPublicKey: voterPublicKey },
-        (secret) => voteOnProposal(req.params.id, voterPublicKey, in_favor, secret)
+        secret => voteOnProposal(req.params.id, voterPublicKey, in_favor, secret)
       );
 
       res.json({ success: true, vote: result });
     } catch (error) {
-      logger.error('Failed to vote on proposal', { error: error.message, proposalId: req.params.id });
+      logger.error('Failed to vote on proposal', {
+        error: error.message,
+        proposalId: req.params.id,
+      });
 
       if (error.message.includes('not active') || error.message.includes('not found')) {
         return res.status(400).json({ error: error.message });
@@ -177,7 +183,8 @@ router.post('/proposals/:id/vote',
  * Finalizes a Freighter-signed vote. Rejects a cross-wallet signature or a
  * signed transaction whose args don't match what was prepared (#802).
  */
-router.post('/proposals/:id/vote/submit-signed',
+router.post(
+  '/proposals/:id/vote/submit-signed',
   requireAuth,
   param('id').isUUID(),
   body('prepare_token').isString(),
@@ -212,7 +219,10 @@ router.post('/proposals/:id/vote/submit-signed',
       if (error.isValidationError || error.statusCode === 422) {
         return res.status(422).json({ error: error.message });
       }
-      logger.error('Failed to submit signed vote', { error: error.message, proposalId: req.params.id });
+      logger.error('Failed to submit signed vote', {
+        error: error.message,
+        proposalId: req.params.id,
+      });
       if (error.message.includes('not active') || error.message.includes('not found')) {
         return res.status(400).json({ error: error.message });
       }
@@ -228,7 +238,8 @@ router.post('/proposals/:id/vote/submit-signed',
  * prepare_token to sign in the browser and finalize via
  * POST /proposals/submit-signed.
  */
-router.post('/proposals',
+router.post(
+  '/proposals',
   requireAuth,
   attachWallet,
   body('new_fee_bps').isInt({ min: 0, max: 10000 }),
@@ -262,13 +273,22 @@ router.post('/proposals',
           process.env.JWT_SECRET,
           { expiresIn: GOVERNANCE_PREPARE_TOKEN_TTL }
         );
-        return res.status(200).json({ mode: 'prepare', unsigned_xdr: unsignedXdr, prepare_token: prepareToken });
+        return res
+          .status(200)
+          .json({ mode: 'prepare', unsigned_xdr: unsignedXdr, prepare_token: prepareToken });
       }
 
       const proposal = await withDecryptedWalletSecret(
         req.wallet.secretEncrypted,
         { userId: req.user.userId, walletPublicKey: proposerPublicKey },
-        (secret) => createProposal(proposerPublicKey, new_fee_bps, new_creator_share_bps, rationale_text, secret)
+        secret =>
+          createProposal(
+            proposerPublicKey,
+            new_fee_bps,
+            new_creator_share_bps,
+            rationale_text,
+            secret
+          )
       );
 
       res.status(201).json({ success: true, proposal });
@@ -290,7 +310,8 @@ router.post('/proposals',
  * signature or a signed transaction whose args don't match what was
  * prepared (#802).
  */
-router.post('/proposals/submit-signed',
+router.post(
+  '/proposals/submit-signed',
   requireAuth,
   body('prepare_token').isString(),
   body('signed_xdr').isString(),
@@ -337,35 +358,35 @@ router.post('/proposals/submit-signed',
  * user-supplied signer, since execute_proposal isn't gated on a specific
  * caller's authorization (#802).
  */
-router.post('/proposals/:id/execute',
-  requireAuth,
-  param('id').isUUID(),
-  async (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    try {
-      const result = await executeProposal(req.params.id, process.env.PLATFORM_SECRET_KEY);
-
-      // Invalidate fee cache after successful execution
-      if (result.status === 'executed') {
-        invalidateFeeCache();
-      }
-
-      res.json({ success: true, execution: result });
-    } catch (error) {
-      logger.error('Failed to execute proposal', { error: error.message, proposalId: req.params.id });
-
-      if (error.message.includes('not active') || error.message.includes('not found') || error.message.includes('deadline')) {
-        return res.status(400).json({ error: error.message });
-      }
-
-      next(error);
-    }
+router.post('/proposals/:id/execute', requireAuth, param('id').isUUID(), async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
   }
-);
+
+  try {
+    const result = await executeProposal(req.params.id, process.env.PLATFORM_SECRET_KEY);
+
+    // Invalidate fee cache after successful execution
+    if (result.status === 'executed') {
+      invalidateFeeCache();
+    }
+
+    res.json({ success: true, execution: result });
+  } catch (error) {
+    logger.error('Failed to execute proposal', { error: error.message, proposalId: req.params.id });
+
+    if (
+      error.message.includes('not active') ||
+      error.message.includes('not found') ||
+      error.message.includes('deadline')
+    ) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    next(error);
+  }
+});
 
 /**
  * GET /api/governance/fee
@@ -404,7 +425,9 @@ router.get('/user/token-balance', requireAuth, attachWallet, async (req, res, ne
 
 function sendServiceError(res, next, error) {
   if (error.statusCode) {
-    return res.status(error.statusCode).json({ error: error.message, ...(error.code ? { code: error.code } : {}) });
+    return res
+      .status(error.statusCode)
+      .json({ error: error.message, ...(error.code ? { code: error.code } : {}) });
   }
   return next(error);
 }
@@ -475,7 +498,8 @@ router.get(
       const errors = validationResult(req);
       if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
       const run = await governanceSyncRuns.getRun(req.params.id);
-      if (!run) return res.status(404).json({ error: 'Sync run not found', code: 'SYNC_RUN_NOT_FOUND' });
+      if (!run)
+        return res.status(404).json({ error: 'Sync run not found', code: 'SYNC_RUN_NOT_FOUND' });
       return res.json(run);
     } catch (error) {
       return sendServiceError(res, next, error);
@@ -557,7 +581,8 @@ router.get('/delegations', requireAuth, attachWallet, async (req, res, next) => 
  * POST /api/governance/delegations
  * Delegate the current user's governance voting power to another wallet.
  */
-router.post('/delegations',
+router.post(
+  '/delegations',
   requireAuth,
   attachWallet,
   body('delegate_public_key').isString().notEmpty(),

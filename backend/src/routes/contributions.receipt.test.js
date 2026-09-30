@@ -6,7 +6,7 @@ test('assembly and pdf generation mock verification', async () => {
   let getReceiptDataCalled = false;
 
   const contributionReceiptService = {
-    getOrCreateReceiptPdf: async (id) => {
+    getOrCreateReceiptPdf: async id => {
       getOrCreateReceiptPdfCalled = true;
       return 'https://storage.test/signed-receipt.pdf';
     },

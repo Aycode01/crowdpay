@@ -22,13 +22,7 @@ describe('ThankYouModal', () => {
   it('renders bulk send modal and submits successfully', async () => {
     api.sendBulkThankYou.mockResolvedValueOnce({});
 
-    render(
-      <ThankYouModal
-        campaignId="camp-1"
-        onClose={mockOnClose}
-        onSent={mockOnSent}
-      />
-    );
+    render(<ThankYouModal campaignId="camp-1" onClose={mockOnClose} onSent={mockOnSent} />);
 
     expect(screen.getByText('thankYou.bulkTitle')).toBeDefined();
 
@@ -77,13 +71,7 @@ describe('ThankYouModal', () => {
   it('handles API error state correctly', async () => {
     api.sendBulkThankYou.mockRejectedValueOnce(new Error('Network failure'));
 
-    render(
-      <ThankYouModal
-        campaignId="camp-1"
-        onClose={mockOnClose}
-        onSent={mockOnSent}
-      />
-    );
+    render(<ThankYouModal campaignId="camp-1" onClose={mockOnClose} onSent={mockOnSent} />);
 
     const textarea = screen.getByRole('textbox');
     fireEvent.change(textarea, { target: { value: 'Thank you!' } });

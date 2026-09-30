@@ -55,20 +55,18 @@ test('POST /api/nft-rewards/claim rejects claim for another users contribution (
     queryImpl: async () => ({ rows: [] }),
   });
 
-  const res = await request(app)
-    .post('/api/nft-rewards/claim')
-    .send({
-      campaign_id: 'camp-1',
-      reward_tier_id: 'tier-1',
-      contribution_id: 'other-user',
-    });
+  const res = await request(app).post('/api/nft-rewards/claim').send({
+    campaign_id: 'camp-1',
+    reward_tier_id: 'tier-1',
+    contribution_id: 'other-user',
+  });
 
   assert.equal(res.status, 403);
 });
 
 test('POST /api/nft-rewards/claim fails closed when NFT contract is not configured (#815)', async () => {
   const app = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM reward_tiers')) {
         return { rows: [{ id: 'tier-1', campaign_id: 'camp-1', nft_enabled: true }] };
       }
@@ -79,13 +77,11 @@ test('POST /api/nft-rewards/claim fails closed when NFT contract is not configur
     },
   });
 
-  const res = await request(app)
-    .post('/api/nft-rewards/claim')
-    .send({
-      campaign_id: 'camp-1',
-      reward_tier_id: 'tier-1',
-      contribution_id: 'contrib-1',
-    });
+  const res = await request(app).post('/api/nft-rewards/claim').send({
+    campaign_id: 'camp-1',
+    reward_tier_id: 'tier-1',
+    contribution_id: 'contrib-1',
+  });
 
   assert.equal(res.status, 503);
   assert.equal(res.body.code, 'NFT_MINT_UNAVAILABLE');
@@ -98,13 +94,11 @@ test('POST /api/nft-rewards/claim rejects campaign mismatch (#815)', async () =>
     queryImpl: async () => ({ rows: [] }),
   });
 
-  const res = await request(app)
-    .post('/api/nft-rewards/claim')
-    .send({
-      campaign_id: 'camp-OTHER',
-      reward_tier_id: 'tier-1',
-      contribution_id: 'contrib-1',
-    });
+  const res = await request(app).post('/api/nft-rewards/claim').send({
+    campaign_id: 'camp-OTHER',
+    reward_tier_id: 'tier-1',
+    contribution_id: 'contrib-1',
+  });
 
   assert.equal(res.status, 400);
   assert.match(res.body.error, /does not belong to the requested campaign/);

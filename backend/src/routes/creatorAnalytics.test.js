@@ -37,12 +37,12 @@ describe('creatorAnalytics routes', () => {
 
   it('GET /campaigns/:campaignId/velocity returns velocity data', async () => {
     dbQueryMock.mockResolvedValueOnce({
-      rows: [{ creator_id: 'creator-1' }]
+      rows: [{ creator_id: 'creator-1' }],
     });
     getCampaignVelocityMock.mockResolvedValueOnce({
       campaignId: 'camp-1',
       velocityAlertThreshold: 0,
-      raised7d: 100
+      raised7d: 100,
     });
 
     const res = await request(app).get('/api/creator/campaigns/camp-1/velocity');
@@ -52,11 +52,11 @@ describe('creatorAnalytics routes', () => {
 
   it('PATCH /campaigns/:campaignId/velocity/threshold updates threshold', async () => {
     dbQueryMock.mockResolvedValueOnce({
-      rows: [{ creator_id: 'creator-1' }]
+      rows: [{ creator_id: 'creator-1' }],
     });
     updateCampaignVelocityAlertThresholdMock.mockResolvedValueOnce({
       success: true,
-      velocityAlertThreshold: 200
+      velocityAlertThreshold: 200,
     });
 
     const res = await request(app)
@@ -69,7 +69,7 @@ describe('creatorAnalytics routes', () => {
 
   it('PATCH /campaigns/:campaignId/velocity/threshold validates negative or invalid threshold', async () => {
     dbQueryMock.mockResolvedValueOnce({
-      rows: [{ creator_id: 'creator-1' }]
+      rows: [{ creator_id: 'creator-1' }],
     });
 
     const res = await request(app)

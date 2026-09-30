@@ -7,11 +7,15 @@ const request = require('supertest');
 const proxyquire = require('proxyquire').noCallThru();
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-for-contributions-embed-32';
-process.env.USDC_ISSUER = process.env.USDC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
+process.env.USDC_ISSUER =
+  process.env.USDC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 
 function buildApp({ queryImpl, verifyJwtImpl, validateDbTokenImpl }) {
   const router = proxyquire('./contributions', {
-    '../config/database': { query: queryImpl, connect: async () => ({ query: async () => {}, release: async () => {} }) },
+    '../config/database': {
+      query: queryImpl,
+      connect: async () => ({ query: async () => {}, release: async () => {} }),
+    },
     '../services/embedTokenJwtService': {
       verifyEmbedToken: verifyJwtImpl || (() => null),
     },
@@ -19,7 +23,11 @@ function buildApp({ queryImpl, verifyJwtImpl, validateDbTokenImpl }) {
       validateEmbedToken: validateDbTokenImpl || (async () => null),
     },
     '../services/contributionService': {
-      submitCustodialContribution: async () => ({ txHash: 'abc123hash', conversionQuote: null, platformFeeAmount: 0 }),
+      submitCustodialContribution: async () => ({
+        txHash: 'abc123hash',
+        conversionQuote: null,
+        platformFeeAmount: 0,
+      }),
     },
     '../services/kycService': {
       assertUserKycVerified: async () => true,
@@ -69,25 +77,29 @@ test('POST /api/contributions/embed returns 403 for mismatched campaign token', 
 });
 
 test('POST /api/contributions/embed succeeds with valid token and active campaign', async () => {
-  const queryImpl = async (sql) => {
+  const queryImpl = async sql => {
     if (sql.includes('FROM campaigns')) {
       return {
-        rows: [{
-          id: 'c-1',
-          title: 'Test Campaign',
-          asset_type: 'XLM',
-          status: 'active',
-          wallet_public_key: 'GCPK',
-          escrow_contract_id: null,
-        }],
+        rows: [
+          {
+            id: 'c-1',
+            title: 'Test Campaign',
+            asset_type: 'XLM',
+            status: 'active',
+            wallet_public_key: 'GCPK',
+            escrow_contract_id: null,
+          },
+        ],
       };
     }
     if (sql.includes('FROM users')) {
       return {
-        rows: [{
-          wallet_public_key: 'GCONTRIB',
-          wallet_secret_encrypted: 'ENC',
-        }],
+        rows: [
+          {
+            wallet_public_key: 'GCONTRIB',
+            wallet_secret_encrypted: 'ENC',
+          },
+        ],
       };
     }
     return { rows: [] };

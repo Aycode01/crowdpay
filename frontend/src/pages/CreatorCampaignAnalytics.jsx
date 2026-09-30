@@ -6,8 +6,18 @@ import { api } from '../services/api';
 import VelocityWidget from '../components/campaign/VelocityWidget';
 
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  PieChart, Pie, Cell, BarChart, Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
 } from 'recharts';
 
 const DONUT_COLORS = ['#7c3aed', '#22c55e', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899', '#14b8a6'];
@@ -116,18 +126,40 @@ export default function CreatorCampaignAnalytics() {
 
   return (
     <main className="container" style={{ paddingTop: '2rem', paddingBottom: '3rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.25rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+          marginBottom: '1.25rem',
+        }}
+      >
         <h1 style={{ fontSize: '1.6rem', fontWeight: 800 }}>
           {data?.campaign?.title || 'Campaign Analytics'}
         </h1>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <button type="button" className="btn-secondary" onClick={handleExport} disabled={exporting}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={handleExport}
+            disabled={exporting}
+          >
             {exporting ? 'Exporting…' : 'Export CSV'}
           </button>
-          <button type="button" className="btn-secondary" onClick={handleDownloadReport} disabled={downloadingPdf}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={handleDownloadReport}
+            disabled={downloadingPdf}
+          >
             {downloadingPdf ? 'Generating…' : 'Download Report'}
           </button>
-          <Link to="/dashboard/analytics" style={{ color: 'var(--color-accent)', fontWeight: 600, fontSize: '0.9rem' }}>
+          <Link
+            to="/dashboard/analytics"
+            style={{ color: 'var(--color-accent)', fontWeight: 600, fontSize: '0.9rem' }}
+          >
             ← Back to Analytics
           </Link>
         </div>
@@ -144,24 +176,57 @@ export default function CreatorCampaignAnalytics() {
 
       {data && !loading && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
-            <StatCard label="Raised" value={`${Number(data.campaign.raised_amount).toLocaleString()} ${data.campaign.asset_type}`} />
-            <StatCard label="Target" value={`${Number(data.campaign.target_amount).toLocaleString()} ${data.campaign.asset_type}`} />
-            <StatCard label="Goal %" value={`${Number(data.campaign.target_amount) > 0 ? Math.min(100, (Number(data.campaign.raised_amount) / Number(data.campaign.target_amount)) * 100).toFixed(1) : 0}%`} />
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))',
+              gap: '0.75rem',
+              marginBottom: '1.25rem',
+            }}
+          >
+            <StatCard
+              label="Raised"
+              value={`${Number(data.campaign.raised_amount).toLocaleString()} ${data.campaign.asset_type}`}
+            />
+            <StatCard
+              label="Target"
+              value={`${Number(data.campaign.target_amount).toLocaleString()} ${data.campaign.asset_type}`}
+            />
+            <StatCard
+              label="Goal %"
+              value={`${Number(data.campaign.target_amount) > 0 ? Math.min(100, (Number(data.campaign.raised_amount) / Number(data.campaign.target_amount)) * 100).toFixed(1) : 0}%`}
+            />
             <StatCard label="Contributors" value={retention?.total || 0} />
             <StatCard label="Retention Rate" value={`${retention?.retention_rate || 0}%`} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '1.25rem' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))',
+              gap: '1.25rem',
+            }}
+          >
             <div className="campaign-card">
               <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Asset Mix</h3>
               {assetMixData.length > 0 ? (
                 <div style={{ width: '100%', height: '220px' }}>
                   <ResponsiveContainer>
                     <PieChart>
-                      <Pie data={assetMixData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                      <Pie
+                        data={assetMixData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        label
+                      >
                         {assetMixData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={DONUT_COLORS[index % DONUT_COLORS.length]} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={DONUT_COLORS[index % DONUT_COLORS.length]}
+                          />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -178,7 +243,11 @@ export default function CreatorCampaignAnalytics() {
               {milestonesData.length > 0 ? (
                 <div style={{ width: '100%', height: '220px' }}>
                   <ResponsiveContainer>
-                    <BarChart data={milestonesData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                    <BarChart
+                      data={milestonesData}
+                      layout="vertical"
+                      margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis type="number" domain={[0, 100]} />
                       <YAxis dataKey="name" type="category" width={80} />

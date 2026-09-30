@@ -142,9 +142,7 @@ export default function AttestationsPanel({ attestations = [], onStartKyc }) {
               }}
             >
               {/* Icon */}
-              <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>
-                {isActive ? '✅' : '🔲'}
-              </span>
+              <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>{isActive ? '✅' : '🔲'}</span>
 
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>

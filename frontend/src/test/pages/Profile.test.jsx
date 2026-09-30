@@ -45,7 +45,9 @@ describe('Profile page', () => {
 
     expect(await screen.findByRole('heading', { name: /Your Profile/i })).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText(/Display name/i), { target: { value: 'Alice Updated' } });
+    fireEvent.change(screen.getByLabelText(/Display name/i), {
+      target: { value: 'Alice Updated' },
+    });
     const form = screen.getByRole('button', { name: /Save changes/i }).closest('form');
     fireEvent.submit(form);
 

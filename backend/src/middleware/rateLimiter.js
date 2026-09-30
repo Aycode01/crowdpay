@@ -15,7 +15,7 @@ const impactStatsLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
-  keyGenerator: (req) => ipKeyGenerator(req.ip),
+  keyGenerator: req => ipKeyGenerator(req.ip),
 });
 
 module.exports = {

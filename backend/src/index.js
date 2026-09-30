@@ -21,8 +21,8 @@ if (process.env.NODE_ENV !== 'test') {
 function buildCorsOrigin() {
   const raw = [process.env.FRONTEND_URL, process.env.CORS_ALLOWED_ORIGINS]
     .filter(Boolean)
-    .flatMap((v) => String(v).split(','))
-    .map((v) => v.trim())
+    .flatMap(v => String(v).split(','))
+    .map(v => v.trim())
     .filter(Boolean);
   if (raw.length === 0) {
     return process.env.NODE_ENV === 'production' ? [] : true;

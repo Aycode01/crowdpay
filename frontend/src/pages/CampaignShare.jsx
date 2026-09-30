@@ -26,8 +26,14 @@ export default function CampaignShare() {
 
   useEffect(() => {
     if (!id) return;
-    api.getCampaign(id).then(setCampaign).catch(() => setCampaign(null));
-    api.getReferralProgram(id).then(setProgram).catch(() => setProgram(null));
+    api
+      .getCampaign(id)
+      .then(setCampaign)
+      .catch(() => setCampaign(null));
+    api
+      .getReferralProgram(id)
+      .then(setProgram)
+      .catch(() => setProgram(null));
   }, [id]);
 
   const claimLink = useCallback(async () => {
@@ -78,7 +84,8 @@ export default function CampaignShare() {
           {user ? (
             <>
               <p style={{ marginTop: 0 }}>
-                Claim your personal referral link to earn commission on the contributions you bring in.
+                Claim your personal referral link to earn commission on the contributions you bring
+                in.
               </p>
               <button type="button" className="btn-primary" onClick={claimLink} disabled={claiming}>
                 {claiming ? 'Creating…' : 'Get my referral link'}
@@ -94,14 +101,22 @@ export default function CampaignShare() {
 
       {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
 
-      <div className="campaign-card" style={{ display: 'grid', gap: '0.75rem', marginBottom: '1.25rem' }}>
+      <div
+        className="campaign-card"
+        style={{ display: 'grid', gap: '0.75rem', marginBottom: '1.25rem' }}
+      >
         <strong>{link ? 'Your referral link' : 'Campaign link'}</strong>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <input
             readOnly
             value={shareUrl}
             aria-label="Share URL"
-            style={{ flex: '1 1 20rem', padding: '0.45rem 0.6rem', fontFamily: 'monospace', fontSize: '0.82rem' }}
+            style={{
+              flex: '1 1 20rem',
+              padding: '0.45rem 0.6rem',
+              fontFamily: 'monospace',
+              fontSize: '0.82rem',
+            }}
           />
           <button type="button" className="btn-secondary" onClick={() => copy(shareUrl, 'url')}>
             {copied === 'url' ? 'Copied!' : 'Copy link'}
@@ -109,22 +124,37 @@ export default function CampaignShare() {
         </div>
       </div>
 
-      <div className="campaign-card" style={{ display: 'grid', gap: '0.75rem', marginBottom: '1.25rem' }}>
+      <div
+        className="campaign-card"
+        style={{ display: 'grid', gap: '0.75rem', marginBottom: '1.25rem' }}
+      >
         <strong>Get Embed Code</strong>
         <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
           Embed a real-time contribution progress widget on your website or blog.
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <label style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+          <label
+            style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+          >
             Theme:
-            <select value={embedTheme} onChange={(e) => setEmbedTheme(e.target.value)} style={{ padding: '0.2rem' }}>
+            <select
+              value={embedTheme}
+              onChange={(e) => setEmbedTheme(e.target.value)}
+              style={{ padding: '0.2rem' }}
+            >
               <option value="light">Light</option>
               <option value="dark">Dark</option>
             </select>
           </label>
-          <label style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+          <label
+            style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+          >
             Size:
-            <select value={embedSize} onChange={(e) => setEmbedSize(e.target.value)} style={{ padding: '0.2rem' }}>
+            <select
+              value={embedSize}
+              onChange={(e) => setEmbedSize(e.target.value)}
+              style={{ padding: '0.2rem' }}
+            >
               <option value="small">Small</option>
               <option value="medium">Medium</option>
               <option value="large">Large</option>
@@ -137,9 +167,18 @@ export default function CampaignShare() {
             rows={3}
             value={embedScript}
             aria-label="Embed Code"
-            style={{ flex: '1 1 20rem', padding: '0.45rem 0.6rem', fontFamily: 'monospace', fontSize: '0.78rem' }}
+            style={{
+              flex: '1 1 20rem',
+              padding: '0.45rem 0.6rem',
+              fontFamily: 'monospace',
+              fontSize: '0.78rem',
+            }}
           />
-          <button type="button" className="btn-secondary" onClick={() => copy(embedScript, 'embed')}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => copy(embedScript, 'embed')}
+          >
             {copied === 'embed' ? 'Copied!' : 'Copy embed code'}
           </button>
         </div>

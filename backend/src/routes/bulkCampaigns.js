@@ -15,7 +15,7 @@ const {
 const bulkImportLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
-  keyGenerator: (req) => req.user?.userId || ipKeyGenerator(req),
+  keyGenerator: req => req.user?.userId || ipKeyGenerator(req),
   message: { error: 'Too many bulk import requests. Please try again later.' },
 });
 
@@ -56,7 +56,9 @@ router.post(
       const report = validateAllRows(req.body.rows);
       return res.json(report);
     } else {
-      return res.status(400).json({ error: 'Please provide CSV content in the request body or rows array' });
+      return res
+        .status(400)
+        .json({ error: 'Please provide CSV content in the request body or rows array' });
     }
 
     const rows = parseCsv(csvContent);
@@ -98,7 +100,9 @@ router.post(
     } else if (req.body && typeof req.body.csv === 'string') {
       csvContent = req.body.csv;
     } else {
-      return res.status(400).json({ error: 'Please provide CSV content string in req.body or req.body.csv' });
+      return res
+        .status(400)
+        .json({ error: 'Please provide CSV content string in req.body or req.body.csv' });
     }
 
     const job = await createImportJob({

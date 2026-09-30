@@ -17,7 +17,8 @@ process.env.STELLAR_NETWORK = 'testnet';
 process.env.STELLAR_HORIZON_URL = 'https://horizon-testnet.stellar.org';
 process.env.PLATFORM_SECRET_KEY = 'SCVMQUS5EMTHWBLJTE5XCSCMHB2ZOVKRR4ATVTRPUNRCOGKRENIL3LHR';
 process.env.ARBITRATOR_SECRET_KEY = 'SD5R3ADP7AC37OAYWYG73266DR2MBR6IJGXBLLAGCOWMTHLMPFAJMWPM';
-process.env.WALLET_ENCRYPTION_KEY = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+process.env.WALLET_ENCRYPTION_KEY =
+  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 process.env.WALLET_SECRET_LOCAL_KEK = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 process.env.OPS_API_KEY = 'test-ops-key';
 process.env.UNSUBSCRIBE_SECRET = 'test-unsubscribe-secret';
@@ -84,10 +85,11 @@ describe('API Keys Routes', () => {
   // ── GET /api/users/api-keys ─────────────────────────────────────────────
   describe('GET /api/users/api-keys', () => {
     it('returns list of API keys without secrets', async () => {
-      mockListApiKeysForUser = () => Promise.resolve([
-        { id: 'key-1', label: 'Test Key', scopes: ['read'], created_at: new Date() },
-        { id: 'key-2', label: 'Another Key', scopes: ['read', 'write'], created_at: new Date() },
-      ]);
+      mockListApiKeysForUser = () =>
+        Promise.resolve([
+          { id: 'key-1', label: 'Test Key', scopes: ['read'], created_at: new Date() },
+          { id: 'key-2', label: 'Another Key', scopes: ['read', 'write'], created_at: new Date() },
+        ]);
 
       const res = await agent.get('/api/users/api-keys');
       assert.equal(res.status, 200);
@@ -198,7 +200,7 @@ describe('API Keys Routes', () => {
       const secret = 'cp_live_testsecret123';
       const pepper = 'test-pepper';
       const hash = bcrypt.hashSync(secret + pepper, 12);
-      
+
       assert.ok(bcrypt.compareSync(secret + pepper, hash));
       assert.ok(!bcrypt.compareSync('wrong' + pepper, hash));
     });
@@ -207,14 +209,14 @@ describe('API Keys Routes', () => {
       const secret = 'cp_live_testsecret123';
       const pepper = 'test-pepper';
       const hash = bcrypt.hashSync(secret + pepper, 12);
-      
+
       assert.ok(!bcrypt.compareSync(secret + 'wrong-pepper', hash));
     });
 
     it('rejects malformed key', () => {
       const pepper = 'test-pepper';
       const hash = bcrypt.hashSync('cp_live_validsecret' + pepper, 12);
-      
+
       assert.ok(!bcrypt.compareSync('' + pepper, hash));
       assert.ok(!bcrypt.compareSync('random-string' + pepper, hash));
     });

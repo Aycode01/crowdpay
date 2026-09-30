@@ -41,13 +41,21 @@ export default function ThankYouModal({ campaignId, contribution, onClose, onSen
         <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem' }}>
           {isBulk ? t('thankYou.bulkTitle') : t('thankYou.individualTitle')}
         </h2>
-        <p style={{ margin: '0 0 1rem', color: 'var(--color-text-secondary)', fontSize: '0.88rem' }}>
+        <p
+          style={{ margin: '0 0 1rem', color: 'var(--color-text-secondary)', fontSize: '0.88rem' }}
+        >
           {isBulk
             ? t('thankYou.bulkDescription')
-            : t('thankYou.individualDescription', { name: contribution.display_name || 'contributor' })}
+            : t('thankYou.individualDescription', {
+                name: contribution.display_name || 'contributor',
+              })}
         </p>
 
-        {error && <p className="alert alert--error" style={{ marginBottom: '0.75rem' }}>{error}</p>}
+        {error && (
+          <p className="alert alert--error" style={{ marginBottom: '0.75rem' }}>
+            {error}
+          </p>
+        )}
 
         <form onSubmit={handleSubmit}>
           <textarea

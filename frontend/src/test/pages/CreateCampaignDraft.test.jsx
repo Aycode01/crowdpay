@@ -23,7 +23,9 @@ const apiMocks = vi.hoisted(() => ({
   createCampaign: vi.fn().mockResolvedValue({ id: 'new-campaign' }),
   uploadCampaignCoverImage: vi.fn().mockResolvedValue({}),
   getMyCampaignDraft: vi.fn().mockResolvedValue(null),
-  saveCampaignDraft: vi.fn().mockResolvedValue({ id: 'draft-1', saved_at: new Date().toISOString() }),
+  saveCampaignDraft: vi
+    .fn()
+    .mockResolvedValue({ id: 'draft-1', saved_at: new Date().toISOString() }),
   deleteCampaignDraft: vi.fn().mockResolvedValue({}),
 }));
 

@@ -17,8 +17,21 @@ const WALLET = {
   },
 };
 
-function buildApp({ userId = 'user-1', isAdmin = false, wallet = WALLET.custodial, governanceImpl = {}, sorobanImpl = {}, syncRunsImpl = {} } = {}) {
-  const calls = { createProposal: [], voteOnProposal: [], executeProposal: [], createProposalFromSignedXdr: [], voteFromSignedXdr: [] };
+function buildApp({
+  userId = 'user-1',
+  isAdmin = false,
+  wallet = WALLET.custodial,
+  governanceImpl = {},
+  sorobanImpl = {},
+  syncRunsImpl = {},
+} = {}) {
+  const calls = {
+    createProposal: [],
+    voteOnProposal: [],
+    executeProposal: [],
+    createProposalFromSignedXdr: [],
+    voteFromSignedXdr: [],
+  };
 
   const governanceStub = {
     getAllProposals: async () => [],
@@ -33,7 +46,7 @@ function buildApp({ userId = 'user-1', isAdmin = false, wallet = WALLET.custodia
       return { id: 'db-proposal-1', stellar_proposal_id: 42, status: 'active' };
     },
     buildUnsignedProposal: async () => 'UNSIGNED_PROPOSE_XDR',
-    createProposalFromSignedXdr: async (args) => {
+    createProposalFromSignedXdr: async args => {
       calls.createProposalFromSignedXdr.push(args);
       return { id: 'db-proposal-1', stellar_proposal_id: 42, status: 'active' };
     },
@@ -42,9 +55,14 @@ function buildApp({ userId = 'user-1', isAdmin = false, wallet = WALLET.custodia
       return { proposal_id: args[0], voter: args[1], in_favor: args[2], token_balance: 5000 };
     },
     buildUnsignedVote: async () => 'UNSIGNED_VOTE_XDR',
-    voteFromSignedXdr: async (args) => {
+    voteFromSignedXdr: async args => {
       calls.voteFromSignedXdr.push(args);
-      return { proposal_id: args.proposalId, voter: args.voterPublicKey, in_favor: args.inFavor, token_balance: 5000 };
+      return {
+        proposal_id: args.proposalId,
+        voter: args.voterPublicKey,
+        in_favor: args.inFavor,
+        token_balance: 5000,
+      };
     },
     executeProposal: async (...args) => {
       calls.executeProposal.push(args);
@@ -85,7 +103,10 @@ function buildApp({ userId = 'user-1', isAdmin = false, wallet = WALLET.custodia
       },
     },
     '../services/governanceSyncRuns': {
-      runGovernanceSync: async () => ({ run: { id: 'run-1', status: 'succeeded' }, deduplicated: false }),
+      runGovernanceSync: async () => ({
+        run: { id: 'run-1', status: 'succeeded' },
+        deduplicated: false,
+      }),
       listRuns: async () => ({ data: [], total: 0, limit: 20, offset: 0 }),
       getRun: async () => null,
       retryRun: async () => ({ run: null, deduplicated: false }),
@@ -105,12 +126,17 @@ test('POST /api/governance/proposals (custodial) creates a proposal without any 
 
   const res = await request(app)
     .post('/api/governance/proposals')
-    .send({ new_fee_bps: 300, new_creator_share_bps: 500, rationale_text: 'Reduce fees for creators' });
+    .send({
+      new_fee_bps: 300,
+      new_creator_share_bps: 500,
+      rationale_text: 'Reduce fees for creators',
+    });
 
   assert.equal(res.status, 201);
   assert.equal(res.body.success, true);
   assert.equal(calls.createProposal.length, 1);
-  const [proposerPublicKey, newFeeBps, newCreatorShareBps, rationaleText, signerSecret] = calls.createProposal[0];
+  const [proposerPublicKey, newFeeBps, newCreatorShareBps, rationaleText, signerSecret] =
+    calls.createProposal[0];
   assert.equal(proposerPublicKey, WALLET.custodial.wallet_public_key);
   assert.equal(newFeeBps, 300);
   assert.equal(newCreatorShareBps, 500);
@@ -123,14 +149,12 @@ test('POST /api/governance/proposals (custodial) creates a proposal without any 
 test('POST /api/governance/proposals ignores a client-supplied signer_secret entirely', async () => {
   const { app, calls } = buildApp({ wallet: WALLET.custodial });
 
-  await request(app)
-    .post('/api/governance/proposals')
-    .send({
-      new_fee_bps: 300,
-      new_creator_share_bps: 500,
-      rationale_text: 'Reduce fees for creators',
-      signer_secret: 'SATTACKERSUPPLIEDSECRET',
-    });
+  await request(app).post('/api/governance/proposals').send({
+    new_fee_bps: 300,
+    new_creator_share_bps: 500,
+    rationale_text: 'Reduce fees for creators',
+    signer_secret: 'SATTACKERSUPPLIEDSECRET',
+  });
 
   const [, , , , signerSecret] = calls.createProposal[0];
   assert.notEqual(signerSecret, 'SATTACKERSUPPLIEDSECRET');
@@ -142,7 +166,11 @@ test('POST /api/governance/proposals (freighter) returns an unsigned XDR and pre
 
   const res = await request(app)
     .post('/api/governance/proposals')
-    .send({ new_fee_bps: 300, new_creator_share_bps: 500, rationale_text: 'Reduce fees for creators' });
+    .send({
+      new_fee_bps: 300,
+      new_creator_share_bps: 500,
+      rationale_text: 'Reduce fees for creators',
+    });
 
   assert.equal(res.status, 200);
   assert.equal(res.body.mode, 'prepare');
@@ -156,7 +184,11 @@ test('POST /api/governance/proposals/submit-signed finalizes with the prepare to
 
   const prepareRes = await request(app)
     .post('/api/governance/proposals')
-    .send({ new_fee_bps: 300, new_creator_share_bps: 500, rationale_text: 'Reduce fees for creators' });
+    .send({
+      new_fee_bps: 300,
+      new_creator_share_bps: 500,
+      rationale_text: 'Reduce fees for creators',
+    });
 
   const submitRes = await request(app)
     .post('/api/governance/proposals/submit-signed')
@@ -185,7 +217,11 @@ test('POST /api/governance/proposals/submit-signed rejects a cross-wallet or tam
 
   const prepareRes = await request(app)
     .post('/api/governance/proposals')
-    .send({ new_fee_bps: 300, new_creator_share_bps: 500, rationale_text: 'Reduce fees for creators' });
+    .send({
+      new_fee_bps: 300,
+      new_creator_share_bps: 500,
+      rationale_text: 'Reduce fees for creators',
+    });
 
   const submitRes = await request(app)
     .post('/api/governance/proposals/submit-signed')
@@ -285,7 +321,9 @@ test('POST /api/governance/proposals/:id/execute surfaces a deadline/status erro
     },
   });
 
-  const res = await request(app).post('/api/governance/proposals/11111111-1111-4111-8111-111111111111/execute').send({});
+  const res = await request(app)
+    .post('/api/governance/proposals/11111111-1111-4111-8111-111111111111/execute')
+    .send({});
   assert.equal(res.status, 400);
   assert.match(res.body.error, /deadline has not passed/);
 });
@@ -308,9 +346,12 @@ test('POST /api/governance/sync records a manual run for the operator', async ()
     isAdmin: true,
     userId: 'admin-1',
     syncRunsImpl: {
-      runGovernanceSync: async (args) => {
+      runGovernanceSync: async args => {
         received = args;
-        return { run: { id: RUN_ID, trigger: 'manual', status: 'succeeded', proposals_updated: 1 }, deduplicated: false };
+        return {
+          run: { id: RUN_ID, trigger: 'manual', status: 'succeeded', proposals_updated: 1 },
+          deduplicated: false,
+        };
       },
     },
   });
@@ -328,7 +369,12 @@ test('POST /api/governance/sync reports a failed run with 502 and its safe error
     isAdmin: true,
     syncRunsImpl: {
       runGovernanceSync: async () => ({
-        run: { id: RUN_ID, status: 'failed', error_code: 'PROVIDER_ERROR', error_message: 'rpc timeout' },
+        run: {
+          id: RUN_ID,
+          status: 'failed',
+          error_code: 'PROVIDER_ERROR',
+          error_message: 'rpc timeout',
+        },
         deduplicated: false,
       }),
     },
@@ -343,7 +389,10 @@ test('POST /api/governance/sync deduplicates a trigger while a run is in flight'
   const { app } = buildApp({
     isAdmin: true,
     syncRunsImpl: {
-      runGovernanceSync: async () => ({ run: { id: RUN_ID, status: 'running' }, deduplicated: true }),
+      runGovernanceSync: async () => ({
+        run: { id: RUN_ID, status: 'running' },
+        deduplicated: true,
+      }),
     },
   });
 
@@ -357,14 +406,16 @@ test('GET /api/governance/sync/runs bounds pagination and forwards filters', asy
   const { app } = buildApp({
     isAdmin: true,
     syncRunsImpl: {
-      listRuns: async (args) => {
+      listRuns: async args => {
         received = args;
         return { data: [], total: 0, limit: args.limit, offset: args.offset };
       },
     },
   });
 
-  await request(app).get('/api/governance/sync/runs?status=failed&trigger=manual&limit=5000&offset=40').expect(200);
+  await request(app)
+    .get('/api/governance/sync/runs?status=failed&trigger=manual&limit=5000&offset=40')
+    .expect(200);
   assert.deepEqual(received, { status: 'failed', trigger: 'manual', limit: 100, offset: 40 });
 });
 
@@ -388,12 +439,14 @@ test('GET /api/governance/sync/runs/:id returns the run detail or 404', async ()
   const { app } = buildApp({
     isAdmin: true,
     syncRunsImpl: {
-      getRun: async (id) => (id === RUN_ID ? { id: RUN_ID, status: 'failed', retries: [] } : null),
+      getRun: async id => (id === RUN_ID ? { id: RUN_ID, status: 'failed', retries: [] } : null),
     },
   });
   const ok = await request(app).get(`/api/governance/sync/runs/${RUN_ID}`).expect(200);
   assert.deepEqual(ok.body.retries, []);
-  await request(app).get('/api/governance/sync/runs/55555555-5555-4555-8555-555555555555').expect(404);
+  await request(app)
+    .get('/api/governance/sync/runs/55555555-5555-4555-8555-555555555555')
+    .expect(404);
   await request(app).get('/api/governance/sync/runs/not-a-uuid').expect(400);
 });
 
@@ -402,7 +455,7 @@ test('POST /api/governance/sync/runs/:id/retry creates a linked run, and repeats
   const { app } = buildApp({
     isAdmin: true,
     syncRunsImpl: {
-      retryRun: async (id) => {
+      retryRun: async id => {
         calls += 1;
         return {
           run: { id: 'retry-run', trigger: 'retry', retry_of_run_id: id, status: 'succeeded' },

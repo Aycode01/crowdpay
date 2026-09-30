@@ -44,7 +44,7 @@ export default function VelocityWidget({ campaignId }) {
     setSavingThreshold(true);
     try {
       const res = await api.updateVelocityThreshold(campaignId, Number(thresholdInput));
-      setData(prev => ({
+      setData((prev) => ({
         ...prev,
         alerts: {
           ...prev.alerts,
@@ -60,7 +60,12 @@ export default function VelocityWidget({ campaignId }) {
   };
 
   if (loading && !data) return <div className="campaign-card">Loading velocity widget…</div>;
-  if (error && !data) return <div className="campaign-card" style={{ color: 'var(--color-danger)' }}>{error}</div>;
+  if (error && !data)
+    return (
+      <div className="campaign-card" style={{ color: 'var(--color-danger)' }}>
+        {error}
+      </div>
+    );
 
   const velocity = data?.velocity || {};
   const projected = data?.projected_completion_date;
@@ -71,40 +76,101 @@ export default function VelocityWidget({ campaignId }) {
 
   return (
     <div className="campaign-card" style={{ display: 'grid', gap: '1rem', padding: '1.25rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+        }}
+      >
         <h3 style={{ margin: 0, fontSize: '1.15rem' }}>Contribution Velocity & Funding Pace</h3>
-        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-hint)' }}>Refreshes every 5m</span>
+        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-hint)' }}>
+          Refreshes every 5m
+        </span>
       </div>
 
       {alerts.is_below_threshold && (
-        <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--color-danger)', padding: '0.75rem', borderRadius: '6px', color: 'var(--color-danger)', fontSize: '0.85rem' }}>
-          ⚠️ <strong>Velocity Alert:</strong> Current hourly velocity ({velocity.amount_per_hour}/hr) has dropped below your configured threshold ({alerts.threshold}/hr).
+        <div
+          style={{
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid var(--color-danger)',
+            padding: '0.75rem',
+            borderRadius: '6px',
+            color: 'var(--color-danger)',
+            fontSize: '0.85rem',
+          }}
+        >
+          ⚠️ <strong>Velocity Alert:</strong> Current hourly velocity ({velocity.amount_per_hour}
+          /hr) has dropped below your configured threshold ({alerts.threshold}/hr).
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
-        <div style={{ background: 'var(--color-bg-subtle)', padding: '0.75rem', borderRadius: '6px' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-hint)' }}>Velocity (Hourly)</div>
-          <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{velocity.amount_per_hour || 0} /hr</div>
-        </div>
-        <div style={{ background: 'var(--color-bg-subtle)', padding: '0.75rem', borderRadius: '6px' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-hint)' }}>Velocity (Daily)</div>
-          <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{velocity.amount_per_day || 0} /day</div>
-        </div>
-        <div style={{ background: 'var(--color-bg-subtle)', padding: '0.75rem', borderRadius: '6px' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-hint)' }}>Projected Completion</div>
-          <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>
-            {projected ? new Date(projected).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+          gap: '0.75rem',
+        }}
+      >
+        <div
+          style={{ background: 'var(--color-bg-subtle)', padding: '0.75rem', borderRadius: '6px' }}
+        >
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-hint)' }}>
+            Velocity (Hourly)
+          </div>
+          <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+            {velocity.amount_per_hour || 0} /hr
           </div>
         </div>
-        <div style={{ background: 'var(--color-bg-subtle)', padding: '0.75rem', borderRadius: '6px' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-hint)' }}>Category Avg (Weekly)</div>
-          <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{comparison.category_avg_weekly || 0}</div>
+        <div
+          style={{ background: 'var(--color-bg-subtle)', padding: '0.75rem', borderRadius: '6px' }}
+        >
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-hint)' }}>
+            Velocity (Daily)
+          </div>
+          <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+            {velocity.amount_per_day || 0} /day
+          </div>
+        </div>
+        <div
+          style={{ background: 'var(--color-bg-subtle)', padding: '0.75rem', borderRadius: '6px' }}
+        >
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-hint)' }}>
+            Projected Completion
+          </div>
+          <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>
+            {projected
+              ? new Date(projected).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })
+              : 'N/A'}
+          </div>
+        </div>
+        <div
+          style={{ background: 'var(--color-bg-subtle)', padding: '0.75rem', borderRadius: '6px' }}
+        >
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-hint)' }}>
+            Category Avg (Weekly)
+          </div>
+          <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+            {comparison.category_avg_weekly || 0}
+          </div>
         </div>
       </div>
 
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '0.5rem',
+          }}
+        >
           <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Velocity Trend</span>
           <div style={{ display: 'flex', gap: '0.25rem' }}>
             <button
@@ -138,7 +204,18 @@ export default function VelocityWidget({ campaignId }) {
         </div>
       </div>
 
-      <form onSubmit={handleSaveThreshold} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.5rem', borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem' }}>
+      <form
+        onSubmit={handleSaveThreshold}
+        style={{
+          display: 'flex',
+          gap: '0.5rem',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          marginTop: '0.5rem',
+          borderTop: '1px solid var(--color-border)',
+          paddingTop: '0.75rem',
+        }}
+      >
         <label htmlFor="velocity-threshold" style={{ fontSize: '0.8rem', flex: '1 1 180px' }}>
           Alert when hourly velocity drops below:
         </label>
@@ -151,7 +228,12 @@ export default function VelocityWidget({ campaignId }) {
           onChange={(e) => setThresholdInput(e.target.value)}
           style={{ width: '100px', padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
         />
-        <button type="submit" className="btn-secondary" disabled={savingThreshold} style={{ padding: '0.3rem 0.75rem', fontSize: '0.8rem' }}>
+        <button
+          type="submit"
+          className="btn-secondary"
+          disabled={savingThreshold}
+          style={{ padding: '0.3rem 0.75rem', fontSize: '0.8rem' }}
+        >
           {savingThreshold ? 'Saving…' : 'Set Alert'}
         </button>
       </form>

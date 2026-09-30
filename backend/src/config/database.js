@@ -2,9 +2,7 @@ const { Pool } = require('pg');
 const logger = require('./logger');
 
 if (!process.env.DATABASE_URL && process.env.NODE_ENV !== 'test') {
-  throw new Error(
-    'DATABASE_URL environment variable is required. Set it in your .env file.'
-  );
+  throw new Error('DATABASE_URL environment variable is required. Set it in your .env file.');
 }
 
 /**
@@ -55,12 +53,20 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: POOL_MAX,
   idleTimeoutMillis: parsePositiveInt('DB_IDLE_TIMEOUT_MS', process.env.DB_IDLE_TIMEOUT_MS, 30000),
-  connectionTimeoutMillis: parsePositiveInt('DB_CONNECTION_TIMEOUT_MS', process.env.DB_CONNECTION_TIMEOUT_MS, 5000),
+  connectionTimeoutMillis: parsePositiveInt(
+    'DB_CONNECTION_TIMEOUT_MS',
+    process.env.DB_CONNECTION_TIMEOUT_MS,
+    5000
+  ),
 });
 
-const WAITING_THRESHOLD = parseNonNegativeInt('DB_POOL_WAITING_THRESHOLD', process.env.DB_POOL_WAITING_THRESHOLD, 5);
+const WAITING_THRESHOLD = parseNonNegativeInt(
+  'DB_POOL_WAITING_THRESHOLD',
+  process.env.DB_POOL_WAITING_THRESHOLD,
+  5
+);
 
-pool.on('error', (err) => {
+pool.on('error', err => {
   logger.error('Unexpected database pool error', { error: err.message });
 });
 

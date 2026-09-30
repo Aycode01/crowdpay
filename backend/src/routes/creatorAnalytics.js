@@ -1,7 +1,10 @@
 const router = require('express').Router();
 const { requireAuth } = require('../middleware/auth');
 const asyncHandler = require('../utils/asyncHandler');
-const { getCampaignVelocity, updateCampaignVelocityAlertThreshold } = require('../services/velocityService');
+const {
+  getCampaignVelocity,
+  updateCampaignVelocityAlertThreshold,
+} = require('../services/velocityService');
 const db = require('../config/database');
 
 async function requireCampaignCreatorOrMember(req, res, next) {

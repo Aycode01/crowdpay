@@ -23,7 +23,10 @@ export default function ModalAccessibilityManager() {
       dialogs.forEach((dialog) => {
         if (!previousFocus.has(dialog)) {
           const active = document.activeElement;
-          previousFocus.set(dialog, active instanceof HTMLElement && !dialog.contains(active) ? active : null);
+          previousFocus.set(
+            dialog,
+            active instanceof HTMLElement && !dialog.contains(active) ? active : null
+          );
         }
       });
 
@@ -42,7 +45,7 @@ export default function ModalAccessibilityManager() {
 
       if (event.key === 'Escape') {
         const closeButton = dialog.querySelector(
-          'button[aria-label*="close" i], [data-modal-close="true"]',
+          'button[aria-label*="close" i], [data-modal-close="true"]'
         );
         if (closeButton instanceof HTMLElement) {
           event.preventDefault();
@@ -53,7 +56,7 @@ export default function ModalAccessibilityManager() {
 
       if (event.key !== 'Tab') return;
       const focusable = [...dialog.querySelectorAll(FOCUSABLE)].filter(
-        (element) => element instanceof HTMLElement && element.offsetParent !== null,
+        (element) => element instanceof HTMLElement && element.offsetParent !== null
       );
       if (focusable.length === 0) {
         event.preventDefault();

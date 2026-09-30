@@ -72,7 +72,7 @@ function canonicalize(value) {
   }
   if (value && typeof value === 'object') {
     const keys = Object.keys(value).sort();
-    return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalize(value[key])}`).join(',')}}`;
+    return `{${keys.map(key => `${JSON.stringify(key)}:${canonicalize(value[key])}`).join(',')}}`;
   }
   return JSON.stringify(value);
 }
@@ -228,7 +228,10 @@ async function authenticateEmbedToken(req, res, next) {
   }
 
   const activeToken = rows[0];
-  db.query(`UPDATE embed_tokens SET last_used_at = NOW(), use_count = use_count + 1 WHERE id = $1`, [activeToken.id]).catch(() => {});
+  db.query(
+    `UPDATE embed_tokens SET last_used_at = NOW(), use_count = use_count + 1 WHERE id = $1`,
+    [activeToken.id]
+  ).catch(() => {});
 
   req.embedPayload = payload;
   req.embedTokenRow = activeToken;
@@ -315,7 +318,8 @@ router.get(
 
     const goal = Number(campaign.target_amount) || 0;
     const totalRaised = Number(campaign.raised_amount) || 0;
-    const percentFunded = goal > 0 ? Math.min(100, Math.round((totalRaised / goal) * 1000) / 10) : 0;
+    const percentFunded =
+      goal > 0 ? Math.min(100, Math.round((totalRaised / goal) * 1000) / 10) : 0;
 
     const { rows: milestoneRows } = await db.query(
       `SELECT
@@ -335,7 +339,8 @@ router.get(
 
     const milestoneTotal = milestoneRows[0]?.total || 0;
     const milestoneCompleted = milestoneRows[0]?.completed || 0;
-    const milestonePercent = milestoneTotal > 0 ? Math.round((milestoneCompleted / milestoneTotal) * 100) : 0;
+    const milestonePercent =
+      milestoneTotal > 0 ? Math.round((milestoneCompleted / milestoneTotal) * 100) : 0;
 
     // Strict schema check: returns zero internal fields (no wallet keys, no email, no IDs)
     res.json({
@@ -529,7 +534,10 @@ router.post(
 
     // ── Fail closed: no simulated funding outside explicit allow (#813) ───────
     if (!isEmbedSimulationAllowed()) {
-      const frontendBase = (process.env.FRONTEND_URL || process.env.APP_BASE_URL || '').replace(/\/$/, '');
+      const frontendBase = (process.env.FRONTEND_URL || process.env.APP_BASE_URL || '').replace(
+        /\/$/,
+        ''
+      );
       const contributionUrl = frontendBase
         ? `${frontendBase}/campaigns/${campaignId}`
         : `/campaigns/${campaignId}`;
@@ -593,44 +601,42 @@ router.post(
  * GET /embed/widget.html (or GET /widget.html)
  * Serves iframe widget HTML response with CSP headers.
  */
-router.get(
-  ['/widget.html', '/widget'],
-  (req, res) => {
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Content-Security-Policy', buildEmbedCsp());
-    res.removeHeader('X-Frame-Options');
+router.get(['/widget.html', '/widget'], (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Content-Security-Policy', buildEmbedCsp());
+  res.removeHeader('X-Frame-Options');
 
-    const widgetPath = path.join(__dirname, '../../../frontend/public/embed/widget.html');
-    if (fs.existsSync(widgetPath)) {
-      return res.sendFile(widgetPath, {
-        headers: {
-          'Content-Security-Policy': buildEmbedCsp(),
-        },
-      });
-    }
-
-    res.send(`<!DOCTYPE html><html><head><title>CrowdPay Widget</title></head><body>Embed Widget</body></html>`);
+  const widgetPath = path.join(__dirname, '../../../frontend/public/embed/widget.html');
+  if (fs.existsSync(widgetPath)) {
+    return res.sendFile(widgetPath, {
+      headers: {
+        'Content-Security-Policy': buildEmbedCsp(),
+      },
+    });
   }
-);
+
+  res.send(
+    `<!DOCTYPE html><html><head><title>CrowdPay Widget</title></head><body>Embed Widget</body></html>`
+  );
+});
 
 /**
  * GET /embed/widget.js (or /widget.js)
  * Serves the script-tag embed loader for the milestone progress bar widget.
  */
-router.get(
-  ['/widget.js', '/embed/widget.js'],
-  (req, res) => {
-    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+router.get(['/widget.js', '/embed/widget.js'], (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.setHeader('Access-Control-Allow-Origin', '*');
 
-    const widgetScriptPath = path.join(__dirname, '../../../frontend/public/embed/widget.js');
-    if (fs.existsSync(widgetScriptPath)) {
-      return res.sendFile(widgetScriptPath);
-    }
-
-    res.send(`(function(){var s=document.currentScript,u=new URL(s.src);u.pathname='/widget.html';var i=document.createElement('iframe');i.src=u.toString();i.style.width='100%';i.style.border='0';i.style.overflow='hidden';s.parentNode.insertBefore(i,s);setInterval(function(){u.searchParams.set('_t',Date.now());i.src=u.toString();},60000);})();`);
+  const widgetScriptPath = path.join(__dirname, '../../../frontend/public/embed/widget.js');
+  if (fs.existsSync(widgetScriptPath)) {
+    return res.sendFile(widgetScriptPath);
   }
-);
+
+  res.send(
+    `(function(){var s=document.currentScript,u=new URL(s.src);u.pathname='/widget.html';var i=document.createElement('iframe');i.src=u.toString();i.style.width='100%';i.style.border='0';i.style.overflow='hidden';s.parentNode.insertBefore(i,s);setInterval(function(){u.searchParams.set('_t',Date.now());i.src=u.toString();},60000);})();`
+  );
+});
 
 // Backwards compatibility for discovery widget
 router.get(
@@ -645,13 +651,14 @@ router.get(
     const trending = await getTrendingCampaigns({ limit: 50 });
     const siteBaseUrl = (process.env.PUBLIC_SITE_URL || 'https://crowdpay.com').replace(/\/+$/, '');
 
-    const campaigns = trending.slice(0, limit).map((c) => ({
+    const campaigns = trending.slice(0, limit).map(c => ({
       id: c.id,
       title: c.title,
       description_truncated: truncateDescription(c.description),
       goalAmountUsd: Number(c.target_amount) || 0,
       totalRaisedUsd: Number(c.raised_amount) || 0,
-      percentFunded: c.target_amount > 0 ? Math.round((c.raised_amount / c.target_amount) * 100) : 0,
+      percentFunded:
+        c.target_amount > 0 ? Math.round((c.raised_amount / c.target_amount) * 100) : 0,
       asset: c.asset_type,
       status: c.status,
       shareUrl: `${siteBaseUrl}/campaigns/${c.id}`,

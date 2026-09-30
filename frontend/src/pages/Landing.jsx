@@ -7,7 +7,17 @@ import CampaignCard from '../components/CampaignCard';
 
 function Icon({ children }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       {children}
     </svg>
   );
@@ -18,19 +28,35 @@ const TRUST_STEPS = [
     number: '01',
     titleKey: 'landing.trust_verified',
     bodyKey: 'landing.trust_verified_body',
-    icon: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></>,
+    icon: (
+      <>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <path d="m9 12 2 2 4-4" />
+      </>
+    ),
   },
   {
     number: '02',
     titleKey: 'landing.trust_protected',
     bodyKey: 'landing.trust_protected_body',
-    icon: <><rect x="3" y="11" width="18" height="10" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>,
+    icon: (
+      <>
+        <rect x="3" y="11" width="18" height="10" rx="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </>
+    ),
   },
   {
     number: '03',
     titleKey: 'landing.trust_milestones',
     bodyKey: 'landing.trust_milestones_body',
-    icon: <><path d="M4 19V5" /><path d="m4 14 5-5 4 4 7-7" /><path d="M16 6h4v4" /></>,
+    icon: (
+      <>
+        <path d="M4 19V5" />
+        <path d="m4 14 5-5 4 4 7-7" />
+        <path d="M16 6h4v4" />
+      </>
+    ),
   },
 ];
 
@@ -63,8 +89,12 @@ export default function Landing() {
         <h1 id="landing-title">{t('landing.hero_title_compact')}</h1>
         <p>{t('landing.hero_subtitle')}</p>
         <div className="landing-hero__actions">
-          <Link to="/discover" className="btn-accent landing-cta">{t('landing.hero_cta_start')}</Link>
-          <Link to="/register?role=creator" className="btn-secondary landing-cta">{t('landing.cta_start')}</Link>
+          <Link to="/discover" className="btn-accent landing-cta">
+            {t('landing.hero_cta_start')}
+          </Link>
+          <Link to="/register?role=creator" className="btn-secondary landing-cta">
+            {t('landing.cta_start')}
+          </Link>
         </div>
         <p className="landing-hero__note">{t('landing.hero_note')}</p>
       </section>
@@ -79,7 +109,9 @@ export default function Landing() {
           {TRUST_STEPS.map((step) => (
             <article className="landing-trust-card" key={step.number}>
               <div className="landing-trust-card__top">
-                <span className="landing-trust-card__icon"><Icon>{step.icon}</Icon></span>
+                <span className="landing-trust-card__icon">
+                  <Icon>{step.icon}</Icon>
+                </span>
                 <span className="landing-trust-card__number">{step.number}</span>
               </div>
               <h3>{t(step.titleKey)}</h3>
@@ -96,10 +128,14 @@ export default function Landing() {
               <span className="eyebrow">{t('landing.campaigns_eyebrow')}</span>
               <h2 id="featured-title">{t('landing.campaigns_title')}</h2>
             </div>
-            <Link to="/discover" className="landing-text-link">{t('landing.campaigns_view_all')} →</Link>
+            <Link to="/discover" className="landing-text-link">
+              {t('landing.campaigns_view_all')} →
+            </Link>
           </div>
           <div className="landing-campaign-grid">
-            {campaigns.map((campaign) => <CampaignCard key={campaign.id} campaign={campaign} featured />)}
+            {campaigns.map((campaign) => (
+              <CampaignCard key={campaign.id} campaign={campaign} featured />
+            ))}
           </div>
         </section>
       )}
@@ -111,8 +147,12 @@ export default function Landing() {
           <p>{t('landing.creator_body')}</p>
         </div>
         <div className="landing-creator__action">
-          <Link to="/register?role=creator" className="btn-accent landing-cta">{t('landing.cta_start')}</Link>
-          <Link to="/how-it-works" className="landing-text-link">{t('landing.creator_learn')} →</Link>
+          <Link to="/register?role=creator" className="btn-accent landing-cta">
+            {t('landing.cta_start')}
+          </Link>
+          <Link to="/how-it-works" className="landing-text-link">
+            {t('landing.creator_learn')} →
+          </Link>
         </div>
       </section>
 

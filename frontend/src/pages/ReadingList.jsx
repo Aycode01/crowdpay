@@ -13,7 +13,8 @@ export default function ReadingList() {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    api.getFavorites()
+    api
+      .getFavorites()
       .then((res) => setCampaigns(res.data || []))
       .catch(() => toast('Failed to load reading list', 'error'))
       .finally(() => setLoading(false));
@@ -30,7 +31,8 @@ export default function ReadingList() {
   };
 
   const filtered = campaigns.filter((c) => {
-    const matchSearch = !search ||
+    const matchSearch =
+      !search ||
       c.title?.toLowerCase().includes(search.toLowerCase()) ||
       c.category?.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'all' || c.status === filter;
@@ -43,7 +45,8 @@ export default function ReadingList() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t('readingList.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {campaigns.length} {t(campaigns.length === 1 ? 'readingList.campaign' : 'readingList.campaigns')}
+            {campaigns.length}{' '}
+            {t(campaigns.length === 1 ? 'readingList.campaign' : 'readingList.campaigns')}
           </p>
         </div>
         <Link
@@ -82,7 +85,10 @@ export default function ReadingList() {
         <div className="text-center py-12 text-gray-400">
           {search ? t('readingList.noMatches') : t('readingList.empty')}
           <br />
-          <Link to="/discover" className="text-indigo-600 hover:text-indigo-800 text-sm font-medium mt-2 inline-block">
+          <Link
+            to="/discover"
+            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium mt-2 inline-block"
+          >
             {t('readingList.browseCampaigns')}
           </Link>
         </div>
@@ -91,7 +97,10 @@ export default function ReadingList() {
           {filtered.map((camp) => {
             const pct = Math.min(100, (camp.raised_amount / camp.target_amount) * 100);
             return (
-              <div key={camp.id} className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div
+                key={camp.id}
+                className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <Link to={`/campaigns/${camp.id}`} className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 truncate">{camp.title}</h3>
@@ -120,18 +129,26 @@ export default function ReadingList() {
                   <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full"
-                      style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? '#10b981' : '#2563eb' }}
+                      style={{
+                        width: `${pct}%`,
+                        backgroundColor: pct >= 100 ? '#10b981' : '#2563eb',
+                      }}
                     />
                   </div>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-                  <span className={`px-2 py-0.5 rounded-full font-medium ${
-                    camp.status === 'active' ? 'bg-green-100 text-green-700' :
-                    camp.status === 'funded' ? 'bg-blue-100 text-blue-700' :
-                    camp.status === 'completed' ? 'bg-gray-100 text-gray-600' :
-                    'bg-red-100 text-red-600'
-                  }`}>
+                  <span
+                    className={`px-2 py-0.5 rounded-full font-medium ${
+                      camp.status === 'active'
+                        ? 'bg-green-100 text-green-700'
+                        : camp.status === 'funded'
+                          ? 'bg-blue-100 text-blue-700'
+                          : camp.status === 'completed'
+                            ? 'bg-gray-100 text-gray-600'
+                            : 'bg-red-100 text-red-600'
+                    }`}
+                  >
                     {camp.status}
                   </span>
                   <Link

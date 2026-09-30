@@ -2,11 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {
-  isUpMigration,
-  downFilenameFor,
-  sha256,
-} = require('../../db/migrateLib');
+const { isUpMigration, downFilenameFor, sha256 } = require('../../db/migrateLib');
 
 test('isUpMigration excludes .down.sql rollback scripts', () => {
   assert.equal(isUpMigration('20260401_users.sql'), true);

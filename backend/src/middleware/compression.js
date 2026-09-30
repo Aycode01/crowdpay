@@ -63,17 +63,25 @@ function parseCompressionLevel(value) {
   }
   // Reject non-integer strings (e.g., "6.5", "high", "-2", "10")
   if (!/^-?\d+$/.test(value)) {
-    throw new Error(`COMPRESSION_LEVEL must be an integer between -1 and 9 (received: ${JSON.stringify(value)})`);
+    throw new Error(
+      `COMPRESSION_LEVEL must be an integer between -1 and 9 (received: ${JSON.stringify(value)})`
+    );
   }
   const parsed = Number.parseInt(value, 10);
   if (parsed < -1 || parsed > 9) {
-    throw new Error(`COMPRESSION_LEVEL must be an integer between -1 and 9 (received: ${JSON.stringify(value)})`);
+    throw new Error(
+      `COMPRESSION_LEVEL must be an integer between -1 and 9 (received: ${JSON.stringify(value)})`
+    );
   }
   return parsed;
 }
 
 /** Minimum bytes before compression kicks in — validated at startup */
-const THRESHOLD = parseNonNegativeInt('COMPRESSION_THRESHOLD', process.env.COMPRESSION_THRESHOLD, 1024);
+const THRESHOLD = parseNonNegativeInt(
+  'COMPRESSION_THRESHOLD',
+  process.env.COMPRESSION_THRESHOLD,
+  1024
+);
 
 /** zlib level: -1 = library default, range 1–9; also accepts -1 — validated at startup */
 const LEVEL = parseCompressionLevel(process.env.COMPRESSION_LEVEL);

@@ -292,9 +292,7 @@ describe('ContributeModal', () => {
     it('shows a Cancel signing button while waiting for the signature', async () => {
       await startSigning();
 
-      expect(
-        await screen.findByRole('button', { name: /cancel signing/i })
-      ).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: /cancel signing/i })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /^cancel$/i })).not.toBeInTheDocument();
     });
 

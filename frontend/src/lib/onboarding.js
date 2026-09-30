@@ -78,10 +78,7 @@ export function hasPublishedCampaigns(campaigns = [], stats = null) {
 
 function campaignHasMedia(campaign) {
   return Boolean(
-    campaign?.cover_image_url ||
-      campaign?.image_url ||
-      campaign?.cover_url ||
-      campaign?.media_url
+    campaign?.cover_image_url || campaign?.image_url || campaign?.cover_url || campaign?.media_url
   );
 }
 
@@ -95,9 +92,7 @@ export function getCreatorChecklistProgress(user, campaigns = [], draftForm = nu
 
   const profileDone = Boolean(user?.name && String(user.name).trim());
   const walletDone = Boolean(user?.wallet_public_key);
-  const kycDone =
-    user?.kyc_status === 'verified' ||
-    user?.verification_status === 'verified';
+  const kycDone = user?.kyc_status === 'verified' || user?.verification_status === 'verified';
 
   const createDone =
     list.length > 0 ||

@@ -48,11 +48,11 @@ function buildApp({
         : denyAuth(),
     },
     '../services/campaignInviteService': {
-      getInvitePreview: async (token) => {
+      getInvitePreview: async token => {
         calls.previewToken = token;
         return preview;
       },
-      acceptCampaignInvite: async (opts) => {
+      acceptCampaignInvite: async opts => {
         calls.acceptOpts = opts;
         return member;
       },

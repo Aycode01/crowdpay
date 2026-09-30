@@ -27,7 +27,9 @@ const CSRF_MUTATING_METHODS = new Set(['post', 'put', 'patch', 'delete']);
 
 function readCookie(name) {
   if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=([^;]*)`));
+  const match = document.cookie.match(
+    new RegExp(`(?:^|; )${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=([^;]*)`)
+  );
   return match ? decodeURIComponent(match[1]) : null;
 }
 
@@ -77,19 +79,21 @@ apiClient.interceptors.response.use(
 export function retryQueuedRequests() {
   const queue = [...retryQueue.values()];
   retryQueue.clear();
-  return Promise.allSettled(queue.map(({ config, waiters }) =>
-    apiClient.request(config).then(
-      (response) => {
-        waiters.forEach((waiter) => waiter.resolve(response));
-        return response;
-      },
-      (error) => {
-        const normalized = normalizeError(error);
-        waiters.forEach((waiter) => waiter.reject(normalized));
-        throw normalized;
-      }
+  return Promise.allSettled(
+    queue.map(({ config, waiters }) =>
+      apiClient.request(config).then(
+        (response) => {
+          waiters.forEach((waiter) => waiter.resolve(response));
+          return response;
+        },
+        (error) => {
+          const normalized = normalizeError(error);
+          waiters.forEach((waiter) => waiter.reject(normalized));
+          throw normalized;
+        }
+      )
     )
-  ));
+  );
 }
 
 function normalizeError(error) {
@@ -247,7 +251,9 @@ export const api = {
     return res.data;
   },
   async exportCreatorCampaignData(campaignId) {
-    const res = await apiClient.get(`/creator/campaigns/${campaignId}/export`, { responseType: 'blob' });
+    const res = await apiClient.get(`/creator/campaigns/${campaignId}/export`, {
+      responseType: 'blob',
+    });
     const disposition = res.headers['content-disposition'] || '';
     let filename = 'campaign-export.csv';
     const match = disposition.match(/filename="?([^"]+)"?/);
@@ -255,7 +261,9 @@ export const api = {
     return { blob: res.data, filename };
   },
   async exportCampaignReport(campaignId) {
-    const res = await apiClient.get(`/campaigns/${campaignId}/report/export`, { responseType: 'blob' });
+    const res = await apiClient.get(`/campaigns/${campaignId}/report/export`, {
+      responseType: 'blob',
+    });
     const disposition = res.headers['content-disposition'] || '';
     let filename = 'campaign-report.pdf';
     const match = disposition.match(/filename="?([^"]+)"?/);
@@ -267,7 +275,9 @@ export const api = {
     return res.data;
   },
   async updateVelocityThreshold(campaignId, threshold) {
-    const res = await apiClient.patch(`/creator/campaigns/${campaignId}/velocity/threshold`, { threshold });
+    const res = await apiClient.patch(`/creator/campaigns/${campaignId}/velocity/threshold`, {
+      threshold,
+    });
     return res.data;
   },
   async getNotificationPreferences() {
@@ -313,7 +323,10 @@ export const api = {
   },
 
   async exportAdminAuditLogsCsv(params) {
-    const res = await apiClient.get('/admin/audit-logs/export.csv', { params, responseType: 'blob' });
+    const res = await apiClient.get('/admin/audit-logs/export.csv', {
+      params,
+      responseType: 'blob',
+    });
     const disposition = res.headers['content-disposition'] || '';
     let filename = 'audit-logs.csv';
     const match = disposition.match(/filename="?([^"]+)"?/);
@@ -322,7 +335,10 @@ export const api = {
   },
 
   async exportAdminAuditLogsJson(params) {
-    const res = await apiClient.get('/admin/audit-logs/export.json', { params, responseType: 'blob' });
+    const res = await apiClient.get('/admin/audit-logs/export.json', {
+      params,
+      responseType: 'blob',
+    });
     const disposition = res.headers['content-disposition'] || '';
     let filename = 'audit-logs.json';
     const match = disposition.match(/filename="?([^"]+)"?/);
@@ -464,13 +480,24 @@ export const api = {
   // --- Subscriptions (Freighter support #821) ---
   async prepareSubscription(campaignId, { amountPerPeriod, asset, periodMonths, totalPeriods }) {
     const res = await apiClient.post(`/campaigns/${campaignId}/subscriptions/prepare`, {
-      amountPerPeriod, asset, periodMonths, totalPeriods,
+      amountPerPeriod,
+      asset,
+      periodMonths,
+      totalPeriods,
     });
     return res.data;
   },
-  async submitSubscription(campaignId, { unsignedXdr, signedXdr, amountPerPeriod, asset, periodMonths, totalPeriods }) {
+  async submitSubscription(
+    campaignId,
+    { unsignedXdr, signedXdr, amountPerPeriod, asset, periodMonths, totalPeriods }
+  ) {
     const res = await apiClient.post(`/campaigns/${campaignId}/subscriptions/submit`, {
-      unsignedXdr, signedXdr, amountPerPeriod, asset, periodMonths, totalPeriods,
+      unsignedXdr,
+      signedXdr,
+      amountPerPeriod,
+      asset,
+      periodMonths,
+      totalPeriods,
     });
     return res.data;
   },
@@ -544,7 +571,9 @@ export const api = {
     return res.data;
   },
   async voteGovernanceProposal(proposalId, inFavor) {
-    const res = await apiClient.post(`/governance/proposals/${proposalId}/vote`, { in_favor: inFavor });
+    const res = await apiClient.post(`/governance/proposals/${proposalId}/vote`, {
+      in_favor: inFavor,
+    });
     return res.data;
   },
   async executeGovernanceProposal(proposalId) {
@@ -563,18 +592,15 @@ export const api = {
   getGovernanceSyncRun: (runId) =>
     apiClient.get(`/governance/sync/runs/${runId}`).then((r) => r.data),
 
-  triggerGovernanceSync: () =>
-    apiClient.post('/governance/sync').then((r) => r.data),
+  triggerGovernanceSync: () => apiClient.post('/governance/sync').then((r) => r.data),
 
   retryGovernanceSyncRun: (runId) =>
     apiClient.post(`/governance/sync/runs/${runId}/retry`).then((r) => r.data),
 
   // --- Campaign templates ---
-  getCampaignTemplates: () =>
-    apiClient.get('/campaign-templates').then((r) => r.data),
+  getCampaignTemplates: () => apiClient.get('/campaign-templates').then((r) => r.data),
 
-  adminGetCampaignTemplates: () =>
-    apiClient.get('/campaign-templates/admin').then((r) => r.data),
+  adminGetCampaignTemplates: () => apiClient.get('/campaign-templates/admin').then((r) => r.data),
 
   adminCreateCampaignTemplate: (data) =>
     apiClient.post('/campaign-templates/admin', data).then((r) => r.data),
@@ -594,4 +620,3 @@ export const api = {
   processRefund: (campaignId, payload) =>
     apiClient.post(`/campaigns/${campaignId}/refunds`, payload).then((r) => r.data),
 };
-

@@ -9,32 +9,48 @@ const mockDb = {
     if (sql.includes('COUNT(*)')) return { rows: [{ count: '2' }] };
     if (sql.includes('INSERT INTO creator_refunds')) {
       return {
-        rows: [{
-          id: 'refund-1',
-          campaign_id: params[0],
-          contribution_id: params[1],
-          recipient_wallet: params[2],
-          amount: params[3],
-          asset: params[4],
-          reason: params[5],
-          status: 'pending',
-          created_by: params[6],
-        }],
+        rows: [
+          {
+            id: 'refund-1',
+            campaign_id: params[0],
+            contribution_id: params[1],
+            recipient_wallet: params[2],
+            amount: params[3],
+            asset: params[4],
+            reason: params[5],
+            status: 'pending',
+            created_by: params[6],
+          },
+        ],
       };
     }
     if (sql.includes('UPDATE creator_refunds')) {
       return {
-        rows: [{
-          id: params[params.length - 1],
-          status: params[0],
-          processed_at: new Date().toISOString(),
-        }],
+        rows: [
+          {
+            id: params[params.length - 1],
+            status: params[0],
+            processed_at: new Date().toISOString(),
+          },
+        ],
       };
     }
     return {
       rows: [
-        { id: 'r1', campaign_id: 'c1', amount: '100.00', status: 'pending', created_at: new Date().toISOString() },
-        { id: 'r2', campaign_id: 'c1', amount: '50.00', status: 'completed', created_at: new Date().toISOString() },
+        {
+          id: 'r1',
+          campaign_id: 'c1',
+          amount: '100.00',
+          status: 'pending',
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: 'r2',
+          campaign_id: 'c1',
+          amount: '50.00',
+          status: 'completed',
+          created_at: new Date().toISOString(),
+        },
       ],
     };
   },
@@ -70,7 +86,13 @@ test('POST /api/admin/refunds creates a refund', async () => {
   const app = createApp({ userId: 'admin1', role: 'admin' });
   const res = await request(app)
     .post('/api/admin/refunds')
-    .send({ campaignId: 'c1', recipientWallet: 'GABC', amount: 100, asset: 'native', reason: 'Goodwill' });
+    .send({
+      campaignId: 'c1',
+      recipientWallet: 'GABC',
+      amount: 100,
+      asset: 'native',
+      reason: 'Goodwill',
+    });
   assert.equal(res.status, 201);
   assert.equal(res.body.amount, '100');
   assert.equal(res.body.status, 'pending');

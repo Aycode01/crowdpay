@@ -8,7 +8,11 @@ const { Keypair } = require('@stellar/stellar-sdk');
 const db = require('../config/database');
 const logger = require('../config/logger');
 const { ensureCustodialAccountFundedAndTrusted } = require('../services/stellarService');
-const { sendEmail, sendWelcomeEmail, sendWalletFundingFailedEmail } = require('../services/emailService');
+const {
+  sendEmail,
+  sendWelcomeEmail,
+  sendWalletFundingFailedEmail,
+} = require('../services/emailService');
 const { requireAuth } = require('../middleware/auth');
 const { encryptWalletSecret } = require('../services/walletSecrets');
 const { isKycRequiredForCampaigns } = require('../services/kycProvider');
@@ -39,8 +43,7 @@ const ACCESS_TOKEN_COOKIE_NAME = 'cp_token';
 const REFRESH_TOKEN_COOKIE_NAME = 'cp_refresh_token';
 const REFRESH_TOKEN_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
-const FORGOT_PASSWORD_MESSAGE =
-  'If that email exists, a password reset link has been sent.';
+const FORGOT_PASSWORD_MESSAGE = 'If that email exists, a password reset link has been sent.';
 
 function parseJwtExpiresIn(value) {
   const match = String(value).match(/^(\d+)([smhd])$/);
@@ -91,7 +94,7 @@ const registerEmailLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: () => isTest,
-  keyGenerator: (req) => {
+  keyGenerator: req => {
     return String((req.body?.email || '').trim().toLowerCase());
   },
 });
@@ -123,7 +126,7 @@ const totpChallengeEmailLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: () => isTest,
-  keyGenerator: (req) => String((req.body?.email || '').trim().toLowerCase()),
+  keyGenerator: req => String((req.body?.email || '').trim().toLowerCase()),
 });
 
 const TOTP_MAX_CONSECUTIVE_FAILURES = 10;
@@ -212,10 +215,7 @@ async function validateRefreshToken(token) {
 
 async function revokeRefreshToken(token) {
   const tokenHash = hashToken(token);
-  await db.query(
-    `UPDATE refresh_tokens SET revoked_at = NOW() WHERE token_hash = $1`,
-    [tokenHash]
-  );
+  await db.query(`UPDATE refresh_tokens SET revoked_at = NOW() WHERE token_hash = $1`, [tokenHash]);
 }
 
 async function rotateRefreshToken(oldToken, userId) {
@@ -223,193 +223,211 @@ async function rotateRefreshToken(oldToken, userId) {
   return createRefreshToken(userId);
 }
 
-router.post('/register', registerLimiter, registerEmailLimiter, registerValidation, validateRequest, async (req, res) => {
-  /**
-   * @openapi
-   * /api/auth/register:
-   *   post:
-   *     tags: [Users]
-   *     summary: Register a new user
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             required: [email, password, name]
-   *             properties:
-   *               email: { type: string, format: email }
-   *               password: { type: string, minLength: 6 }
-   *               name: { type: string }
-   *               role: { type: string, enum: [contributor, creator] }
-   *     responses:
-   *       201:
-   *         description: Created
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               required: [token, user]
-   *               properties:
-   *                 token: { type: string }
-   *                 user:
-   *                   type: object
-   *                   properties:
-   *                     id: { type: integer }
-   *                     email: { type: string, format: email }
-   *                     name: { type: string }
-   *                     wallet_public_key: { type: string }
-   *                     role: { type: string }
-   *                     kyc_status: { type: string }
-   *                     kyc_completed_at: { type: string, nullable: true }
-   *                     kyc_required_for_campaigns: { type: boolean }
-   *       409:
-   *         description: Email already registered
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 error: { type: string }
-   * /api/users/register:
-   *   post:
-   *     tags: [Users]
-   *     summary: Register a new user (alias of /api/auth/register)
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             required: [email, password, name]
-   *             properties:
-   *               email: { type: string, format: email }
-   *               password: { type: string, minLength: 6 }
-   *               name: { type: string }
-   *               role: { type: string, enum: [contributor, creator] }
-   *     responses:
-   *       201: { description: Created }
-   *       409: { description: Email already registered }
-   */
-  const { email, password, name, role } = req.body;
-  const normalizedEmail = String(email || '').trim().toLowerCase();
-  const normalizedName = String(name || '').trim();
-  const allowedRoles = new Set(['contributor', 'creator']);
-  const userRole = role || 'contributor';
-  if (!allowedRoles.has(userRole)) {
-    return res.status(400).json({ error: 'role must be contributor or creator' });
-  }
-
-  const existing = await db.query('SELECT id FROM users WHERE LOWER(email) = $1', [normalizedEmail]);
-  if (existing.rows.length > 0) {
-    return res.status(409).json({ error: 'Email already registered' });
-  }
-
-  const passwordHash = await bcrypt.hash(password, 10);
-
-  // Support freighter (non-custodial) registration where frontend provides wallet_public_key
-  let publicKey;
-  let encryptedSecret = null;
-  let secret = null;
-  const walletType = req.body.wallet_type || 'custodial';
-
-  if (walletType === 'freighter') {
-    publicKey = req.body.wallet_public_key;
-    // wallet_public_key validated by middleware when wallet_type=freighter
-    encryptedSecret = null;
-  } else {
-    const keypair = Keypair.random();
-    publicKey = keypair.publicKey();
-    secret = keypair.secret();
-    encryptedSecret = await encryptWalletSecret(secret, { walletPublicKey: publicKey });
-  }
-
-  const walletFundedAt = walletType === 'freighter' ? new Date() : null;
-
-  const { rows } = await db.query(
-    `INSERT INTO users (email, password_hash, name, wallet_public_key, wallet_secret_encrypted, role, wallet_type, wallet_funded_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-     RETURNING id, email, name, wallet_public_key, role, kyc_status, kyc_completed_at, wallet_type, wallet_funded_at, wallet_funding_failed_at`,
-    [normalizedEmail, passwordHash, normalizedName, publicKey, encryptedSecret, userRole, walletType, walletFundedAt]
-  );
-
-  const user = {
-    ...rows[0],
-    kyc_required_for_campaigns: isKycRequiredForCampaigns(),
-  };
-  const { accessToken } = generateTokens(user);
-  const { token: refreshToken, expiresAt } = await createRefreshToken(user.id);
-
-  // Get the refresh token ID for session tracking
-  const { rows: rtRows } = await db.query(
-    'SELECT id FROM refresh_tokens WHERE token_hash = $1',
-    [hashToken(refreshToken)]
-  );
-  const refreshTokenId = rtRows[0]?.id;
-
-  // Create user session
-  if (refreshTokenId) {
-    await createUserSession(user.id, refreshTokenId, req);
-  }
-
-  // Record successful login attempt
-  await recordLoginAttempt({
-    userId: user.id,
-    email: normalizedEmail,
-    ip: req.ip,
-    userAgent: req.headers['user-agent'],
-    success: true,
-  });
-
-  setRefreshTokenCookie(res, refreshToken, expiresAt);
-  setAccessTokenCookie(res, accessToken);
-
-  const requestId = req.id;
-  setImmediate(() => {
-    // Only fund and setup trustlines for custodial wallets
-    if (walletType === 'custodial' && secret) {
-      ensureCustodialAccountFundedAndTrusted({ publicKey, secret })
-        .then(async () => {
-          await db.query(
-            'UPDATE users SET wallet_funded_at = NOW(), wallet_funding_failed_at = NULL WHERE id = $1',
-            [user.id]
-          );
-          logger.info('Background Stellar funding/trustlines succeeded', { userId: user.id });
-        })
-        .catch(async (err) => {
-          logger.error('Background Stellar funding/trustlines failed', {
-            request_id: requestId,
-            userId: user.id,
-            error: err.message,
-          });
-          await db.query(
-            'UPDATE users SET wallet_funding_failed_at = NOW() WHERE id = $1',
-            [user.id]
-          );
-          sendWalletFundingFailedEmail({
-            to: normalizedEmail,
-            name: normalizedName,
-            walletPublicKey: publicKey,
-          }).catch((emailErr) => {
-            logger.error('Failed to send wallet funding failed email', {
-              userId: user.id,
-              error: emailErr.message,
-            });
-          });
-        });
+router.post(
+  '/register',
+  registerLimiter,
+  registerEmailLimiter,
+  registerValidation,
+  validateRequest,
+  async (req, res) => {
+    /**
+     * @openapi
+     * /api/auth/register:
+     *   post:
+     *     tags: [Users]
+     *     summary: Register a new user
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [email, password, name]
+     *             properties:
+     *               email: { type: string, format: email }
+     *               password: { type: string, minLength: 6 }
+     *               name: { type: string }
+     *               role: { type: string, enum: [contributor, creator] }
+     *     responses:
+     *       201:
+     *         description: Created
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               required: [token, user]
+     *               properties:
+     *                 token: { type: string }
+     *                 user:
+     *                   type: object
+     *                   properties:
+     *                     id: { type: integer }
+     *                     email: { type: string, format: email }
+     *                     name: { type: string }
+     *                     wallet_public_key: { type: string }
+     *                     role: { type: string }
+     *                     kyc_status: { type: string }
+     *                     kyc_completed_at: { type: string, nullable: true }
+     *                     kyc_required_for_campaigns: { type: boolean }
+     *       409:
+     *         description: Email already registered
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 error: { type: string }
+     * /api/users/register:
+     *   post:
+     *     tags: [Users]
+     *     summary: Register a new user (alias of /api/auth/register)
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [email, password, name]
+     *             properties:
+     *               email: { type: string, format: email }
+     *               password: { type: string, minLength: 6 }
+     *               name: { type: string }
+     *               role: { type: string, enum: [contributor, creator] }
+     *     responses:
+     *       201: { description: Created }
+     *       409: { description: Email already registered }
+     */
+    const { email, password, name, role } = req.body;
+    const normalizedEmail = String(email || '')
+      .trim()
+      .toLowerCase();
+    const normalizedName = String(name || '').trim();
+    const allowedRoles = new Set(['contributor', 'creator']);
+    const userRole = role || 'contributor';
+    if (!allowedRoles.has(userRole)) {
+      return res.status(400).json({ error: 'role must be contributor or creator' });
     }
 
-    sendWelcomeEmail({
-      to: normalizedEmail,
-      name: normalizedName,
-      walletPublicKey: publicKey,
-    }).catch((err) => {
-      logger.error('Welcome email failed', { request_id: requestId, error: err.message });
-    });
-  });
+    const existing = await db.query('SELECT id FROM users WHERE LOWER(email) = $1', [
+      normalizedEmail,
+    ]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: 'Email already registered' });
+    }
 
-  res.status(201).json({ token: accessToken, user });
-});
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Support freighter (non-custodial) registration where frontend provides wallet_public_key
+    let publicKey;
+    let encryptedSecret = null;
+    let secret = null;
+    const walletType = req.body.wallet_type || 'custodial';
+
+    if (walletType === 'freighter') {
+      publicKey = req.body.wallet_public_key;
+      // wallet_public_key validated by middleware when wallet_type=freighter
+      encryptedSecret = null;
+    } else {
+      const keypair = Keypair.random();
+      publicKey = keypair.publicKey();
+      secret = keypair.secret();
+      encryptedSecret = await encryptWalletSecret(secret, { walletPublicKey: publicKey });
+    }
+
+    const walletFundedAt = walletType === 'freighter' ? new Date() : null;
+
+    const { rows } = await db.query(
+      `INSERT INTO users (email, password_hash, name, wallet_public_key, wallet_secret_encrypted, role, wallet_type, wallet_funded_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id, email, name, wallet_public_key, role, kyc_status, kyc_completed_at, wallet_type, wallet_funded_at, wallet_funding_failed_at`,
+      [
+        normalizedEmail,
+        passwordHash,
+        normalizedName,
+        publicKey,
+        encryptedSecret,
+        userRole,
+        walletType,
+        walletFundedAt,
+      ]
+    );
+
+    const user = {
+      ...rows[0],
+      kyc_required_for_campaigns: isKycRequiredForCampaigns(),
+    };
+    const { accessToken } = generateTokens(user);
+    const { token: refreshToken, expiresAt } = await createRefreshToken(user.id);
+
+    // Get the refresh token ID for session tracking
+    const { rows: rtRows } = await db.query('SELECT id FROM refresh_tokens WHERE token_hash = $1', [
+      hashToken(refreshToken),
+    ]);
+    const refreshTokenId = rtRows[0]?.id;
+
+    // Create user session
+    if (refreshTokenId) {
+      await createUserSession(user.id, refreshTokenId, req);
+    }
+
+    // Record successful login attempt
+    await recordLoginAttempt({
+      userId: user.id,
+      email: normalizedEmail,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      success: true,
+    });
+
+    setRefreshTokenCookie(res, refreshToken, expiresAt);
+    setAccessTokenCookie(res, accessToken);
+
+    const requestId = req.id;
+    setImmediate(() => {
+      // Only fund and setup trustlines for custodial wallets
+      if (walletType === 'custodial' && secret) {
+        ensureCustodialAccountFundedAndTrusted({ publicKey, secret })
+          .then(async () => {
+            await db.query(
+              'UPDATE users SET wallet_funded_at = NOW(), wallet_funding_failed_at = NULL WHERE id = $1',
+              [user.id]
+            );
+            logger.info('Background Stellar funding/trustlines succeeded', { userId: user.id });
+          })
+          .catch(async err => {
+            logger.error('Background Stellar funding/trustlines failed', {
+              request_id: requestId,
+              userId: user.id,
+              error: err.message,
+            });
+            await db.query('UPDATE users SET wallet_funding_failed_at = NOW() WHERE id = $1', [
+              user.id,
+            ]);
+            sendWalletFundingFailedEmail({
+              to: normalizedEmail,
+              name: normalizedName,
+              walletPublicKey: publicKey,
+            }).catch(emailErr => {
+              logger.error('Failed to send wallet funding failed email', {
+                userId: user.id,
+                error: emailErr.message,
+              });
+            });
+          });
+      }
+
+      sendWelcomeEmail({
+        to: normalizedEmail,
+        name: normalizedName,
+        walletPublicKey: publicKey,
+      }).catch(err => {
+        logger.error('Welcome email failed', { request_id: requestId, error: err.message });
+      });
+    });
+
+    res.status(201).json({ token: accessToken, user });
+  }
+);
 
 router.post('/login', loginLimiter, loginValidation, validateRequest, async (req, res) => {
   /**
@@ -476,7 +494,9 @@ router.post('/login', loginLimiter, loginValidation, validateRequest, async (req
    *       401: { description: Invalid credentials }
    */
   const { email, password } = req.body;
-  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const normalizedEmail = String(email || '')
+    .trim()
+    .toLowerCase();
   const { rows } = await db.query('SELECT * FROM users WHERE LOWER(email) = $1', [normalizedEmail]);
 
   if (!rows.length || !(await bcrypt.compare(password, rows[0].password_hash))) {
@@ -512,10 +532,9 @@ router.post('/login', loginLimiter, loginValidation, validateRequest, async (req
   const { token: refreshToken, expiresAt } = await createRefreshToken(user.id);
 
   // Get the refresh token ID for session tracking
-  const { rows: rtRows } = await db.query(
-    'SELECT id FROM refresh_tokens WHERE token_hash = $1',
-    [hashToken(refreshToken)]
-  );
+  const { rows: rtRows } = await db.query('SELECT id FROM refresh_tokens WHERE token_hash = $1', [
+    hashToken(refreshToken),
+  ]);
   const refreshTokenId = rtRows[0]?.id;
 
   // Create user session
@@ -552,104 +571,114 @@ router.post('/login', loginLimiter, loginValidation, validateRequest, async (req
   });
 });
 
-router.post('/2fa/challenge', totpChallengeLimiter, totpChallengeEmailLimiter, validateRequest, async (req, res) => {
-  const { email, password, code } = req.body;
-  if (!email || !password || !code) {
-    return res.status(400).json({ error: 'Email, password, and code are required' });
-  }
-  const normalizedEmail = String(email || '').trim().toLowerCase();
-  const { rows } = await db.query('SELECT * FROM users WHERE LOWER(email) = $1', [normalizedEmail]);
-
-  if (!rows.length || !(await bcrypt.compare(password, rows[0].password_hash))) {
-    return res.status(401).json({ error: 'Invalid credentials' });
-  }
-
-  const user = rows[0];
-  if (!user.totp_enabled) {
-    return res.status(400).json({ error: '2FA is not enabled for this account' });
-  }
-
-  if (user.totp_locked_until && new Date(user.totp_locked_until) > new Date()) {
-    logger.warn('TOTP challenge blocked: account locked', {
-      event: 'totp_locked',
-      userId: user.id,
-      ip: req.ip,
-    });
-    return res.status(423).json({ error: 'Too many failed 2FA attempts. Try again later.' });
-  }
-
-  let codeValid = false;
-
-  if (code.length === 6) {
-    codeValid = totpService.verifyTotp(user.totp_secret, code);
-  } else if (user.backup_codes && user.backup_codes.length > 0) {
-    const result = await totpService.verifyBackupCode(user.backup_codes, code);
-    if (result.valid) {
-      codeValid = true;
-      await totpService.removeBackupCode(user.id, user.backup_codes, result.index);
+router.post(
+  '/2fa/challenge',
+  totpChallengeLimiter,
+  totpChallengeEmailLimiter,
+  validateRequest,
+  async (req, res) => {
+    const { email, password, code } = req.body;
+    if (!email || !password || !code) {
+      return res.status(400).json({ error: 'Email, password, and code are required' });
     }
-  }
+    const normalizedEmail = String(email || '')
+      .trim()
+      .toLowerCase();
+    const { rows } = await db.query('SELECT * FROM users WHERE LOWER(email) = $1', [
+      normalizedEmail,
+    ]);
 
-  if (!codeValid) {
-    const failedAttempts = (user.totp_failed_attempts || 0) + 1;
-    const lockingOut = failedAttempts >= TOTP_MAX_CONSECUTIVE_FAILURES;
-    await db.query(
-      'UPDATE users SET totp_failed_attempts = $1, totp_locked_until = $2 WHERE id = $3',
-      [
-        lockingOut ? 0 : failedAttempts,
-        lockingOut ? new Date(Date.now() + TOTP_LOCKOUT_MS) : null,
-        user.id,
-      ]
-    );
-    await totpService.logAuditEvent(user.id, 'totp_challenge_failed', req, {
-      consecutiveFailures: failedAttempts,
-      lockedOut: lockingOut,
+    if (!rows.length || !(await bcrypt.compare(password, rows[0].password_hash))) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const user = rows[0];
+    if (!user.totp_enabled) {
+      return res.status(400).json({ error: '2FA is not enabled for this account' });
+    }
+
+    if (user.totp_locked_until && new Date(user.totp_locked_until) > new Date()) {
+      logger.warn('TOTP challenge blocked: account locked', {
+        event: 'totp_locked',
+        userId: user.id,
+        ip: req.ip,
+      });
+      return res.status(423).json({ error: 'Too many failed 2FA attempts. Try again later.' });
+    }
+
+    let codeValid = false;
+
+    if (code.length === 6) {
+      codeValid = totpService.verifyTotp(user.totp_secret, code);
+    } else if (user.backup_codes && user.backup_codes.length > 0) {
+      const result = await totpService.verifyBackupCode(user.backup_codes, code);
+      if (result.valid) {
+        codeValid = true;
+        await totpService.removeBackupCode(user.id, user.backup_codes, result.index);
+      }
+    }
+
+    if (!codeValid) {
+      const failedAttempts = (user.totp_failed_attempts || 0) + 1;
+      const lockingOut = failedAttempts >= TOTP_MAX_CONSECUTIVE_FAILURES;
+      await db.query(
+        'UPDATE users SET totp_failed_attempts = $1, totp_locked_until = $2 WHERE id = $3',
+        [
+          lockingOut ? 0 : failedAttempts,
+          lockingOut ? new Date(Date.now() + TOTP_LOCKOUT_MS) : null,
+          user.id,
+        ]
+      );
+      await totpService.logAuditEvent(user.id, 'totp_challenge_failed', req, {
+        consecutiveFailures: failedAttempts,
+        lockedOut: lockingOut,
+      });
+      logger.warn('Failed 2FA attempt', {
+        event: 'totp_failed_attempt',
+        userId: user.id,
+        ip: req.ip,
+        consecutiveFailures: failedAttempts,
+        lockedOut: lockingOut,
+      });
+      return res.status(401).json({ error: 'Invalid 2FA code' });
+    }
+
+    if (user.totp_failed_attempts) {
+      await db.query(
+        'UPDATE users SET totp_failed_attempts = 0, totp_locked_until = NULL WHERE id = $1',
+        [user.id]
+      );
+    }
+
+    const fingerprint = totpService.generateFingerprint(req);
+    const wasBackupCode = code.length !== 6;
+    await totpService.logAuditEvent(user.id, 'totp_challenge_success', req, {
+      method: wasBackupCode ? 'backup_code' : 'totp',
     });
-    logger.warn('Failed 2FA attempt', {
-      event: 'totp_failed_attempt',
-      userId: user.id,
-      ip: req.ip,
-      consecutiveFailures: failedAttempts,
-      lockedOut: lockingOut,
+
+    const { accessToken } = generateTokens(user);
+    const { token: refreshToken, expiresAt } = await createRefreshToken(user.id);
+
+    setRefreshTokenCookie(res, refreshToken, expiresAt);
+    setAccessTokenCookie(res, accessToken);
+
+    res.json({
+      token: accessToken,
+      device_trusted: await totpService.isDeviceTrusted(user.id, fingerprint),
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        wallet_public_key: user.wallet_public_key,
+        wallet_type: user.wallet_type || 'custodial',
+        role: user.role,
+        kyc_status: user.kyc_status,
+        kyc_completed_at: user.kyc_completed_at,
+        kyc_required_for_campaigns: isKycRequiredForCampaigns(),
+      },
     });
-    return res.status(401).json({ error: 'Invalid 2FA code' });
   }
-
-  if (user.totp_failed_attempts) {
-    await db.query(
-      'UPDATE users SET totp_failed_attempts = 0, totp_locked_until = NULL WHERE id = $1',
-      [user.id]
-    );
-  }
-
-  const fingerprint = totpService.generateFingerprint(req);
-  const wasBackupCode = code.length !== 6;
-  await totpService.logAuditEvent(user.id, 'totp_challenge_success', req, {
-    method: wasBackupCode ? 'backup_code' : 'totp',
-  });
-
-  const { accessToken } = generateTokens(user);
-  const { token: refreshToken, expiresAt } = await createRefreshToken(user.id);
-
-  setRefreshTokenCookie(res, refreshToken, expiresAt);
-  setAccessTokenCookie(res, accessToken);
-
-  res.json({
-    token: accessToken,
-    device_trusted: await totpService.isDeviceTrusted(user.id, fingerprint),
-    user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      wallet_public_key: user.wallet_public_key,
-      wallet_type: user.wallet_type || 'custodial',
-      role: user.role,
-      kyc_status: user.kyc_status,
-      kyc_completed_at: user.kyc_completed_at,
-      kyc_required_for_campaigns: isKycRequiredForCampaigns(),
-    },
-  });
-});
+);
 
 router.post('/2fa/setup', requireAuth, async (req, res) => {
   const { rows } = await db.query('SELECT * FROM users WHERE id = $1', [req.user.userId]);
@@ -671,7 +700,7 @@ router.post('/2fa/setup', requireAuth, async (req, res) => {
 
   res.json({
     secret,
-    qrCodeDataUrl
+    qrCodeDataUrl,
   });
 });
 
@@ -693,14 +722,18 @@ router.post('/2fa/verify', requireAuth, async (req, res) => {
     return res.status(401).json({ error: 'Invalid 2FA code' });
   }
 
-  const { raw: rawBackupCodes, hashed: hashedBackupCodes } = await totpService.generateBackupCodes();
+  const { raw: rawBackupCodes, hashed: hashedBackupCodes } =
+    await totpService.generateBackupCodes();
 
-  await db.query('UPDATE users SET totp_enabled = true, backup_codes = $1 WHERE id = $2', [hashedBackupCodes, user.id]);
+  await db.query('UPDATE users SET totp_enabled = true, backup_codes = $1 WHERE id = $2', [
+    hashedBackupCodes,
+    user.id,
+  ]);
   await totpService.logAuditEvent(user.id, 'totp_enabled', req);
 
   res.json({
     message: '2FA enabled successfully',
-    backupCodes: rawBackupCodes
+    backupCodes: rawBackupCodes,
   });
 });
 
@@ -887,10 +920,9 @@ router.post(
   async (req, res) => {
     const normalizedEmail = req.body.email.trim().toLowerCase();
 
-    const { rows } = await db.query(
-      'SELECT id, email FROM users WHERE LOWER(email) = $1',
-      [normalizedEmail]
-    );
+    const { rows } = await db.query('SELECT id, email FROM users WHERE LOWER(email) = $1', [
+      normalizedEmail,
+    ]);
 
     if (rows.length) {
       const user = rows[0];
@@ -953,10 +985,9 @@ router.post(
       passwordHash,
       resetToken.user_id,
     ]);
-    await db.query(
-      'UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1',
-      [resetToken.id]
-    );
+    await db.query('UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1', [
+      resetToken.id,
+    ]);
     await db.query(
       `UPDATE refresh_tokens SET revoked_at = NOW()
        WHERE user_id = $1 AND revoked_at IS NULL`,
@@ -974,31 +1005,39 @@ router.get('/csrf-token', (req, res) => {
   res.json({ csrfToken: token });
 });
 
-router.post('/kyc/start', requireAuth, asyncHandler(async (req, res) => {
-  try {
-    const result = await startKycForUser(req.user.userId);
-    if (result.status === 'verified') {
-      return res.json(result);
+router.post(
+  '/kyc/start',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    try {
+      const result = await startKycForUser(req.user.userId);
+      if (result.status === 'verified') {
+        return res.json(result);
+      }
+      res.status(201).json(result);
+    } catch (err) {
+      if (err.statusCode === 404) {
+        return res.status(404).json({ error: err.message });
+      }
+      res.status(502).json({ error: err.message || 'Could not start identity verification' });
     }
-    res.status(201).json(result);
-  } catch (err) {
-    if (err.statusCode === 404) {
-      return res.status(404).json({ error: err.message });
-    }
-    res.status(502).json({ error: err.message || 'Could not start identity verification' });
-  }
-}));
+  })
+);
 
-router.get('/kyc/status', requireAuth, asyncHandler(async (req, res) => {
-  try {
-    const status = await getKycStatusForUser(req.user.userId);
-    res.json(status);
-  } catch (err) {
-    if (err.statusCode === 404) {
-      return res.status(404).json({ error: err.message });
+router.get(
+  '/kyc/status',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    try {
+      const status = await getKycStatusForUser(req.user.userId);
+      res.json(status);
+    } catch (err) {
+      if (err.statusCode === 404) {
+        return res.status(404).json({ error: err.message });
+      }
+      throw err;
     }
-    throw err;
-  }
-}));
+  })
+);
 
 module.exports = router;

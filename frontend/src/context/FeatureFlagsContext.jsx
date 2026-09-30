@@ -29,17 +29,10 @@ export function FeatureFlagsProvider({ children }) {
     refreshFlags();
   }, [refreshFlags]);
 
-  const isEnabled = useCallback(
-    (key) => flags.get(key) ?? false,
-    [flags]
-  );
+  const isEnabled = useCallback((key) => flags.get(key) ?? false, [flags]);
 
   const value = { flags, ready, isEnabled, refreshFlags };
-  return (
-    <FeatureFlagsContext.Provider value={value}>
-      {children}
-    </FeatureFlagsContext.Provider>
-  );
+  return <FeatureFlagsContext.Provider value={value}>{children}</FeatureFlagsContext.Provider>;
 }
 
 export function useFeatureFlags() {

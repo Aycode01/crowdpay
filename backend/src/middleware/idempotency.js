@@ -35,8 +35,8 @@ const IDEMPOTENCY_KEY_HEADER = 'idempotency-key';
  */
 function buildKeyHelpers(scope) {
   return {
-    lockKey: (k) => `idempotency:lock:${scope}:${k}`,
-    resultKey: (k) => `idempotency:result:${scope}:${k}`,
+    lockKey: k => `idempotency:lock:${scope}:${k}`,
+    resultKey: k => `idempotency:result:${scope}:${k}`,
   };
 }
 
@@ -81,7 +81,8 @@ function idempotency(scope) {
       if (!locked) {
         // Another request with the same key is in flight right now.
         return res.status(409).json({
-          error: 'A request with this Idempotency-Key is already being processed. Retry after a moment.',
+          error:
+            'A request with this Idempotency-Key is already being processed. Retry after a moment.',
           code: 'IDEMPOTENCY_CONFLICT',
         });
       }
@@ -100,7 +101,7 @@ function idempotency(scope) {
               'EX',
               IDEMPOTENCY_TTL_SECONDS
             )
-            .catch((err) =>
+            .catch(err =>
               logger.warn('Failed to cache idempotency result', { scope, key, error: err.message })
             );
         }

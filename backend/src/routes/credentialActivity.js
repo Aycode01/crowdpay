@@ -18,13 +18,17 @@ const { getCredentialActivity } = require('../services/auditService');
  *     responses:
  *       200: { description: Credential activity feed }
  */
-router.get('/me/credentials/activity', requireAuth, asyncHandler(async (req, res) => {
-  const { limit, offset } = req.query;
-  const activity = await getCredentialActivity(req.user.userId, {
-    limit: limit ? parseInt(limit, 10) : 50,
-    offset: offset ? parseInt(offset, 10) : 0,
-  });
-  res.json({ activity });
-}));
+router.get(
+  '/me/credentials/activity',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { limit, offset } = req.query;
+    const activity = await getCredentialActivity(req.user.userId, {
+      limit: limit ? parseInt(limit, 10) : 50,
+      offset: offset ? parseInt(offset, 10) : 0,
+    });
+    res.json({ activity });
+  })
+);
 
 module.exports = router;

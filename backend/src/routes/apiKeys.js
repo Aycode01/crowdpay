@@ -9,37 +9,49 @@ const {
 } = require('../services/apiKeyService');
 const { logCredentialEvent } = require('../services/auditService');
 
-router.get('/', requireAuth, asyncHandler(async (req, res) => {
-  const keys = await listApiKeysForUser(req.user.userId);
-  res.json(keys);
-}));
+router.get(
+  '/',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const keys = await listApiKeysForUser(req.user.userId);
+    res.json(keys);
+  })
+);
 
-router.post('/', requireAuth, asyncHandler(async (req, res) => {
-  const created = await createApiKeyForUser(req.user.userId, req.body || {});
-  await logCredentialEvent({
-    actorId: req.user.userId,
-    action: 'api_key_create',
-    resourceType: 'api_key',
-    resourceId: created.id,
-    req,
-    metadata: { scopes: created.scopes, label: created.label },
-  });
-  res.status(201).json(created);
-}));
+router.post(
+  '/',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const created = await createApiKeyForUser(req.user.userId, req.body || {});
+    await logCredentialEvent({
+      actorId: req.user.userId,
+      action: 'api_key_create',
+      resourceType: 'api_key',
+      resourceId: created.id,
+      req,
+      metadata: { scopes: created.scopes, label: created.label },
+    });
+    res.status(201).json(created);
+  })
+);
 
-router.delete('/:id', requireAuth, asyncHandler(async (req, res) => {
-  const revoked = await revokeApiKeyForUser(req.user.userId, req.params.id);
-  if (!revoked) return res.status(404).json({ error: 'API key not found' });
-  await logCredentialEvent({
-    actorId: req.user.userId,
-    action: 'api_key_revoke',
-    resourceType: 'api_key',
-    resourceId: revoked.id,
-    req,
-    metadata: { label: revoked.label },
-  });
-  res.json({ revoked: true, id: revoked.id });
-}));
+router.delete(
+  '/:id',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const revoked = await revokeApiKeyForUser(req.user.userId, req.params.id);
+    if (!revoked) return res.status(404).json({ error: 'API key not found' });
+    await logCredentialEvent({
+      actorId: req.user.userId,
+      action: 'api_key_revoke',
+      resourceType: 'api_key',
+      resourceId: revoked.id,
+      req,
+      metadata: { label: revoked.label },
+    });
+    res.json({ revoked: true, id: revoked.id });
+  })
+);
 
 /**
  * @openapi
@@ -71,24 +83,28 @@ router.delete('/:id', requireAuth, asyncHandler(async (req, res) => {
  *       201: { description: Replacement key issued }
  *       404: { description: Key not found or cannot be rotated }
  */
-router.post('/:id/rotate', requireAuth, asyncHandler(async (req, res) => {
-  const rotated = await rotateApiKey(req.user.userId, req.params.id, req.body || {});
-  if (!rotated) return res.status(404).json({ error: 'Key not found or cannot be rotated' });
-  
-  await logCredentialEvent({
-    actorId: req.user.userId,
-    action: 'api_key_rotate',
-    resourceType: 'api_key',
-    resourceId: req.params.id,
-    req,
-    metadata: { 
-      successor_id: rotated.id,
-      scopes: rotated.scopes,
-      expires_at: rotated.expires_at 
-    },
-  });
+router.post(
+  '/:id/rotate',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const rotated = await rotateApiKey(req.user.userId, req.params.id, req.body || {});
+    if (!rotated) return res.status(404).json({ error: 'Key not found or cannot be rotated' });
 
-  res.status(201).json(rotated);
-}));
+    await logCredentialEvent({
+      actorId: req.user.userId,
+      action: 'api_key_rotate',
+      resourceType: 'api_key',
+      resourceId: req.params.id,
+      req,
+      metadata: {
+        successor_id: rotated.id,
+        scopes: rotated.scopes,
+        expires_at: rotated.expires_at,
+      },
+    });
+
+    res.status(201).json(rotated);
+  })
+);
 
 module.exports = router;

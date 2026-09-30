@@ -11,7 +11,10 @@ const router = express.Router();
 
 const createPoolValidation = [
   body('campaign_id').isUUID().withMessage('Valid campaign ID is required'),
-  body('title').trim().isLength({ min: 1, max: 200 }).withMessage('Title is required (max 200 chars)'),
+  body('title')
+    .trim()
+    .isLength({ min: 1, max: 200 })
+    .withMessage('Title is required (max 200 chars)'),
   body('description').optional().trim().isLength({ max: 2000 }),
   body('target_amount').isFloat({ min: 0.01 }).withMessage('Target amount must be at least 0.01'),
   body('expires_at').optional().isISO8601().withMessage('Expiry must be a valid ISO date'),
@@ -117,7 +120,8 @@ router.patch(
   validate,
   asyncHandler(async (req, res) => {
     const pool = await poolQueries.update(req.params.poolId, req.user.userId, req.body);
-    if (!pool) return res.status(403).json({ success: false, error: 'Not authorized or pool not found' });
+    if (!pool)
+      return res.status(403).json({ success: false, error: 'Not authorized or pool not found' });
     res.json({ success: true, data: pool });
   })
 );

@@ -54,14 +54,17 @@ const asyncHandler = require('../utils/asyncHandler');
  *               items:
  *                 $ref: '#/components/schemas/FeatureFlag'
  */
-router.get('/feature-flags', asyncHandler(async (req, res) => {
-  const { rows } = await db.query(`
+router.get(
+  '/feature-flags',
+  asyncHandler(async (req, res) => {
+    const { rows } = await db.query(`
     SELECT key, enabled, default_enabled, description, updated_at
     FROM feature_flags
     ORDER BY key
   `);
-  res.json(rows);
-}));
+    res.json(rows);
+  })
+);
 
 /**
  * @openapi
@@ -79,15 +82,18 @@ router.get('/feature-flags', asyncHandler(async (req, res) => {
  *               items:
  *                 type: string
  */
-router.get('/feature-flags/enabled', asyncHandler(async (req, res) => {
-  const { rows } = await db.query(`
+router.get(
+  '/feature-flags/enabled',
+  asyncHandler(async (req, res) => {
+    const { rows } = await db.query(`
     SELECT key
     FROM feature_flags
     WHERE enabled = true
     ORDER BY key
   `);
-  res.json(rows.map(r => r.key));
-}));
+    res.json(rows.map(r => r.key));
+  })
+);
 
 /**
  * @openapi
@@ -111,14 +117,19 @@ router.get('/feature-flags/enabled', asyncHandler(async (req, res) => {
  *       403:
  *         description: Admin access required
  */
-router.get('/admin/feature-flags', requireAuth, requireRole('admin'), asyncHandler(async (req, res) => {
-  const { rows } = await db.query(`
+router.get(
+  '/admin/feature-flags',
+  requireAuth,
+  requireRole('admin'),
+  asyncHandler(async (req, res) => {
+    const { rows } = await db.query(`
     SELECT key, enabled, default_enabled, description, updated_at
     FROM feature_flags
     ORDER BY key
   `);
-  res.json(rows);
-}));
+    res.json(rows);
+  })
+);
 
 /**
  * @openapi
@@ -156,26 +167,34 @@ router.get('/admin/feature-flags', requireAuth, requireRole('admin'), asyncHandl
  *       404:
  *         description: Flag not found
  */
-router.put('/admin/feature-flags/:key', requireAuth, requireRole('admin'), asyncHandler(async (req, res) => {
-  const { key } = req.params;
-  const { enabled } = req.body;
+router.put(
+  '/admin/feature-flags/:key',
+  requireAuth,
+  requireRole('admin'),
+  asyncHandler(async (req, res) => {
+    const { key } = req.params;
+    const { enabled } = req.body;
 
-  if (typeof enabled !== 'boolean') {
-    return res.status(400).json({ error: 'enabled must be a boolean' });
-  }
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ error: 'enabled must be a boolean' });
+    }
 
-  const { rows } = await db.query(`
+    const { rows } = await db.query(
+      `
     UPDATE feature_flags
     SET enabled = $1, updated_at = NOW()
     WHERE key = $2
     RETURNING key, enabled, default_enabled, description, updated_at
-  `, [enabled, key]);
+  `,
+      [enabled, key]
+    );
 
-  if (rows.length === 0) {
-    return res.status(404).json({ error: 'Feature flag not found' });
-  }
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Feature flag not found' });
+    }
 
-  res.json(rows[0]);
-}));
+    res.json(rows[0]);
+  })
+);
 
 module.exports = router;

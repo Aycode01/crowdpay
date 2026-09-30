@@ -247,10 +247,7 @@ describe('Compression middleware — integration', () => {
   // ── Gzip compression ─────────────────────────────────────────────────────
 
   it('compresses large JSON responses when client sends Accept-Encoding: gzip', async () => {
-    const res = await agent
-      .get('/large')
-      .set('Accept-Encoding', 'gzip')
-      .buffer(true);
+    const res = await agent.get('/large').set('Accept-Encoding', 'gzip').buffer(true);
 
     assert.equal(res.status, 200);
     // supertest decompresses gzip automatically; check the header was set
@@ -259,9 +256,7 @@ describe('Compression middleware — integration', () => {
   });
 
   it('sets Vary: Accept-Encoding on compressed responses', async () => {
-    const res = await agent
-      .get('/large')
-      .set('Accept-Encoding', 'gzip');
+    const res = await agent.get('/large').set('Accept-Encoding', 'gzip');
 
     const vary = res.headers['vary'] || '';
     assert.ok(
@@ -271,9 +266,7 @@ describe('Compression middleware — integration', () => {
   });
 
   it('returns readable JSON content after decompression', async () => {
-    const res = await agent
-      .get('/large')
-      .set('Accept-Encoding', 'gzip');
+    const res = await agent.get('/large').set('Accept-Encoding', 'gzip');
 
     assert.equal(res.status, 200);
     // supertest auto-decodes; body should parse as JSON
@@ -284,9 +277,7 @@ describe('Compression middleware — integration', () => {
   // ── Deflate ───────────────────────────────────────────────────────────────
 
   it('compresses using deflate when client sends Accept-Encoding: deflate', async () => {
-    const res = await agent
-      .get('/large')
-      .set('Accept-Encoding', 'deflate');
+    const res = await agent.get('/large').set('Accept-Encoding', 'deflate');
 
     assert.equal(res.status, 200);
     const encoding = res.headers['content-encoding'];
@@ -299,9 +290,7 @@ describe('Compression middleware — integration', () => {
   // ── Small payload — no compression ───────────────────────────────────────
 
   it('does NOT compress small responses below the threshold', async () => {
-    const res = await agent
-      .get('/small')
-      .set('Accept-Encoding', 'gzip');
+    const res = await agent.get('/small').set('Accept-Encoding', 'gzip');
 
     assert.equal(res.status, 200);
     const encoding = res.headers['content-encoding'];
@@ -314,9 +303,7 @@ describe('Compression middleware — integration', () => {
   // ── identity ─────────────────────────────────────────────────────────────
 
   it('returns uncompressed response when client sends Accept-Encoding: identity', async () => {
-    const res = await agent
-      .get('/large')
-      .set('Accept-Encoding', 'identity');
+    const res = await agent.get('/large').set('Accept-Encoding', 'identity');
 
     assert.equal(res.status, 200);
     const encoding = res.headers['content-encoding'];
@@ -340,9 +327,7 @@ describe('Compression middleware — integration', () => {
   // ── SSE exclusion ────────────────────────────────────────────────────────
 
   it('does NOT compress Server-Sent Event streams (text/event-stream)', async () => {
-    const res = await agent
-      .get('/sse')
-      .set('Accept-Encoding', 'gzip');
+    const res = await agent.get('/sse').set('Accept-Encoding', 'gzip');
 
     assert.equal(res.status, 200);
     const encoding = res.headers['content-encoding'];

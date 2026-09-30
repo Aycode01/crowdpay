@@ -20,7 +20,7 @@ function validateRequest(req, res, next) {
       error: {
         code: 'VALIDATION_ERROR',
         message: 'Invalid request parameters',
-        fields: Object.fromEntries(errors.array().map((e) => [e.path, e.msg])),
+        fields: Object.fromEntries(errors.array().map(e => [e.path, e.msg])),
       },
     });
   }
@@ -46,7 +46,7 @@ router.post(
       .optional()
       .isArray()
       .withMessage('required_attestations must be an array')
-      .custom((arr) => {
+      .custom(arr => {
         for (const item of arr) {
           if (!VALID_ATTESTATION_TYPES.includes(item)) {
             throw new Error(
@@ -103,10 +103,9 @@ router.get(
   [param('id').isUUID().withMessage('Campaign id must be a valid UUID')],
   validateRequest,
   asyncHandler(async (req, res) => {
-    const { rows } = await db.query(
-      'SELECT * FROM campaign_requirements WHERE campaign_id = $1',
-      [req.params.id]
-    );
+    const { rows } = await db.query('SELECT * FROM campaign_requirements WHERE campaign_id = $1', [
+      req.params.id,
+    ]);
     if (!rows.length) {
       return res.json({
         campaign_id: req.params.id,

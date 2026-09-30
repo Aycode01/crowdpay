@@ -32,11 +32,11 @@ module.exports = {
   create(context) {
     const options = context.options[0] || {};
     const ignoredStrings = new Set(options.ignoredStrings || []);
-    const ignoredPatterns = (options.ignoredPatterns || []).map(p => new RegExp(p));
+    const ignoredPatterns = (options.ignoredPatterns || []).map((p) => new RegExp(p));
 
     const isIgnored = (str) => {
       if (ignoredStrings.has(str)) return true;
-      return ignoredPatterns.some(pattern => pattern.test(str));
+      return ignoredPatterns.some((pattern) => pattern.test(str));
     };
 
     const isUserFacing = (str) => {
@@ -49,17 +49,21 @@ module.exports = {
     const isInTranslationCall = (node) => {
       let current = node.parent;
       while (current) {
-        if (current.type === 'CallExpression' &&
-            current.callee &&
-            (current.callee.name === 't' ||
-             (current.callee.type === 'MemberExpression' &&
+        if (
+          current.type === 'CallExpression' &&
+          current.callee &&
+          (current.callee.name === 't' ||
+            (current.callee.type === 'MemberExpression' &&
               current.callee.property &&
-              current.callee.property.name === 't'))) {
+              current.callee.property.name === 't'))
+        ) {
           return true;
         }
-        if (current.type === 'TaggedTemplateExpression' &&
-            current.tag &&
-            current.tag.name === 't') {
+        if (
+          current.type === 'TaggedTemplateExpression' &&
+          current.tag &&
+          current.tag.name === 't'
+        ) {
           return true;
         }
         current = current.parent;
@@ -79,9 +83,11 @@ module.exports = {
     const isInRequireCall = (node) => {
       let current = node;
       while (current) {
-        if (current.type === 'CallExpression' &&
-            current.callee &&
-            current.callee.name === 'require') {
+        if (
+          current.type === 'CallExpression' &&
+          current.callee &&
+          current.callee.name === 'require'
+        ) {
           return true;
         }
         current = current.parent;
@@ -92,11 +98,12 @@ module.exports = {
     const isInConsoleOrLog = (node) => {
       let current = node.parent;
       while (current) {
-        if (current.type === 'CallExpression' &&
-            current.callee &&
-            (current.callee.type === 'MemberExpression') &&
-            (current.callee.object?.name === 'console' ||
-             current.callee.object?.name === 'logger')) {
+        if (
+          current.type === 'CallExpression' &&
+          current.callee &&
+          current.callee.type === 'MemberExpression' &&
+          (current.callee.object?.name === 'console' || current.callee.object?.name === 'logger')
+        ) {
           return true;
         }
         current = current.parent;
@@ -109,15 +116,23 @@ module.exports = {
       while (current) {
         if (current.type === 'JSXAttribute') {
           const attrName = current.name?.name;
-          if (attrName === 'className' || attrName === 'style' ||
-              attrName === 'class' || attrName === 'data-testid' ||
-              attrName === 'data-test-id' || attrName === 'id' ||
-              attrName?.startsWith('data-') || attrName?.startsWith('aria-')) {
+          if (
+            attrName === 'className' ||
+            attrName === 'style' ||
+            attrName === 'class' ||
+            attrName === 'data-testid' ||
+            attrName === 'data-test-id' ||
+            attrName === 'id' ||
+            attrName?.startsWith('data-') ||
+            attrName?.startsWith('aria-')
+          ) {
             return true;
           }
         }
-        if (current.type === 'Property' &&
-            (current.key?.name === 'className' || current.key?.name === 'style')) {
+        if (
+          current.type === 'Property' &&
+          (current.key?.name === 'className' || current.key?.name === 'style')
+        ) {
           return true;
         }
         current = current.parent;
@@ -130,8 +145,12 @@ module.exports = {
       while (current) {
         if (current.type === 'JSXAttribute') {
           const attrName = current.name?.name;
-          if (attrName === 'placeholder' || attrName === 'alt' ||
-              attrName === 'title' || attrName === 'aria-label') {
+          if (
+            attrName === 'placeholder' ||
+            attrName === 'alt' ||
+            attrName === 'title' ||
+            attrName === 'aria-label'
+          ) {
             return false;
           }
         }

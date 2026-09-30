@@ -88,10 +88,13 @@ describe('RefundsSection', () => {
     await user.click(submitBtn);
 
     await waitFor(() => {
-      expect(api.processRefund).toHaveBeenCalledWith('camp-123', expect.objectContaining({
-        contributionId: 'contrib-1',
-        amount: 100,
-      }));
+      expect(api.processRefund).toHaveBeenCalledWith(
+        'camp-123',
+        expect.objectContaining({
+          contributionId: 'contrib-1',
+          amount: 100,
+        })
+      );
     });
   }, 20000);
 

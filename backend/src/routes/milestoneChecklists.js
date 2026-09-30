@@ -39,9 +39,7 @@ async function loadMilestoneWithAccess(milestoneId, user) {
 router.get(
   '/:id/checklist',
   asyncHandler(async (req, res) => {
-    const { rows } = await db.query('SELECT id FROM milestones WHERE id = $1', [
-      req.params.id,
-    ]);
+    const { rows } = await db.query('SELECT id FROM milestones WHERE id = $1', [req.params.id]);
     if (!rows.length) {
       return res.status(404).json({ error: 'Milestone not found' });
     }
@@ -62,10 +60,7 @@ router.put(
   requireAuth,
   requireRole('creator', 'admin'),
   asyncHandler(async (req, res) => {
-    const { milestone, isOwner } = await loadMilestoneWithAccess(
-      req.params.id,
-      req.user
-    );
+    const { milestone, isOwner } = await loadMilestoneWithAccess(req.params.id, req.user);
     if (!milestone) {
       return res.status(404).json({ error: 'Milestone not found' });
     }
@@ -103,10 +98,7 @@ router.post(
   requireAuth,
   requireRole('creator', 'admin'),
   asyncHandler(async (req, res) => {
-    const { milestone, isOwner } = await loadMilestoneWithAccess(
-      req.params.id,
-      req.user
-    );
+    const { milestone, isOwner } = await loadMilestoneWithAccess(req.params.id, req.user);
     if (!milestone) {
       return res.status(404).json({ error: 'Milestone not found' });
     }
@@ -123,11 +115,7 @@ router.post(
         .json({ error: 'completed_item_ids must be an array of checklist item ids' });
     }
 
-    const result = await recordCompletions(
-      req.params.id,
-      itemIds,
-      req.user.userId
-    );
+    const result = await recordCompletions(req.params.id, itemIds, req.user.userId);
     if (!result.ok) {
       return res.status(result.status).json({ error: result.error });
     }

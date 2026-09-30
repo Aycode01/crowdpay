@@ -35,13 +35,15 @@ test('campaign activity is limited to the campaign creator', async () => {
 });
 
 test('campaign activity returns paginated events without contributor identity', async () => {
-  const activity = [{
-    event_type: 'contribution',
-    event_id: 'event-1',
-    occurred_at: '2026-09-29T12:00:00.000Z',
-    summary: 'Contribution received',
-    details: { amount: '10', asset: 'USDC' },
-  }];
+  const activity = [
+    {
+      event_type: 'contribution',
+      event_id: 'event-1',
+      occurred_at: '2026-09-29T12:00:00.000Z',
+      summary: 'Contribution received',
+      details: { amount: '10', asset: 'USDC' },
+    },
+  ];
   const { app, queries } = buildApp({ activity });
   const res = await request(app).get('/api/campaigns/camp-1/activity?limit=10&offset=20');
 
@@ -53,13 +55,15 @@ test('campaign activity returns paginated events without contributor identity', 
 });
 
 test('campaign activity exports CSV', async () => {
-  const activity = [{
-    event_type: 'update',
-    event_id: 'event-1',
-    occurred_at: '2026-09-29T12:00:00.000Z',
-    summary: 'Update "one"',
-    details: { body: 'Hello' },
-  }];
+  const activity = [
+    {
+      event_type: 'update',
+      event_id: 'event-1',
+      occurred_at: '2026-09-29T12:00:00.000Z',
+      summary: 'Update "one"',
+      details: { body: 'Hello' },
+    },
+  ];
   const { app } = buildApp({ activity });
   const res = await request(app).get('/api/campaigns/camp-1/activity?format=csv');
 

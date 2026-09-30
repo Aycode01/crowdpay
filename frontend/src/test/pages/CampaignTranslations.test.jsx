@@ -21,37 +21,43 @@ vi.mock('../../context/AuthContext', () => ({
   }),
 }));
 
-const apiProxy = vi.hoisted(() =>
-  new Proxy(
-    {},
-    {
-      get: (target, prop) => {
-        if (!target[prop]) {
-          if (
-            [
-              'getCampaignUpdates',
-              'getCampaignMembers',
-              'getCampaignTiers',
-              'getStretchGoals',
-              'listWithdrawals',
-              'getComments',
-              'getCampaignTranslations',
-            ].includes(prop)
-          ) {
-            target[prop] = vi.fn().mockResolvedValue([]);
-          } else if (prop === 'getContributions') {
-            target[prop] = vi.fn().mockResolvedValue({ contributions: [], total: 0 });
-          } else {
-            target[prop] = vi.fn().mockResolvedValue({});
+const apiProxy = vi.hoisted(
+  () =>
+    new Proxy(
+      {},
+      {
+        get: (target, prop) => {
+          if (!target[prop]) {
+            if (
+              [
+                'getCampaignUpdates',
+                'getCampaignMembers',
+                'getCampaignTiers',
+                'getStretchGoals',
+                'listWithdrawals',
+                'getComments',
+                'getCampaignTranslations',
+              ].includes(prop)
+            ) {
+              target[prop] = vi.fn().mockResolvedValue([]);
+            } else if (prop === 'getContributions') {
+              target[prop] = vi.fn().mockResolvedValue({ contributions: [], total: 0 });
+            } else {
+              target[prop] = vi.fn().mockResolvedValue({});
+            }
           }
-        }
-        return target[prop];
-      },
-    }
-  )
+          return target[prop];
+        },
+      }
+    )
 );
 
-vi.mock('../../services/api', () => ({ api: apiProxy }));
+vi.mock('../../services/api', () => ({
+  api: apiProxy,
+  apiClient: {
+    get: vi.fn().mockResolvedValue({ data: { campaigns: [] } }),
+  },
+}));
 
 describe('Campaign Translations UI & Logic', () => {
   afterEach(() => {
@@ -130,7 +136,9 @@ describe('Campaign Translations UI & Logic', () => {
     expect(screen.getByRole('button', { name: /✓ Edit French \(Français\)/i })).toBeInTheDocument();
 
     // Untranslated ES button should say "+ Add Translation (Spanish (Español))"
-    const addEsBtn = screen.getByRole('button', { name: /\+ Add Translation \(Spanish \(Español\)\)/i });
+    const addEsBtn = screen.getByRole('button', {
+      name: /\+ Add Translation \(Spanish \(Español\)\)/i,
+    });
     fireEvent.click(addEsBtn);
 
     // Filling in the translation

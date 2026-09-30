@@ -23,9 +23,14 @@ describe('Landing page', () => {
   it('renders the landing heading and main call to action', async () => {
     renderWithProviders(<Landing />);
 
-    expect(await screen.findByRole('heading', { name: /Fund verified campaigns/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: /Fund verified campaigns/i })
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Explore campaigns/i })).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: /Start a campaign/i })[0]).toHaveAttribute('href', '/register?role=creator');
+    expect(screen.getAllByRole('link', { name: /Start a campaign/i })[0]).toHaveAttribute(
+      'href',
+      '/register?role=creator'
+    );
   });
 
   it('calls getFeaturedCampaigns on mount', async () => {

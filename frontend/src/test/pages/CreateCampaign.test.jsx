@@ -23,7 +23,9 @@ const apiMocks = vi.hoisted(() => ({
   createCampaign: vi.fn().mockResolvedValue({ id: 'new-campaign' }),
   uploadCampaignCoverImage: vi.fn().mockResolvedValue({}),
   getMyCampaignDraft: vi.fn().mockResolvedValue(null),
-  saveCampaignDraft: vi.fn().mockResolvedValue({ id: 'draft-1', saved_at: new Date().toISOString() }),
+  saveCampaignDraft: vi
+    .fn()
+    .mockResolvedValue({ id: 'draft-1', saved_at: new Date().toISOString() }),
   deleteCampaignDraft: vi.fn().mockResolvedValue({}),
   saveCampaignTranslation: vi.fn().mockResolvedValue({ id: 'trans-1' }),
 }));
@@ -76,7 +78,9 @@ describe('CreateCampaign page', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Continue to details/i }));
 
-    const frBtn = await screen.findByRole('button', { name: /\+ Add Translation \(French \(Français\)\)/i });
+    const frBtn = await screen.findByRole('button', {
+      name: /\+ Add Translation \(French \(Français\)\)/i,
+    });
     fireEvent.click(frBtn);
 
     const translatedTitleInput = screen.getByPlaceholderText(/Title in French \(Français\)/i);

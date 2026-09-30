@@ -24,7 +24,17 @@ function firstPaymentDate(periodMonths) {
   return formatDate(Date.now() + periodMonths * PERIOD_DAYS * 24 * 60 * 60 * 1000);
 }
 
-function ConfirmLockModal({ amountPerPeriod, asset, periodMonths, totalPeriods, totalCommitment, submitting, error, onConfirm, onClose }) {
+function ConfirmLockModal({
+  amountPerPeriod,
+  asset,
+  periodMonths,
+  totalPeriods,
+  totalCommitment,
+  submitting,
+  error,
+  onConfirm,
+  onClose,
+}) {
   const periodLabel = PERIOD_OPTIONS.find((p) => p.months === periodMonths)?.label.toLowerCase();
 
   return (
@@ -36,21 +46,45 @@ function ConfirmLockModal({ amountPerPeriod, asset, periodMonths, totalPeriods, 
         aria-label="Confirm recurring pledge"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem' }}>Lock {totalCommitment} {asset} now?</h2>
-        <p style={{ margin: '0 0 1rem', color: 'var(--color-text-secondary)', fontSize: '0.88rem', lineHeight: 1.5 }}>
+        <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem' }}>
+          Lock {totalCommitment} {asset} now?
+        </h2>
+        <p
+          style={{
+            margin: '0 0 1rem',
+            color: 'var(--color-text-secondary)',
+            fontSize: '0.88rem',
+            lineHeight: 1.5,
+          }}
+        >
           Stellar has no recurring payments, so the whole commitment leaves your wallet immediately
           and is held in {totalPeriods} claimable balances on the ledger — one per period. CrowdPay
           releases each one to the campaign on its scheduled date.
         </p>
-        <ul style={{ margin: '0 0 1rem', paddingLeft: '1.1rem', color: 'var(--color-text-secondary)', fontSize: '0.85rem', lineHeight: 1.6 }}>
+        <ul
+          style={{
+            margin: '0 0 1rem',
+            paddingLeft: '1.1rem',
+            color: 'var(--color-text-secondary)',
+            fontSize: '0.85rem',
+            lineHeight: 1.6,
+          }}
+        >
           <li>
             {amountPerPeriod} {asset} {periodLabel}, {totalPeriods} times
           </li>
           <li>First payment on {firstPaymentDate(periodMonths)}</li>
-          <li>Cancelling stops any payment more than 7 days away; you reclaim those funds yourself 30 days after their scheduled date</li>
+          <li>
+            Cancelling stops any payment more than 7 days away; you reclaim those funds yourself 30
+            days after their scheduled date
+          </li>
         </ul>
 
-        {error && <p className="alert alert--error" style={{ marginBottom: '0.75rem' }}>{error}</p>}
+        {error && (
+          <p className="alert alert--error" style={{ marginBottom: '0.75rem' }}>
+            {error}
+          </p>
+        )}
 
         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
           <button
@@ -242,7 +276,13 @@ export default function RecurringPledgeForm({ campaignId, asset, walletType, onS
             <strong style={{ fontSize: '1.35rem' }}>
               {totalCommitment} {asset}
             </strong>
-            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '0.2rem' }}>
+            <div
+              style={{
+                fontSize: '0.8rem',
+                color: 'var(--color-text-secondary)',
+                marginTop: '0.2rem',
+              }}
+            >
               First payment {firstPaymentDate(periodMonths)} · locked on Stellar up front
             </div>
           </div>

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 
 export default function CampaignForm({ initialData = {}, onSubmit }) {
-  const [deadline, setDeadline] = useState(initialData.deadline ? initialData.deadline.slice(0, 16) : '');
+  const [deadline, setDeadline] = useState(
+    initialData.deadline ? initialData.deadline.slice(0, 16) : ''
+  );
   const [title, setTitle] = useState(initialData.title || '');
   const [targetAmount, setTargetAmount] = useState(initialData.target_amount || '');
 
@@ -9,7 +11,11 @@ export default function CampaignForm({ initialData = {}, onSubmit }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ title, target_amount: targetAmount, deadline: deadline ? new Date(deadline).toISOString() : null });
+    onSubmit({
+      title,
+      target_amount: targetAmount,
+      deadline: deadline ? new Date(deadline).toISOString() : null,
+    });
   };
 
   return (
@@ -20,7 +26,12 @@ export default function CampaignForm({ initialData = {}, onSubmit }) {
       </div>
       <div>
         <label>Target Amount</label>
-        <input type="number" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} required />
+        <input
+          type="number"
+          value={targetAmount}
+          onChange={(e) => setTargetAmount(e.target.value)}
+          required
+        />
       </div>
       <div>
         <label>Deadline</label>

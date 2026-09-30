@@ -106,7 +106,15 @@ export default function CampaignEmbed() {
 
   if (loading) {
     return (
-      <div style={{ background: bg, color: textColor, padding: '1rem', fontFamily: 'system-ui, sans-serif', fontSize: '0.85rem' }}>
+      <div
+        style={{
+          background: bg,
+          color: textColor,
+          padding: '1rem',
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: '0.85rem',
+        }}
+      >
         Loading campaign progress...
       </div>
     );
@@ -114,7 +122,15 @@ export default function CampaignEmbed() {
 
   if (error || !stats) {
     return (
-      <div style={{ background: bg, color: '#e53e3e', padding: '1rem', fontFamily: 'system-ui, sans-serif', fontSize: '0.85rem' }}>
+      <div
+        style={{
+          background: bg,
+          color: '#e53e3e',
+          padding: '1rem',
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: '0.85rem',
+        }}
+      >
         {error || 'Campaign not available'}
       </div>
     );
@@ -133,8 +149,23 @@ export default function CampaignEmbed() {
         width: '100%',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem' }}>
-        <h3 style={{ margin: 0, fontSize: size === 'small' ? '0.95rem' : '1.1rem', fontWeight: 700, lineHeight: 1.25 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: '0.5rem',
+          marginBottom: '0.5rem',
+        }}
+      >
+        <h3
+          style={{
+            margin: 0,
+            fontSize: size === 'small' ? '0.95rem' : '1.1rem',
+            fontWeight: 700,
+            lineHeight: 1.25,
+          }}
+        >
           {stats.title}
         </h3>
         <span
@@ -154,19 +185,45 @@ export default function CampaignEmbed() {
       </div>
 
       {size !== 'small' && stats.description && (
-        <p style={{ margin: '0 0 0.75rem', fontSize: '0.82rem', color: textMuted, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        <p
+          style={{
+            margin: '0 0 0.75rem',
+            fontSize: '0.82rem',
+            color: textMuted,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
           {stats.description}
         </p>
       )}
 
       <div style={{ marginBottom: '0.75rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.3rem', fontWeight: 600 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontSize: '0.85rem',
+            marginBottom: '0.3rem',
+            fontWeight: 600,
+          }}
+        >
           <span>
-            {Number(stats.raised_amount).toLocaleString()} / {Number(stats.target_amount).toLocaleString()} {stats.asset_type}
+            {Number(stats.raised_amount).toLocaleString()} /{' '}
+            {Number(stats.target_amount).toLocaleString()} {stats.asset_type}
           </span>
           <span style={{ color: textMuted }}>{stats.progress_percentage}%</span>
         </div>
-        <div style={{ height: '8px', background: borderColor, borderRadius: '99px', overflow: 'hidden' }}>
+        <div
+          style={{
+            height: '8px',
+            background: borderColor,
+            borderRadius: '99px',
+            overflow: 'hidden',
+          }}
+        >
           <div
             style={{
               height: '100%',
@@ -179,11 +236,19 @@ export default function CampaignEmbed() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: textMuted, marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontSize: '0.78rem',
+          color: textMuted,
+          marginBottom: '0.75rem',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+        }}
+      >
         <span>👥 {stats.backer_count} backers</span>
-        {stats.days_remaining !== null && (
-          <span>⏳ {stats.days_remaining} days left</span>
-        )}
+        {stats.days_remaining !== null && <span>⏳ {stats.days_remaining} days left</span>}
       </div>
 
       {size === 'large' && stats.milestones?.length > 0 && (
@@ -191,13 +256,33 @@ export default function CampaignEmbed() {
       )}
 
       {size === 'large' && stats.recent_backers?.length > 0 && (
-        <div style={{ marginBottom: '0.75rem', borderTop: `1px solid ${borderColor}`, paddingTop: '0.5rem' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.3rem', color: textMuted }}>Recent Backers</div>
+        <div
+          style={{
+            marginBottom: '0.75rem',
+            borderTop: `1px solid ${borderColor}`,
+            paddingTop: '0.5rem',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              marginBottom: '0.3rem',
+              color: textMuted,
+            }}
+          >
+            Recent Backers
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
             {stats.recent_backers.slice(0, 3).map((b, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+              <div
+                key={i}
+                style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}
+              >
                 <span>{b.name}</span>
-                <span style={{ fontWeight: 600 }}>{Number(b.amount).toLocaleString()} {stats.asset_type}</span>
+                <span style={{ fontWeight: 600 }}>
+                  {Number(b.amount).toLocaleString()} {stats.asset_type}
+                </span>
               </div>
             ))}
           </div>

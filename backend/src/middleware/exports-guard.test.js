@@ -16,13 +16,7 @@ const path = require('path');
 const SRC_DIR = path.join(__dirname, '..');
 
 // Files to exclude from the search (test files, etc.)
-const EXCLUDE_PATTERNS = [
-  /\.test\.js$/,
-  /\.spec\.js$/,
-  /node_modules/,
-  /dist/,
-  /coverage/,
-];
+const EXCLUDE_PATTERNS = [/\.test\.js$/, /\.spec\.js$/, /node_modules/, /dist/, /coverage/];
 
 /**
  * Recursively find all .js files in a directory
@@ -78,7 +72,7 @@ function isImported(name, sourceFiles) {
     // - import { name } from '...'
     // - require('...').name
     const patterns = [
-      new RegExp(`\\{\\s*${name}\\s*\\}`),  // { name } in destructuring
+      new RegExp(`\\{\\s*${name}\\s*\\}`), // { name } in destructuring
       new RegExp(`require\\([^)]+\\.${name}`), // require('...').name
       new RegExp(`import\\s+\\{\\s*${name}\\s*\\}`), // import { name }
       new RegExp(`from\\s+['"][^'"]+['"]`), // import from
@@ -90,7 +84,7 @@ function isImported(name, sourceFiles) {
       const hasRequireAccess = new RegExp(`require\\([^)]+\\.${name}`).test(content);
       const hasImport = new RegExp(`import\\s+\\{\\s*${name}\\s*\\}`).test(content);
       const hasDefaultImport = new RegExp(`require\\([^)]+\\)\\.${name}`).test(content);
-      
+
       if (hasDestructuring || hasRequireAccess || hasImport || hasDefaultImport) {
         // Additional check: make sure it's from the right module
         if (content.includes('rateLimiter') || content.includes('rate-limiter')) {
@@ -121,7 +115,9 @@ describe('Rate limiter exports guard', () => {
     }
 
     if (unusedExports.length > 0) {
-      assert.fail(`Unused rate limiter exports found in middleware/rateLimiter.js:\n${unusedExports.join('\n')}`);
+      assert.fail(
+        `Unused rate limiter exports found in middleware/rateLimiter.js:\n${unusedExports.join('\n')}`
+      );
     }
   });
 });

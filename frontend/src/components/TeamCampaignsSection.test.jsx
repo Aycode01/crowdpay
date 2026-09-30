@@ -87,9 +87,7 @@ describe('TeamCampaignsSection (#952)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('team-totals')).toBeInTheDocument();
     });
-    expect(screen.getByTestId('team-totals').textContent).toContain(
-      '"members":2'
-    );
+    expect(screen.getByTestId('team-totals').textContent).toContain('"members":2');
     expect(screen.getAllByTestId('team-member-card')[0].textContent).toContain(
       'teamFundraising.raisedOf'
     );
@@ -107,9 +105,7 @@ describe('TeamCampaignsSection (#952)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('team-section-empty')).toBeInTheDocument();
     });
-    expect(screen.getByTestId('team-section-empty').textContent).toBe(
-      'teamFundraising.empty'
-    );
+    expect(screen.getByTestId('team-section-empty').textContent).toBe('teamFundraising.empty');
   });
 
   it('propagates load failures as an alert with the server message', async () => {
@@ -122,9 +118,7 @@ describe('TeamCampaignsSection (#952)', () => {
     render(<TeamCampaignsSection campaignId="parent-1" canManage={false} />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('team-section-error')).toHaveTextContent(
-        'Database down'
-      );
+      expect(screen.getByTestId('team-section-error')).toHaveTextContent('Database down');
     });
   });
 
@@ -140,10 +134,9 @@ describe('TeamCampaignsSection (#952)', () => {
     await user.click(screen.getByTestId('team-add-button'));
 
     await waitFor(() => {
-      expect(apiClient.post).toHaveBeenCalledWith(
-        '/campaigns/parent-1/team/members',
-        { member_campaign_id: 'c9' }
-      );
+      expect(apiClient.post).toHaveBeenCalledWith('/campaigns/parent-1/team/members', {
+        member_campaign_id: 'c9',
+      });
     });
     // Initial team load + reload after add + the owner /mine fetch.
     expect(apiClient.get).toHaveBeenCalledTimes(3);
@@ -161,9 +154,7 @@ describe('TeamCampaignsSection (#952)', () => {
     await user.click(screen.getAllByTestId('team-member-remove')[0]);
 
     await waitFor(() => {
-      expect(apiClient.delete).toHaveBeenCalledWith(
-        '/campaigns/parent-1/team/members/member-1'
-      );
+      expect(apiClient.delete).toHaveBeenCalledWith('/campaigns/parent-1/team/members/member-1');
     });
   });
 

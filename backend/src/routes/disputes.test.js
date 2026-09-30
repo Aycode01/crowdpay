@@ -7,12 +7,23 @@ const proxyquire = require('proxyquire').noCallThru();
 const CAMPAIGN_ID = 'cam-1';
 const CONTRIBUTOR_ID = 'user-1';
 
-function buildApp({ queryImpl, hasContributed = true, userId = CONTRIBUTOR_ID, stellarImpl = {}, sorobanImpl = {} } = {}) {
+function buildApp({
+  queryImpl,
+  hasContributed = true,
+  userId = CONTRIBUTOR_ID,
+  stellarImpl = {},
+  sorobanImpl = {},
+} = {}) {
   const defaultQuery = async (sql, params) => {
     if (sql.includes('SELECT id, creator_id, title, wallet_public_key FROM campaigns')) {
       return {
         rows: [
-          { id: CAMPAIGN_ID, creator_id: 'creator-1', title: 'Test Campaign', wallet_public_key: 'GCAMPAIGN' },
+          {
+            id: CAMPAIGN_ID,
+            creator_id: 'creator-1',
+            title: 'Test Campaign',
+            wallet_public_key: 'GCAMPAIGN',
+          },
         ],
       };
     }
@@ -126,13 +137,11 @@ test('POST /campaigns/:id/disputes returns 422 for a missing description', async
 test('POST /campaigns/:id/disputes returns 422 for a malformed evidence_url', async () => {
   const app = buildApp();
 
-  const res = await request(app)
-    .post(`/api/campaigns/${CAMPAIGN_ID}/disputes`)
-    .send({
-      reason: 'non_delivery',
-      description: 'The item never arrived',
-      evidence_url: 'not a url at all',
-    });
+  const res = await request(app).post(`/api/campaigns/${CAMPAIGN_ID}/disputes`).send({
+    reason: 'non_delivery',
+    description: 'The item never arrived',
+    evidence_url: 'not a url at all',
+  });
 
   assert.equal(res.status, 422);
   assert.match(res.body.error, /evidence_url must be a valid/);
@@ -151,13 +160,11 @@ test('POST /campaigns/:id/disputes accepts a missing evidence_url', async () => 
 test('POST /campaigns/:id/disputes accepts a valid https evidence_url', async () => {
   const app = buildApp();
 
-  const res = await request(app)
-    .post(`/api/campaigns/${CAMPAIGN_ID}/disputes`)
-    .send({
-      reason: 'non_delivery',
-      description: 'The item never arrived',
-      evidence_url: 'https://example.com/proof.png',
-    });
+  const res = await request(app).post(`/api/campaigns/${CAMPAIGN_ID}/disputes`).send({
+    reason: 'non_delivery',
+    description: 'The item never arrived',
+    evidence_url: 'https://example.com/proof.png',
+  });
 
   assert.equal(res.status, 201);
   assert.equal(res.body.evidence_url, 'https://example.com/proof.png');
@@ -207,12 +214,24 @@ test('POST /campaigns/:id/disputes still succeeds (frozenAt null) if the on-chai
 
 // --- scoped dispute lookup (#674) -------------------------------------------
 
-function buildLookupQuery({ raisedBy = CONTRIBUTOR_ID, creatorId = 'creator-1', hasOpenDispute = true } = {}) {
-  return async (sql) => {
+function buildLookupQuery({
+  raisedBy = CONTRIBUTOR_ID,
+  creatorId = 'creator-1',
+  hasOpenDispute = true,
+} = {}) {
+  return async sql => {
     if (sql.includes("d.status IN ('open', 'under_review')")) {
       return {
         rows: hasOpenDispute
-          ? [{ id: 'dispute-1', campaign_id: CAMPAIGN_ID, raised_by: raisedBy, creator_id: creatorId, status: 'open' }]
+          ? [
+              {
+                id: 'dispute-1',
+                campaign_id: CAMPAIGN_ID,
+                raised_by: raisedBy,
+                creator_id: creatorId,
+                status: 'open',
+              },
+            ]
           : [],
       };
     }
@@ -253,11 +272,32 @@ test('GET /campaigns/:id/dispute returns null when there is no open dispute', as
 function buildEvidenceQuery({ raisedBy = CONTRIBUTOR_ID, creatorId = 'creator-1' } = {}) {
   return async (sql, params) => {
     if (sql.includes('FROM disputes d JOIN campaigns c')) {
-      return { rows: [{ id: 'dispute-1', campaign_id: CAMPAIGN_ID, raised_by: raisedBy, creator_id: creatorId, status: 'open' }] };
+      return {
+        rows: [
+          {
+            id: 'dispute-1',
+            campaign_id: CAMPAIGN_ID,
+            raised_by: raisedBy,
+            creator_id: creatorId,
+            status: 'open',
+          },
+        ],
+      };
     }
     if (sql.includes('INSERT INTO dispute_evidence')) {
       const [disputeId, submittedBy, role, text, attachmentUrls] = params;
-      return { rows: [{ id: 'evidence-1', dispute_id: disputeId, submitted_by: submittedBy, role, text, attachment_urls: attachmentUrls }] };
+      return {
+        rows: [
+          {
+            id: 'evidence-1',
+            dispute_id: disputeId,
+            submitted_by: submittedBy,
+            role,
+            text,
+            attachment_urls: attachmentUrls,
+          },
+        ],
+      };
     }
     if (sql.includes('INSERT INTO dispute_events')) {
       return { rows: [] };
@@ -269,7 +309,9 @@ function buildEvidenceQuery({ raisedBy = CONTRIBUTOR_ID, creatorId = 'creator-1'
 test('POST /disputes/:id/evidence returns 422 for missing text', async () => {
   const app = buildApp({ queryImpl: buildEvidenceQuery() });
 
-  const res = await request(app).post('/api/disputes/dispute-1/evidence').send({ attachmentUrls: [] });
+  const res = await request(app)
+    .post('/api/disputes/dispute-1/evidence')
+    .send({ attachmentUrls: [] });
 
   assert.equal(res.status, 422);
 });
@@ -290,7 +332,9 @@ test('POST /disputes/:id/evidence returns 403 for someone unrelated to the dispu
     queryImpl: buildEvidenceQuery({ raisedBy: CONTRIBUTOR_ID, creatorId: 'creator-1' }),
   });
 
-  const res = await request(app).post('/api/disputes/dispute-1/evidence').send({ text: 'Not my dispute' });
+  const res = await request(app)
+    .post('/api/disputes/dispute-1/evidence')
+    .send({ text: 'Not my dispute' });
 
   assert.equal(res.status, 403);
 });
@@ -300,7 +344,10 @@ test('POST /disputes/:id/evidence accepts submission from the disputing contribu
 
   const res = await request(app)
     .post('/api/disputes/dispute-1/evidence')
-    .send({ text: 'The item never showed up', attachmentUrls: ['https://example.com/tracking.png'] });
+    .send({
+      text: 'The item never showed up',
+      attachmentUrls: ['https://example.com/tracking.png'],
+    });
 
   assert.equal(res.status, 201);
   assert.equal(res.body.role, 'contributor');
@@ -312,7 +359,9 @@ test('POST /disputes/:id/evidence accepts submission from the campaign creator',
     queryImpl: buildEvidenceQuery({ raisedBy: CONTRIBUTOR_ID, creatorId: 'creator-1' }),
   });
 
-  const res = await request(app).post('/api/disputes/dispute-1/evidence').send({ text: 'It was delivered on time' });
+  const res = await request(app)
+    .post('/api/disputes/dispute-1/evidence')
+    .send({ text: 'It was delivered on time' });
 
   assert.equal(res.status, 201);
   assert.equal(res.body.role, 'creator');
@@ -322,7 +371,11 @@ test('POST /disputes/:id/evidence accepts submission from the campaign creator',
 
 function buildDecideQuery({ contributorRows = [], escrowContractId = null } = {}) {
   return async (sql, params) => {
-    if (sql.includes('FROM disputes d') && sql.includes('JOIN campaigns c') && sql.includes('creator_id')) {
+    if (
+      sql.includes('FROM disputes d') &&
+      sql.includes('JOIN campaigns c') &&
+      sql.includes('creator_id')
+    ) {
       return {
         rows: [
           {
@@ -350,14 +403,20 @@ function buildDecideQuery({ contributorRows = [], escrowContractId = null } = {}
     if (sql.includes('SELECT previous_status FROM campaign_status_events')) {
       return { rows: [{ previous_status: 'active' }] };
     }
-    if (sql.includes("UPDATE campaigns SET status")) return { rows: [] };
+    if (sql.includes('UPDATE campaigns SET status')) return { rows: [] };
     if (sql.includes('UPDATE withdrawal_requests')) return { rows: [] };
     if (sql.includes('INSERT INTO withdrawal_requests')) return { rows: [] };
     if (sql.includes('SELECT id, email, name FROM users WHERE id = $1')) {
       return { rows: [{ id: 'creator-1', email: 'creator@example.com', name: 'Creator' }] };
     }
     if (sql.includes('WHERE id = ANY($1::uuid[])')) {
-      return { rows: contributorRows.map((c) => ({ id: c.contributor_id, email: `${c.contributor_id}@example.com`, name: c.contributor_id })) };
+      return {
+        rows: contributorRows.map(c => ({
+          id: c.contributor_id,
+          email: `${c.contributor_id}@example.com`,
+          name: c.contributor_id,
+        })),
+      };
     }
     return { rows: [] };
   };
@@ -366,7 +425,9 @@ function buildDecideQuery({ contributorRows = [], escrowContractId = null } = {}
 test('POST /admin/disputes/:id/decide returns 422 for an invalid decision', async () => {
   const app = buildApp({ queryImpl: buildDecideQuery() });
 
-  const res = await request(app).post('/api/admin/disputes/dispute-1/decide').send({ decision: 'do_nothing' });
+  const res = await request(app)
+    .post('/api/admin/disputes/dispute-1/decide')
+    .send({ decision: 'do_nothing' });
 
   assert.equal(res.status, 422);
 });
@@ -446,42 +507,48 @@ function buildAppForPatch({
 
     if (sql.includes('SELECT * FROM disputes WHERE id')) {
       return {
-        rows: [{
-          id: DISPUTE_ID,
-          campaign_id: CAMPAIGN_ID,
-          raised_by: CONTRIBUTOR_ID,
-          status: 'under_review',
-          reason: 'non_delivery',
-          description: 'Test dispute',
-          arbitrator_signer_added: arbitratorSignerAdded,
-        }],
+        rows: [
+          {
+            id: DISPUTE_ID,
+            campaign_id: CAMPAIGN_ID,
+            raised_by: CONTRIBUTOR_ID,
+            status: 'under_review',
+            reason: 'non_delivery',
+            description: 'Test dispute',
+            arbitrator_signer_added: arbitratorSignerAdded,
+          },
+        ],
       };
     }
 
     if (sql.includes('SELECT c.id, c.creator_id, c.wallet_public_key, c.escrow_contract_id')) {
       return {
-        rows: [{
-          id: CAMPAIGN_ID,
-          creator_id: 'creator-1',
-          wallet_public_key: 'GCREATOR...',
-          escrow_contract_id: escrowContractId,
-          raised_amount: raisedAmount,
-          title: 'Test Campaign',
-          campaign_status: campaignStatus,
-          creator_wallet_public_key: 'GCREATORWALLET...',
-        }],
+        rows: [
+          {
+            id: CAMPAIGN_ID,
+            creator_id: 'creator-1',
+            wallet_public_key: 'GCREATOR...',
+            escrow_contract_id: escrowContractId,
+            raised_amount: raisedAmount,
+            title: 'Test Campaign',
+            campaign_status: campaignStatus,
+            creator_wallet_public_key: 'GCREATORWALLET...',
+          },
+        ],
       };
     }
 
     if (sql.includes('UPDATE disputes')) {
       return {
-        rows: [{
-          id: DISPUTE_ID,
-          campaign_id: CAMPAIGN_ID,
-          raised_by: CONTRIBUTOR_ID,
-          status: params[0],
-          resolution_note: params[1],
-        }],
+        rows: [
+          {
+            id: DISPUTE_ID,
+            campaign_id: CAMPAIGN_ID,
+            raised_by: CONTRIBUTOR_ID,
+            status: params[0],
+            resolution_note: params[1],
+          },
+        ],
       };
     }
 
@@ -503,11 +570,13 @@ function buildAppForPatch({
 
     if (sql.includes('SELECT u.email, u.name, c.title')) {
       return {
-        rows: [{
-          email: 'creator@example.com',
-          name: 'Creator',
-          title: 'Test Campaign',
-        }],
+        rows: [
+          {
+            email: 'creator@example.com',
+            name: 'Creator',
+            title: 'Test Campaign',
+          },
+        ],
       };
     }
 
@@ -534,7 +603,7 @@ function buildAppForPatch({
     return { rows: [] };
   };
 
-  const releaseEscrowToCreatorMock = async (opts) => {
+  const releaseEscrowToCreatorMock = async opts => {
     sorobanReleaseCalled.count++;
     if (sorobanReleaseShouldFail) {
       throw new Error('Simulated Soroban escrow release failure');
@@ -542,12 +611,12 @@ function buildAppForPatch({
     return sorobanReleaseMock(opts);
   };
 
-  const isRealSorobanContractMock = (contractId) => {
+  const isRealSorobanContractMock = contractId => {
     if (!contractId) return false;
     return process.env.SOROBAN_ENABLED === 'true';
   };
 
-  const releaseEscrowFreezeMock = async (opts) => {
+  const releaseEscrowFreezeMock = async opts => {
     freezeReleaseCalled.count++;
     if (releaseFreezeShouldFail) {
       throw new Error('Simulated freeze release failure');
@@ -637,8 +706,16 @@ test('PATCH /disputes/:id with resolved_creator calls freeze release when arbitr
 
     assert.equal(res.status, 200);
     assert.equal(res.body.status, 'resolved_creator');
-    assert.equal(freezeReleaseCalled.count, 1, 'releaseEscrowFreeze should be called for multisig freeze');
-    assert.equal(sorobanReleaseCalled.count, 0, 'Soroban release should NOT be called without real contract');
+    assert.equal(
+      freezeReleaseCalled.count,
+      1,
+      'releaseEscrowFreeze should be called for multisig freeze'
+    );
+    assert.equal(
+      sorobanReleaseCalled.count,
+      0,
+      'Soroban release should NOT be called without real contract'
+    );
   } finally {
     cleanup();
   }
@@ -664,7 +741,11 @@ test('PATCH /disputes/:id with resolved_creator calls BOTH freeze release AND So
     assert.equal(res.status, 200);
     assert.equal(res.body.status, 'resolved_creator');
     assert.equal(freezeReleaseCalled.count, 1, 'releaseEscrowFreeze should be called');
-    assert.equal(sorobanReleaseCalled.count, 1, 'releaseEscrowToCreator should be called for real Soroban contract');
+    assert.equal(
+      sorobanReleaseCalled.count,
+      1,
+      'releaseEscrowToCreator should be called for real Soroban contract'
+    );
   } finally {
     cleanup();
   }
@@ -690,7 +771,11 @@ test('PATCH /disputes/:id with resolved_creator skips Soroban release when SOROB
     assert.equal(res.status, 200);
     assert.equal(res.body.status, 'resolved_creator');
     assert.equal(freezeReleaseCalled.count, 1, 'Freeze release should still be called');
-    assert.equal(sorobanReleaseCalled.count, 0, 'Soroban release should be SKIPPED for mock contract ID');
+    assert.equal(
+      sorobanReleaseCalled.count,
+      0,
+      'Soroban release should be SKIPPED for mock contract ID'
+    );
   } finally {
     cleanup();
   }
@@ -715,8 +800,16 @@ test('PATCH /disputes/:id with resolved_contributor does NOT call any release', 
 
     assert.equal(res.status, 200);
     assert.equal(res.body.status, 'resolved_contributor');
-    assert.equal(freezeReleaseCalled.count, 0, 'Freeze release should NOT be called for contributor resolution');
-    assert.equal(sorobanReleaseCalled.count, 0, 'Soroban release should NOT be called for contributor resolution');
+    assert.equal(
+      freezeReleaseCalled.count,
+      0,
+      'Freeze release should NOT be called for contributor resolution'
+    );
+    assert.equal(
+      sorobanReleaseCalled.count,
+      0,
+      'Soroban release should NOT be called for contributor resolution'
+    );
   } finally {
     cleanup();
   }

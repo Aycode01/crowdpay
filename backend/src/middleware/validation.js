@@ -6,10 +6,25 @@ const { isValidAmount, STROOP_DECIMALS } = require('../utils/stroops');
 
 const SUPPORTED_ASSETS = getSupportedAssetCodes();
 const VALID_CAMPAIGN_STATUSES = ['active', 'funded', 'closed', 'failed'];
-const VALID_ORDER_BY = ['newest', 'ending_soon', 'most_funded', 'most_backed', 'closest_to_goal', 'trending', 'relevance'];
+const VALID_ORDER_BY = [
+  'newest',
+  'ending_soon',
+  'most_funded',
+  'most_backed',
+  'closest_to_goal',
+  'trending',
+  'relevance',
+];
 const VALID_CATEGORIES = [
-  'technology', 'community', 'arts', 'education',
-  'environment', 'health', 'business', 'open_source', 'other',
+  'technology',
+  'community',
+  'arts',
+  'education',
+  'environment',
+  'health',
+  'business',
+  'open_source',
+  'other',
 ];
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -34,16 +49,9 @@ const passwordValidation = [
 ];
 
 const registerValidation = [
-  body('email')
-    .trim()
-    .toLowerCase()
-    .isEmail()
-    .withMessage('Invalid email format'),
+  body('email').trim().toLowerCase().isEmail().withMessage('Invalid email format'),
   ...passwordValidation,
-  body('name')
-    .customSanitizer(stripHtml)
-    .notEmpty()
-    .withMessage('Name is required'),
+  body('name').customSanitizer(stripHtml).notEmpty().withMessage('Name is required'),
   body('wallet_type')
     .optional()
     .isIn(['custodial', 'freighter'])
@@ -68,20 +76,12 @@ const registerValidation = [
 ];
 
 const loginValidation = [
-  body('email')
-    .trim()
-    .toLowerCase()
-    .isEmail()
-    .withMessage('Invalid email format'),
+  body('email').trim().toLowerCase().isEmail().withMessage('Invalid email format'),
   body('password').notEmpty().withMessage('Password is required'),
 ];
 
 const forgotPasswordValidation = [
-  body('email')
-    .trim()
-    .toLowerCase()
-    .isEmail()
-    .withMessage('Invalid email format'),
+  body('email').trim().toLowerCase().isEmail().withMessage('Invalid email format'),
 ];
 
 const resetPasswordValidation = [
@@ -89,7 +89,7 @@ const resetPasswordValidation = [
   ...passwordValidation,
 ];
 
-const validateDeadline = (value) => {
+const validateDeadline = value => {
   if (!value) return true;
   const deadline = new Date(value);
   const now = new Date();
@@ -123,8 +123,10 @@ const createCampaignValidation = [
     .isFloat({ gt: 0 })
     .withMessage('Target amount must be greater than zero')
     .bail()
-    .custom((value) => isValidAmount(value))
-    .withMessage(`Target amount must have at most ${STROOP_DECIMALS} decimal places and fit a Stellar amount`),
+    .custom(value => isValidAmount(value))
+    .withMessage(
+      `Target amount must have at most ${STROOP_DECIMALS} decimal places and fit a Stellar amount`
+    ),
   body('asset_type')
     .notEmpty()
     .withMessage('Asset type is required')
@@ -169,19 +171,18 @@ const createCampaignValidation = [
     .optional({ nullable: true })
     .isFloat({ min: 0, max: 100 })
     .withMessage('Milestone release_percentage must be between 0 and 100'),
-  body('milestones')
-    .custom((milestones) => {
-      if (!milestones || !Array.isArray(milestones)) return true;
-      if (milestones.length === 0) return true;
-      const total = milestones.reduce((sum, m) => {
-        const pct = parseFloat(m?.release_percentage);
-        return sum + (isNaN(pct) ? 0 : pct);
-      }, 0);
-      if (total > 100) {
-        throw new Error('Milestone percentages must not exceed 100%');
-      }
-      return true;
-    }),
+  body('milestones').custom(milestones => {
+    if (!milestones || !Array.isArray(milestones)) return true;
+    if (milestones.length === 0) return true;
+    const total = milestones.reduce((sum, m) => {
+      const pct = parseFloat(m?.release_percentage);
+      return sum + (isNaN(pct) ? 0 : pct);
+    }, 0);
+    if (total > 100) {
+      throw new Error('Milestone percentages must not exceed 100%');
+    }
+    return true;
+  }),
 ];
 
 const updateCampaignValidation = [
@@ -205,8 +206,10 @@ const updateCampaignValidation = [
     .isFloat({ gt: 0 })
     .withMessage('Target amount must be greater than zero')
     .bail()
-    .custom((value) => isValidAmount(value))
-    .withMessage(`Target amount must have at most ${STROOP_DECIMALS} decimal places and fit a Stellar amount`),
+    .custom(value => isValidAmount(value))
+    .withMessage(
+      `Target amount must have at most ${STROOP_DECIMALS} decimal places and fit a Stellar amount`
+    ),
   body('deadline')
     .optional({ nullable: true, checkFalsy: true })
     .isISO8601()
@@ -261,18 +264,13 @@ const thankYouValidation = [
 const CAMPAIGN_UPDATE_BODY_MAX_LENGTH = 5000;
 
 const createCampaignUpdateValidation = [
-  body('title')
-    .customSanitizer(stripHtml)
-    .notEmpty()
-    .withMessage('Title is required'),
+  body('title').customSanitizer(stripHtml).notEmpty().withMessage('Title is required'),
   body('body')
     .customSanitizer(stripHtml)
     .notEmpty()
     .withMessage('Body is required')
     .isLength({ max: CAMPAIGN_UPDATE_BODY_MAX_LENGTH })
-    .withMessage(
-      `Update body must be ${CAMPAIGN_UPDATE_BODY_MAX_LENGTH} characters or fewer`
-    ),
+    .withMessage(`Update body must be ${CAMPAIGN_UPDATE_BODY_MAX_LENGTH} characters or fewer`),
 ];
 
 const contributionQuoteValidation = [
@@ -297,7 +295,7 @@ const contributionValidation = [
   body('campaign_id')
     .notEmpty()
     .withMessage('campaign_id is required')
-    .custom((value) => {
+    .custom(value => {
       if (!isUuid(value)) throw new Error('campaign_id must be a valid UUID');
       return true;
     }),
@@ -307,8 +305,10 @@ const contributionValidation = [
     .isFloat({ gt: 0 })
     .withMessage('amount must be greater than zero')
     .bail()
-    .custom((value) => isValidAmount(value))
-    .withMessage(`amount must have at most ${STROOP_DECIMALS} decimal places and fit a Stellar amount`),
+    .custom(value => isValidAmount(value))
+    .withMessage(
+      `amount must have at most ${STROOP_DECIMALS} decimal places and fit a Stellar amount`
+    ),
   body('send_asset')
     .notEmpty()
     .withMessage('send_asset is required')
@@ -316,9 +316,15 @@ const contributionValidation = [
     .withMessage(`send_asset must be one of: ${SUPPORTED_ASSETS.join(', ')}`),
   body('display_name')
     .optional({ nullable: true })
-    .customSanitizer((val) => (typeof val === 'string' ? stripHtml(val).trim() : val))
-    .custom((value) => {
-      if (typeof value === 'string' && [...value].some((ch) => { const c = ch.charCodeAt(0); return c < 0x20 || c === 0x7F || (c >= 0x80 && c <= 0x9F); })) {
+    .customSanitizer(val => (typeof val === 'string' ? stripHtml(val).trim() : val))
+    .custom(value => {
+      if (
+        typeof value === 'string' &&
+        [...value].some(ch => {
+          const c = ch.charCodeAt(0);
+          return c < 0x20 || c === 0x7f || (c >= 0x80 && c <= 0x9f);
+        })
+      ) {
         throw new Error('Display name contains invalid control characters or null bytes');
       }
       return true;
@@ -327,7 +333,7 @@ const contributionValidation = [
     .withMessage('Display name must be at most 50 characters'),
   body('tier_id')
     .optional({ nullable: true })
-    .custom((value) => {
+    .custom(value => {
       if (value === null || value === undefined || value === '') return true;
       if (!isUuid(value)) throw new Error('tier_id must be a valid UUID');
       return true;
@@ -339,7 +345,7 @@ const withdrawalValidation = [
   body('campaign_id')
     .notEmpty()
     .withMessage('campaign_id is required')
-    .custom((value) => {
+    .custom(value => {
       if (!isUuid(value)) throw new Error('campaign_id must be a valid UUID');
       return true;
     }),
@@ -351,7 +357,7 @@ const withdrawalValidation = [
   body('destination_key')
     .notEmpty()
     .withMessage('destination_key is required')
-    .custom((value) => {
+    .custom(value => {
       try {
         Keypair.fromPublicKey(value);
         return true;
@@ -393,18 +399,21 @@ const createAnnouncementValidation = [
       const activeFrom = req.body.active_from;
       const startsAt = activeFrom ? new Date(activeFrom) : new Date();
       if (new Date(value).getTime() <= startsAt.getTime()) {
-        throw new Error(activeFrom ? 'active_until must be after active_from' : 'active_until must be in the future');
+        throw new Error(
+          activeFrom
+            ? 'active_until must be after active_from'
+            : 'active_until must be in the future'
+        );
       }
       return true;
     }),
 ];
 
 const announcementIdValidation = [
-  param('id')
-    .custom((value) => {
-      if (!isUuid(value)) throw new Error('id must be a valid UUID');
-      return true;
-    }),
+  param('id').custom(value => {
+    if (!isUuid(value)) throw new Error('id must be a valid UUID');
+    return true;
+  }),
 ];
 
 const getCampaignsValidation = [
@@ -442,7 +451,7 @@ function validateRequest(req, res, next) {
   const result = validationResult(req);
   if (result.isEmpty()) return next();
 
-  const fields = result.array().map((e) => ({
+  const fields = result.array().map(e => ({
     field: e.path || e.param,
     message: e.msg,
   }));

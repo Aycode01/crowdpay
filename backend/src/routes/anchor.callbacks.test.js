@@ -58,7 +58,10 @@ function buildApp({
       pipeline: () => ({
         incr: () => {},
         expire: () => {},
-        exec: async () => [[null, 1], [null, 0]],
+        exec: async () => [
+          [null, 1],
+          [null, 0],
+        ],
       }),
     },
     '../middleware/auth': {
@@ -75,19 +78,31 @@ function buildApp({
       getSupportedAssetCodes: () => ['USDC'],
     },
     '../services/contributionService': {
-      buildContributionIntent: async () => ({ kind: 'payment', conversionQuote: null, flowMetadata: {} }),
+      buildContributionIntent: async () => ({
+        kind: 'payment',
+        conversionQuote: null,
+        flowMetadata: {},
+      }),
       submitCustodialContribution: async () => ({ txHash: 'tx-abc', stellarTransactionId: 'st-1' }),
       ...contributionServiceImpl,
     },
     '../services/anchorService': {
       getAvailableAnchors: () => [],
       getAnchorById: () => null,
-      publicAnchorInfo: (a) => a,
+      publicAnchorInfo: a => a,
       isAnchorConfigured: () => true,
-      authenticateWithAnchor: async () => ({ token: 'tok', expiresAt: new Date(Date.now() + 60000) }),
-      startInteractiveDeposit: async () => ({ id: 'int-1', url: 'https://anchor.test/flow', status: 'pending' }),
+      authenticateWithAnchor: async () => ({
+        token: 'tok',
+        expiresAt: new Date(Date.now() + 60000),
+      }),
+      startInteractiveDeposit: async () => ({
+        id: 'int-1',
+        url: 'https://anchor.test/flow',
+        status: 'pending',
+      }),
       getAnchorTransaction: async () => ({ transaction: { status: 'pending' } }),
-      isAnchorFailureStatus: (s) => ['error', 'expired', 'no_market', 'too_small', 'too_large', 'refunded'].includes(s),
+      isAnchorFailureStatus: s =>
+        ['error', 'expired', 'no_market', 'too_small', 'too_large', 'refunded'].includes(s),
       ...anchorServiceImpl,
     },
   });
@@ -272,9 +287,12 @@ test('POST /api/anchor/callbacks/sep24 — processes a completed wallet deposit'
 
   let updateCalls = 0;
   const app = buildApp({
-    queryImpl: async (sql) => {
+    queryImpl: async sql => {
       if (sql.includes('FROM anchor_deposits ad')) return { rows: [sessionRow] };
-      if (sql.includes('UPDATE anchor_deposits')) { updateCalls++; return { rows: [] }; }
+      if (sql.includes('UPDATE anchor_deposits')) {
+        updateCalls++;
+        return { rows: [] };
+      }
       return { rows: [] };
     },
   });
@@ -315,9 +333,10 @@ test('POST /api/anchor/callbacks/sep24 — submits a contribution on completed c
 
   let contributionSubmitted = false;
   const app = buildApp({
-    queryImpl: async (sql) => {
+    queryImpl: async sql => {
       if (sql.includes('FROM anchor_deposits ad')) return { rows: [sessionRow] };
-      if (sql.includes('FROM campaigns c JOIN users u')) return { rows: [{ id: 'camp-1', asset_type: 'USDC', status: 'active' }] };
+      if (sql.includes('FROM campaigns c JOIN users u'))
+        return { rows: [{ id: 'camp-1', asset_type: 'USDC', status: 'active' }] };
       return { rows: [] };
     },
     contributionServiceImpl: {
@@ -367,7 +386,7 @@ test('POST /api/anchor/callbacks/sep24 — 422 when campaign is no longer active
   };
 
   const app = buildApp({
-    queryImpl: async (sql) => {
+    queryImpl: async sql => {
       if (sql.includes('FROM anchor_deposits ad')) return { rows: [sessionRow] };
       // Campaign lookup returns empty — campaign gone
       if (sql.includes('FROM campaigns c JOIN users u')) return { rows: [] };
@@ -392,29 +411,31 @@ test('POST /api/anchor/callbacks/sep24 — 500 on transient DB error (provider S
   process.env.ANCHOR_CALLBACK_HMAC_SECRET = TEST_SECRET;
   let callCount = 0;
   const app = buildApp({
-    queryImpl: async (sql) => {
+    queryImpl: async sql => {
       if (sql.includes('FROM anchor_deposits ad')) {
         callCount++;
         if (callCount === 1) {
           // First call succeeds to get past idempotency claim
           return {
-            rows: [{
-              id: 'dep-4',
-              user_id: 'user-1',
-              campaign_id: 'camp-1',
-              deposit_type: 'campaign',
-              anchor_transaction_id: 'provider-tx-err',
-              anchor_asset: 'USDC',
-              anchor_amount: '50',
-              contribution_amount: '50',
-              contribution_tx_hash: null,
-              contribution_id: null,
-              contribution_flow: null,
-              status: 'pending_anchor',
-              last_anchor_status: 'pending',
-              wallet_public_key: 'GUSER',
-              wallet_secret_encrypted: 'enc',
-            }],
+            rows: [
+              {
+                id: 'dep-4',
+                user_id: 'user-1',
+                campaign_id: 'camp-1',
+                deposit_type: 'campaign',
+                anchor_transaction_id: 'provider-tx-err',
+                anchor_asset: 'USDC',
+                anchor_amount: '50',
+                contribution_amount: '50',
+                contribution_tx_hash: null,
+                contribution_id: null,
+                contribution_flow: null,
+                status: 'pending_anchor',
+                last_anchor_status: 'pending',
+                wallet_public_key: 'GUSER',
+                wallet_secret_encrypted: 'enc',
+              },
+            ],
           };
         }
       }

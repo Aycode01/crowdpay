@@ -49,7 +49,9 @@ export default function ResetPassword() {
   if (!token) {
     return (
       <main className="container" style={{ paddingTop: '4rem', maxWidth: '400px' }}>
-        <h1 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '1rem' }}>{t('resetPassword.invalidLink')}</h1>
+        <h1 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '1rem' }}>
+          {t('resetPassword.invalidLink')}
+        </h1>
         <p style={{ color: 'var(--color-text-hint)', marginBottom: '1.5rem' }}>
           {t('resetPassword.invalidLinkDescription')}
         </p>
@@ -88,7 +90,9 @@ export default function ResetPassword() {
           onSubmit={handleSubmit}
           style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}
         >
-          <label htmlFor="new-password" className="sr-only">{t('resetPassword.newPassword')}</label>
+          <label htmlFor="new-password" className="sr-only">
+            {t('resetPassword.newPassword')}
+          </label>
           <input
             id="new-password"
             type="password"
@@ -98,7 +102,9 @@ export default function ResetPassword() {
             required
             minLength={8}
           />
-          <label htmlFor="confirm-password" className="sr-only">{t('resetPassword.confirmPassword')}</label>
+          <label htmlFor="confirm-password" className="sr-only">
+            {t('resetPassword.confirmPassword')}
+          </label>
           <input
             id="confirm-password"
             type="password"

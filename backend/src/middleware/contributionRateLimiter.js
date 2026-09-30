@@ -16,7 +16,10 @@ const WINDOW_SECONDS = 60;
  */
 function getTestAccountBypasses() {
   const raw = process.env.RATE_LIMIT_BYPASS_ACCOUNTS || '';
-  return raw.split(',').map((s) => s.trim()).filter(Boolean);
+  return raw
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
 }
 
 /**
@@ -49,7 +52,9 @@ async function contributionRateLimiter(req, res, next) {
     const now = Date.now();
     const windowKeySuffix = Math.floor(now / (WINDOW_SECONDS * 1000));
     const ipKey = `rl:contrib:ip:${ip}:${windowKeySuffix}`;
-    const walletKey = walletPublicKey ? `rl:contrib:wallet:${walletPublicKey}:${windowKeySuffix}` : null;
+    const walletKey = walletPublicKey
+      ? `rl:contrib:wallet:${walletPublicKey}:${windowKeySuffix}`
+      : null;
 
     const pipeline = redis.pipeline();
     pipeline.incr(ipKey);

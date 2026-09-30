@@ -15,17 +15,19 @@ const SENSITIVE_PARAMS = new Set([
   'x-api-key',
   'x-csrf-token',
   'hmac',
-  'signature'
+  'signature',
 ]);
 
 function isSensitiveParam(key) {
   const lowerKey = key.toLowerCase();
-  return SENSITIVE_PARAMS.has(lowerKey) ||
+  return (
+    SENSITIVE_PARAMS.has(lowerKey) ||
     lowerKey.includes('secret') ||
     lowerKey.includes('key') ||
     lowerKey.includes('token') ||
     lowerKey.includes('password') ||
-    lowerKey.includes('sig');
+    lowerKey.includes('sig')
+  );
 }
 
 function sanitizeUrl(url) {
@@ -61,7 +63,9 @@ function requestLogger(req, res, next) {
     const method = req.method;
     const status = res.statusCode;
     const path = sanitizeUrl(req.originalUrl || req.url);
-    const queryParams = sanitizeQueryParams((new URL(req.originalUrl || req.url, `http://localhost`)).search);
+    const queryParams = sanitizeQueryParams(
+      new URL(req.originalUrl || req.url, `http://localhost`).search
+    );
 
     const { requestId } = getRequestContext();
 
@@ -73,4 +77,3 @@ function requestLogger(req, res, next) {
 }
 
 module.exports = { requestLogger };
-

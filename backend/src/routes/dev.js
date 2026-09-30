@@ -1,4 +1,4 @@
-const router = require("express").Router();
+const router = require('express').Router();
 const fs = require('fs');
 const path = require('path');
 
@@ -12,15 +12,15 @@ function getEmailTemplates() {
     const templateName = file.replace('.js', '');
     const templatePath = path.join(emailsDir, file);
     const templateModule = require(templatePath);
-    
+
     const methods = Object.keys(templateModule).filter(
-      (key) => typeof templateModule[key] === 'function' && key.startsWith('build')
+      key => typeof templateModule[key] === 'function' && key.startsWith('build')
     );
-    
+
     if (methods.length > 0) {
       templates.push({
         name: templateName,
-        methods: methods
+        methods: methods,
       });
     }
   }

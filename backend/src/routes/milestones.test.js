@@ -25,10 +25,15 @@ function milestoneRow(overrides = {}) {
   };
 }
 
-function buildApp({ queryImpl, userId = 'creator-1', role = 'creator', platformApproverUserId } = {}) {
+function buildApp({
+  queryImpl,
+  userId = 'creator-1',
+  role = 'creator',
+  platformApproverUserId,
+} = {}) {
   const prevApprover = process.env.PLATFORM_APPROVER_USER_ID;
   const prevSetImmediate = global.setImmediate;
-  global.setImmediate = (fn) => {
+  global.setImmediate = fn => {
     fn();
   };
   if (platformApproverUserId !== false) {
@@ -77,7 +82,7 @@ function buildApp({ queryImpl, userId = 'creator-1', role = 'creator', platformA
     '../services/sorobanService': {
       invokeContract: async () => {},
       releaseMilestone: async () => {},
-      nativeToScVal: (v) => v,
+      nativeToScVal: v => v,
     },
     '../services/campaignInviteService': {
       resolveUserCampaignRole: async () => null,
@@ -90,7 +95,10 @@ function buildApp({ queryImpl, userId = 'creator-1', role = 'creator', platformA
     },
     '../services/webhookDispatcher': {
       emitWebhookEventForUser: async () => {},
-      WEBHOOK_EVENTS: { MILESTONE_REJECTED: 'milestone.rejected', MILESTONE_APPROVED: 'milestone.approved' },
+      WEBHOOK_EVENTS: {
+        MILESTONE_REJECTED: 'milestone.rejected',
+        MILESTONE_APPROVED: 'milestone.approved',
+      },
     },
     '../services/campaignFollowService': {
       notifyFollowers: async () => {},
@@ -146,33 +154,35 @@ test('POST /api/milestones/:id/submit transitions milestone to pending_review', 
         };
       }
       if (text.includes('INSERT INTO milestone_events')) return { rows: [] };
-      if (text.includes("SELECT id, email, name FROM users WHERE role = 'admin'")) return { rows: [] };
+      if (text.includes("SELECT id, email, name FROM users WHERE role = 'admin'"))
+        return { rows: [] };
       if (text.includes('SELECT name FROM users WHERE id')) return { rows: [{ name: 'Creator' }] };
-      if (text.includes('milestones_contract_id')) return { rows: [{ milestones_contract_id: null }] };
+      if (text.includes('milestones_contract_id'))
+        return { rows: [{ milestones_contract_id: null }] };
       return { rows: [] };
     },
   });
 
-  const res = await request(app)
-    .post(`/api/milestones/${MILESTONE_ID}/submit`)
-    .send({
-      evidence_url: 'https://example.com/demo',
-      evidence_description: 'Shipped beta build',
-      destination_key: VALID_DESTINATION,
-    });
+  const res = await request(app).post(`/api/milestones/${MILESTONE_ID}/submit`).send({
+    evidence_url: 'https://example.com/demo',
+    evidence_description: 'Shipped beta build',
+    destination_key: VALID_DESTINATION,
+  });
 
   cleanup();
   assert.equal(res.status, 200);
   assert.equal(res.body.status, 'pending_review');
-  assert.ok(calls.some((c) => c.includes('pending_review')));
-  assert.ok(calls.some((c) => c.includes('INSERT INTO milestone_events')));
+  assert.ok(calls.some(c => c.includes('pending_review')));
+  assert.ok(calls.some(c => c.includes('INSERT INTO milestone_events')));
 });
 
 test('POST /api/milestones/:id/submit blocks when already pending_review', async () => {
   const { app, cleanup } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM milestones m') && text.includes('JOIN campaigns')) {
-        return { rows: [milestoneRow({ status: 'pending_review', evidence_url: 'https://x.test' })] };
+        return {
+          rows: [milestoneRow({ status: 'pending_review', evidence_url: 'https://x.test' })],
+        };
       }
       return { rows: [] };
     },
@@ -189,7 +199,7 @@ test('POST /api/milestones/:id/submit blocks when already pending_review', async
 
 test('POST /api/milestones/:id/submit is blocked while the campaign contract is being migrated', async () => {
   const { app, cleanup } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM milestones m') && text.includes('JOIN campaigns')) {
         return { rows: [milestoneRow({ migration_in_progress: true })] };
       }
@@ -211,12 +221,20 @@ test('POST /api/milestones/:id/approve requires pending_review status', async ()
     userId: 'platform-1',
     role: 'admin',
     platformApproverUserId: 'platform-1',
-    queryImpl: async (text) => {
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+    queryImpl: async text => {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('FROM milestones m') && text.includes('JOIN users u')) {
-        return { rows: [milestoneRow({ status: 'pending', evidence_url: 'https://x.test', destination_key: VALID_DESTINATION })] };
+        return {
+          rows: [
+            milestoneRow({
+              status: 'pending',
+              evidence_url: 'https://x.test',
+              destination_key: VALID_DESTINATION,
+            }),
+          ],
+        };
       }
       return { rows: [] };
     },
@@ -237,7 +255,7 @@ test('POST /api/milestones/:id/reject sets rejected status with reason', async (
     platformApproverUserId: 'platform-1',
     queryImpl: async (text, params) => {
       calls.push(text);
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('UPDATE milestones') && text.includes('rejected')) {
@@ -253,7 +271,8 @@ test('POST /api/milestones/:id/reject sets rejected status with reason', async (
         };
       }
       if (text.includes('INSERT INTO milestone_events')) return { rows: [] };
-      if (text.includes('milestones_contract_id')) return { rows: [{ milestones_contract_id: null }] };
+      if (text.includes('milestones_contract_id'))
+        return { rows: [{ milestones_contract_id: null }] };
       return { rows: [] };
     },
   });
@@ -266,7 +285,7 @@ test('POST /api/milestones/:id/reject sets rejected status with reason', async (
   assert.equal(res.status, 200);
   assert.equal(res.body.status, 'rejected');
   assert.equal(res.body.review_note, 'Evidence does not match deliverable');
-  assert.ok(calls.some((c) => c.includes('rejected')));
+  assert.ok(calls.some(c => c.includes('rejected')));
 });
 
 test('POST /api/milestones/:id/approve prevents concurrent approval via atomic claim', async () => {
@@ -279,7 +298,7 @@ test('POST /api/milestones/:id/approve prevents concurrent approval via atomic c
     queryImpl: async (text, params) => {
       calls.push(text);
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('FROM milestones m') && text.includes('JOIN users u')) {
@@ -322,7 +341,8 @@ test('POST /api/milestones/:id/approve prevents concurrent approval via atomic c
       if (text.includes('SELECT id FROM withdrawal_requests WHERE milestone_id')) {
         return { rows: [] };
       }
-      if (text.includes('milestones_contract_id')) return { rows: [{ milestones_contract_id: null }] };
+      if (text.includes('milestones_contract_id'))
+        return { rows: [{ milestones_contract_id: null }] };
       if (text.includes('COUNT(*)::int AS total')) {
         return { rows: [{ total: 1, released_count: 1 }] };
       }
@@ -344,7 +364,7 @@ test('POST /api/milestones/:id/approve prevents concurrent approval via atomic c
 
 test('POST /api/milestones/:id/submit rejects javascript: scheme in evidence_url', async () => {
   const { app, cleanup } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM milestones m') && text.includes('JOIN campaigns')) {
         return { rows: [milestoneRow()] };
       }
@@ -352,12 +372,10 @@ test('POST /api/milestones/:id/submit rejects javascript: scheme in evidence_url
     },
   });
 
-  const res = await request(app)
-    .post(`/api/milestones/${MILESTONE_ID}/submit`)
-    .send({
-      evidence_url: 'javascript:alert(1)',
-      destination_key: VALID_DESTINATION,
-    });
+  const res = await request(app).post(`/api/milestones/${MILESTONE_ID}/submit`).send({
+    evidence_url: 'javascript:alert(1)',
+    destination_key: VALID_DESTINATION,
+  });
 
   cleanup();
   assert.equal(res.status, 422);
@@ -366,7 +384,7 @@ test('POST /api/milestones/:id/submit rejects javascript: scheme in evidence_url
 
 test('POST /api/milestones/:id/submit rejects data: scheme in evidence_url', async () => {
   const { app, cleanup } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM milestones m') && text.includes('JOIN campaigns')) {
         return { rows: [milestoneRow()] };
       }
@@ -374,12 +392,10 @@ test('POST /api/milestones/:id/submit rejects data: scheme in evidence_url', asy
     },
   });
 
-  const res = await request(app)
-    .post(`/api/milestones/${MILESTONE_ID}/submit`)
-    .send({
-      evidence_url: 'data:text/html,<script>alert(1)</script>',
-      destination_key: VALID_DESTINATION,
-    });
+  const res = await request(app).post(`/api/milestones/${MILESTONE_ID}/submit`).send({
+    evidence_url: 'data:text/html,<script>alert(1)</script>',
+    destination_key: VALID_DESTINATION,
+  });
 
   cleanup();
   assert.equal(res.status, 422);
@@ -388,7 +404,7 @@ test('POST /api/milestones/:id/submit rejects data: scheme in evidence_url', asy
 
 test('POST /api/milestones/:id/submit rejects malformed URL', async () => {
   const { app, cleanup } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM milestones m') && text.includes('JOIN campaigns')) {
         return { rows: [milestoneRow()] };
       }
@@ -396,12 +412,10 @@ test('POST /api/milestones/:id/submit rejects malformed URL', async () => {
     },
   });
 
-  const res = await request(app)
-    .post(`/api/milestones/${MILESTONE_ID}/submit`)
-    .send({
-      evidence_url: 'not-a-valid-url',
-      destination_key: VALID_DESTINATION,
-    });
+  const res = await request(app).post(`/api/milestones/${MILESTONE_ID}/submit`).send({
+    evidence_url: 'not-a-valid-url',
+    destination_key: VALID_DESTINATION,
+  });
 
   cleanup();
   assert.equal(res.status, 422);
@@ -410,7 +424,7 @@ test('POST /api/milestones/:id/submit rejects malformed URL', async () => {
 
 test('POST /api/milestones/:id/submit rejects vbscript: scheme', async () => {
   const { app, cleanup } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM milestones m') && text.includes('JOIN campaigns')) {
         return { rows: [milestoneRow()] };
       }
@@ -418,12 +432,10 @@ test('POST /api/milestones/:id/submit rejects vbscript: scheme', async () => {
     },
   });
 
-  const res = await request(app)
-    .post(`/api/milestones/${MILESTONE_ID}/submit`)
-    .send({
-      evidence_url: 'vbscript:MsgBox("XSS")',
-      destination_key: VALID_DESTINATION,
-    });
+  const res = await request(app).post(`/api/milestones/${MILESTONE_ID}/submit`).send({
+    evidence_url: 'vbscript:MsgBox("XSS")',
+    destination_key: VALID_DESTINATION,
+  });
 
   cleanup();
   assert.equal(res.status, 422);

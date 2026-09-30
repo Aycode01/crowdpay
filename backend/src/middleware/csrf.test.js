@@ -121,7 +121,7 @@ describe('CSRF middleware', () => {
   describe('csrfProtection - safe methods (GET, HEAD, OPTIONS)', () => {
     it('sets CSRF cookie if missing on GET', async () => {
       req.method = 'GET';
-      await new Promise((resolve) => {
+      await new Promise(resolve => {
         csrfProtection(req, res, () => {
           assert.ok(res.cookies[CSRF_COOKIE_NAME]);
           assert.strictEqual(req.csrfToken, res.cookies[CSRF_COOKIE_NAME].value);
@@ -133,7 +133,7 @@ describe('CSRF middleware', () => {
     it('uses existing CSRF cookie on GET', async () => {
       req.method = 'GET';
       req.cookies[CSRF_COOKIE_NAME] = 'existing-token';
-      await new Promise((resolve) => {
+      await new Promise(resolve => {
         csrfProtection(req, res, () => {
           assert.strictEqual(req.csrfToken, 'existing-token');
           resolve();
@@ -148,7 +148,7 @@ describe('CSRF middleware', () => {
       req.url = '/api/webhooks/kyc';
       req.cookies = {}; // No cookie
       req.headers[CSRF_HEADER_NAME] = undefined; // No header
-      await new Promise((resolve) => {
+      await new Promise(resolve => {
         csrfProtection(req, res, () => {
           assert.strictEqual(res.statusCode, 200);
           resolve();
@@ -168,7 +168,10 @@ describe('CSRF middleware', () => {
       });
       // Check response was sent
       assert.strictEqual(res.statusCode, 403);
-      assert.strictEqual(res.body.error, 'CSRF validation failed. Please refresh the page and try again.');
+      assert.strictEqual(
+        res.body.error,
+        'CSRF validation failed. Please refresh the page and try again.'
+      );
     });
   });
 
@@ -203,7 +206,7 @@ describe('CSRF middleware', () => {
       const token = 'valid-csrf-token';
       req.cookies[CSRF_COOKIE_NAME] = token;
       req.headers[CSRF_HEADER_NAME] = token;
-      await new Promise((resolve) => {
+      await new Promise(resolve => {
         csrfProtection(req, res, () => {
           assert.strictEqual(res.statusCode, 200);
           assert.strictEqual(req.csrfToken, token);
@@ -219,7 +222,10 @@ describe('CSRF middleware', () => {
         assert.fail('next() should not be called for rejected request');
       });
       assert.strictEqual(res.statusCode, 403);
-      assert.strictEqual(res.body.error, 'CSRF validation failed. Please refresh the page and try again.');
+      assert.strictEqual(
+        res.body.error,
+        'CSRF validation failed. Please refresh the page and try again.'
+      );
     });
 
     it('rejects mismatched header token', async () => {
@@ -229,7 +235,10 @@ describe('CSRF middleware', () => {
         assert.fail('next() should not be called for rejected request');
       });
       assert.strictEqual(res.statusCode, 403);
-      assert.strictEqual(res.body.error, 'CSRF validation failed. Please refresh the page and try again.');
+      assert.strictEqual(
+        res.body.error,
+        'CSRF validation failed. Please refresh the page and try again.'
+      );
     });
 
     it('rejects request with no CSRF cookie (and not API key)', async () => {
@@ -239,7 +248,10 @@ describe('CSRF middleware', () => {
         assert.fail('next() should not be called for rejected request');
       });
       assert.strictEqual(res.statusCode, 403);
-      assert.strictEqual(res.body.error, 'CSRF validation failed. Please refresh the page and try again.');
+      assert.strictEqual(
+        res.body.error,
+        'CSRF validation failed. Please refresh the page and try again.'
+      );
     });
 
     it('rejects request with no CSRF cookie and no header', async () => {
@@ -249,14 +261,17 @@ describe('CSRF middleware', () => {
         assert.fail('next() should not be called for rejected request');
       });
       assert.strictEqual(res.statusCode, 403);
-      assert.strictEqual(res.body.error, 'CSRF validation failed. Please refresh the page and try again.');
+      assert.strictEqual(
+        res.body.error,
+        'CSRF validation failed. Please refresh the page and try again.'
+      );
     });
   });
 
   describe('ensureCsrfToken', () => {
     it('sets CSRF cookie if missing', async () => {
       req.cookies = {};
-      await new Promise((resolve) => {
+      await new Promise(resolve => {
         ensureCsrfToken(req, res, () => {
           assert.ok(res.cookies[CSRF_COOKIE_NAME]);
           assert.strictEqual(req.csrfToken, res.cookies[CSRF_COOKIE_NAME].value);
@@ -267,7 +282,7 @@ describe('CSRF middleware', () => {
 
     it('uses existing CSRF cookie', async () => {
       req.cookies[CSRF_COOKIE_NAME] = 'existing-token';
-      await new Promise((resolve) => {
+      await new Promise(resolve => {
         ensureCsrfToken(req, res, () => {
           assert.strictEqual(req.csrfToken, 'existing-token');
           resolve();
@@ -284,8 +299,13 @@ describe('CSRF middleware', () => {
     it('contains only exact paths', () => {
       for (const path of CSRF_EXEMPT_PATHS) {
         // Ensure no paths end with / that would act as prefix
-        assert.ok(!path.endsWith('/') || path === '/api/webhooks/incoming' || path === '/api/anchor/callbacks' || path === '/api/anchor/sep24',
-          `Path ${path} should not end with / unless it's an exact match`);
+        assert.ok(
+          !path.endsWith('/') ||
+            path === '/api/webhooks/incoming' ||
+            path === '/api/anchor/callbacks' ||
+            path === '/api/anchor/sep24',
+          `Path ${path} should not end with / unless it's an exact match`
+        );
       }
     });
   });

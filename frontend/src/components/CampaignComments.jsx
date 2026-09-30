@@ -77,7 +77,15 @@ function CommentComposer({ placeholder, submitLabel, onSubmit, onCancel, autoFoc
   );
 }
 
-function CommentItem({ comment, replies, campaignId, isModerator, currentUserId, campaign, onChanged }) {
+function CommentItem({
+  comment,
+  replies,
+  campaignId,
+  isModerator,
+  currentUserId,
+  campaign,
+  onChanged,
+}) {
   const toast = useToast();
   const [replying, setReplying] = useState(false);
   const [error, setError] = useState('');
@@ -159,7 +167,15 @@ function CommentItem({ comment, replies, campaignId, isModerator, currentUserId,
         borderTop: '1px solid var(--color-border-lighter, #e5e7eb)',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '0.5rem',
+          flexWrap: 'wrap',
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
           <strong style={{ fontSize: '0.88rem' }}>{comment.author_name || 'Anonymous'}</strong>
           {isCreator && (
@@ -207,12 +223,26 @@ function CommentItem({ comment, replies, campaignId, isModerator, currentUserId,
       </div>
 
       {comment.hidden ? (
-        <p style={{ fontSize: '0.82rem', fontStyle: 'italic', color: 'var(--color-text-hint)', margin: '0.4rem 0' }}>
+        <p
+          style={{
+            fontSize: '0.82rem',
+            fontStyle: 'italic',
+            color: 'var(--color-text-hint)',
+            margin: '0.4rem 0',
+          }}
+        >
           Hidden by moderator{comment.hidden_reason ? `: ${comment.hidden_reason}` : ''}
           {isModerator && ' (visible to creator/admin only)'}
         </p>
       ) : (
-        <p style={{ fontSize: '0.9rem', margin: '0.4rem 0', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+        <p
+          style={{
+            fontSize: '0.9rem',
+            margin: '0.4rem 0',
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.5,
+          }}
+        >
           {comment.body}
         </p>
       )}
@@ -223,15 +253,27 @@ function CommentItem({ comment, replies, campaignId, isModerator, currentUserId,
         </p>
       )}
 
-      <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', fontSize: '0.78rem', marginTop: '0.3rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '0.65rem',
+          alignItems: 'center',
+          fontSize: '0.78rem',
+          marginTop: '0.3rem',
+        }}
+      >
         <button
           type="button"
           onClick={toggleUpvote}
           title={userUpvoted ? 'Remove upvote' : 'Upvote question'}
           style={{
             background: userUpvoted ? 'var(--color-accent-bg, #eff6ff)' : 'transparent',
-            color: userUpvoted ? 'var(--color-accent, #2563eb)' : 'var(--color-text-secondary, #4b5563)',
-            border: userUpvoted ? '1px solid var(--color-accent-border, #bfdbfe)' : '1px solid var(--color-border-light, #d1d5db)',
+            color: userUpvoted
+              ? 'var(--color-accent, #2563eb)'
+              : 'var(--color-text-secondary, #4b5563)',
+            border: userUpvoted
+              ? '1px solid var(--color-accent-border, #bfdbfe)'
+              : '1px solid var(--color-border-light, #d1d5db)',
             borderRadius: '4px',
             padding: '0.15rem 0.45rem',
             cursor: 'pointer',
@@ -250,7 +292,13 @@ function CommentItem({ comment, replies, campaignId, isModerator, currentUserId,
           <button
             type="button"
             onClick={() => setReplying((r) => !r)}
-            style={{ color: 'var(--color-accent, #2563eb)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            style={{
+              color: 'var(--color-accent, #2563eb)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+            }}
           >
             Reply
           </button>
@@ -260,7 +308,13 @@ function CommentItem({ comment, replies, campaignId, isModerator, currentUserId,
             type="button"
             onClick={flag}
             title="Report inappropriate comment"
-            style={{ color: 'var(--color-text-hint, #6b7280)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            style={{
+              color: 'var(--color-text-hint, #6b7280)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+            }}
           >
             Report / Flag
           </button>
@@ -269,7 +323,13 @@ function CommentItem({ comment, replies, campaignId, isModerator, currentUserId,
           <button
             type="button"
             onClick={remove}
-            style={{ color: 'var(--color-error-text, #dc2626)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            style={{
+              color: 'var(--color-error-text, #dc2626)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+            }}
           >
             Delete
           </button>
@@ -279,7 +339,13 @@ function CommentItem({ comment, replies, campaignId, isModerator, currentUserId,
             <button
               type="button"
               onClick={unhide}
-              style={{ color: 'var(--color-text-hint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              style={{
+                color: 'var(--color-text-hint)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+              }}
             >
               Unhide
             </button>
@@ -287,7 +353,13 @@ function CommentItem({ comment, replies, campaignId, isModerator, currentUserId,
             <button
               type="button"
               onClick={hide}
-              style={{ color: 'var(--color-text-hint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              style={{
+                color: 'var(--color-text-hint)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+              }}
             >
               Hide
             </button>
@@ -334,7 +406,8 @@ export default function CampaignComments({ campaignId, campaign }) {
 
   const currentUserId = user?.id || user?.userId;
   const isModerator =
-    !!currentUserId && (String(campaign?.creator_id) === String(currentUserId) || user?.role === 'admin');
+    !!currentUserId &&
+    (String(campaign?.creator_id) === String(currentUserId) || user?.role === 'admin');
 
   function load() {
     setLoading(true);
@@ -390,12 +463,26 @@ export default function CampaignComments({ campaignId, campaign }) {
         backgroundColor: 'var(--color-bg-card, #ffffff)',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+          marginBottom: '0.75rem',
+        }}
+      >
         <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>
           Campaign Q&A & Comments ({comments.filter((c) => !c.hidden).length})
         </h3>
         {isModerator && (
-          <button type="button" className="btn-secondary" onClick={() => setShowModeration((v) => !v)} style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setShowModeration((v) => !v)}
+            style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
+          >
             {showModeration ? 'Hide moderation queue' : 'Moderation queue'}
           </button>
         )}
@@ -414,10 +501,20 @@ export default function CampaignComments({ campaignId, campaign }) {
         >
           <strong style={{ fontSize: '0.85rem' }}>Flagged / hidden comments queue</strong>
           {flagged.length === 0 ? (
-            <p style={{ fontSize: '0.8rem', margin: '0.3rem 0 0' }}>Nothing currently needs review.</p>
+            <p style={{ fontSize: '0.8rem', margin: '0.3rem 0 0' }}>
+              Nothing currently needs review.
+            </p>
           ) : (
             flagged.map((c) => (
-              <div key={c.id} style={{ fontSize: '0.82rem', marginTop: '0.4rem', padding: '0.4rem 0', borderTop: '1px border-dashed #fcd34d' }}>
+              <div
+                key={c.id}
+                style={{
+                  fontSize: '0.82rem',
+                  marginTop: '0.4rem',
+                  padding: '0.4rem 0',
+                  borderTop: '1px border-dashed #fcd34d',
+                }}
+              >
                 <strong>{c.author_name}</strong> ({c.flag_count} flag{c.flag_count !== 1 ? 's' : ''}
                 {c.hidden ? ', hidden' : ''}): &quot;{c.body}&quot;
               </div>
@@ -447,7 +544,11 @@ export default function CampaignComments({ campaignId, campaign }) {
         </div>
       )}
 
-      {loading && <p style={{ color: 'var(--color-text-hint)', fontSize: '0.85rem' }}>Loading Q&A comments…</p>}
+      {loading && (
+        <p style={{ color: 'var(--color-text-hint)', fontSize: '0.85rem' }}>
+          Loading Q&A comments…
+        </p>
+      )}
       {error && (
         <p className="alert alert--error" style={{ fontSize: '0.82rem' }}>
           {error}
@@ -455,7 +556,14 @@ export default function CampaignComments({ campaignId, campaign }) {
       )}
 
       {!loading && topLevel.length === 0 && (
-        <p style={{ color: 'var(--color-text-hint)', fontSize: '0.88rem', fontStyle: 'italic', marginTop: '0.5rem' }}>
+        <p
+          style={{
+            color: 'var(--color-text-hint)',
+            fontSize: '0.88rem',
+            fontStyle: 'italic',
+            marginTop: '0.5rem',
+          }}
+        >
           No questions or comments yet. Be the first to ask the creator!
         </p>
       )}

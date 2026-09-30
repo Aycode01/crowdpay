@@ -49,8 +49,8 @@ function buildApp({ queryImpl, authUser }) {
         status: 0,
         evidence_hash: null,
       }),
-      nativeToScVal: (v) => v,
-      scvAddressFromString: (s) => s,
+      nativeToScVal: v => v,
+      scvAddressFromString: s => s,
     },
     '../services/emailService': { sendEmail: async () => {} },
     '../services/alerting': { sendAlert: () => {} },
@@ -78,7 +78,7 @@ function buildApp({ queryImpl, authUser }) {
       getCampaignsValidation: [],
       validateRequest: (_req, _res, next) => next(),
     },
-    '../utils/asyncHandler': (fn) => (req, res, next) => fn(req, res, next).catch(next),
+    '../utils/asyncHandler': fn => (req, res, next) => fn(req, res, next).catch(next),
     '../middleware/auth': {
       requireAuth: (req, _res, next) => {
         req.user = authUser || { userId: 'user-1', role: 'creator' };
@@ -113,7 +113,13 @@ const CAMPAIGN_ROW = {
 const MILESTONE_ROWS = [
   { id: 'm-1', title: 'Design', release_percentage: '25', sort_order: 0, status: 'released' },
   { id: 'm-2', title: 'Build', release_percentage: '25', sort_order: 1, status: 'approved' },
-  { id: 'm-3', title: 'Install', release_percentage: '25', sort_order: 2, status: 'pending_review' },
+  {
+    id: 'm-3',
+    title: 'Install',
+    release_percentage: '25',
+    sort_order: 2,
+    status: 'pending_review',
+  },
   { id: 'm-4', title: 'Handover', release_percentage: '25', sort_order: 3, status: 'rejected' },
 ];
 
@@ -136,7 +142,7 @@ test('GET /api/campaigns/:id/embed includes milestones with public statuses', as
 
   assert.equal(res.status, 200);
   assert.deepEqual(
-    res.body.milestones.map((milestone) => milestone.status),
+    res.body.milestones.map(milestone => milestone.status),
     ['released', 'approved', 'submitted', 'pending']
   );
   assert.deepEqual(res.body.milestones[0], {
@@ -147,7 +153,7 @@ test('GET /api/campaigns/:id/embed includes milestones with public statuses', as
     status: 'released',
   });
   // The campaign id must reach the query untouched — it is a UUID, not an int.
-  const campaignLookup = calls.find((call) => call.text.includes('FROM campaigns WHERE id = $1'));
+  const campaignLookup = calls.find(call => call.text.includes('FROM campaigns WHERE id = $1'));
   assert.deepEqual(campaignLookup.params, [CAMPAIGN_ID]);
 });
 

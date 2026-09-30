@@ -16,7 +16,7 @@ function createApp(user, queryImpl) {
       requireRole: () => (_req, _res, next) => next(),
     },
     '../services/auditService': {
-      queryAuditLogs: async (filters) => {
+      queryAuditLogs: async filters => {
         const countResult = await mockDb.query('COUNT');
         const dataResult = await mockDb.query('DATA', filters);
         return {
@@ -30,10 +30,12 @@ function createApp(user, queryImpl) {
         const result = await mockDb.query('EXPORT');
         return result.rows;
       },
-      buildExportCsv: (rows) => {
+      buildExportCsv: rows => {
         const headers = 'id,actor_id,action,ip_address,user_agent,metadata,created_at';
-        const lines = rows.map((r) =>
-          [r.id, r.actor_id, r.action, r.ip_address, r.user_agent, r.metadata, r.created_at].join(',')
+        const lines = rows.map(r =>
+          [r.id, r.actor_id, r.action, r.ip_address, r.user_agent, r.metadata, r.created_at].join(
+            ','
+          )
         );
         return [headers, ...lines].join('\n');
       },
@@ -60,8 +62,24 @@ describe('GET /api/admin/audit-logs', () => {
       }
       return {
         rows: [
-          { id: 1, actor_id: 'u1', action: 'login', ip_address: '1.2.3.4', user_agent: 'test', metadata: '{}', created_at: new Date().toISOString() },
-          { id: 2, actor_id: 'u2', action: 'refund', ip_address: '5.6.7.8', user_agent: 'test', metadata: '{"campaignId":"c1"}', created_at: new Date().toISOString() },
+          {
+            id: 1,
+            actor_id: 'u1',
+            action: 'login',
+            ip_address: '1.2.3.4',
+            user_agent: 'test',
+            metadata: '{}',
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: 2,
+            actor_id: 'u2',
+            action: 'refund',
+            ip_address: '5.6.7.8',
+            user_agent: 'test',
+            metadata: '{"campaignId":"c1"}',
+            created_at: new Date().toISOString(),
+          },
         ],
       };
     };
@@ -83,7 +101,15 @@ describe('GET /api/admin/audit-logs', () => {
       }
       return {
         rows: [
-          { id: 1, actor_id: 'u1', action: 'login', ip_address: null, user_agent: null, metadata: null, created_at: new Date().toISOString() },
+          {
+            id: 1,
+            actor_id: 'u1',
+            action: 'login',
+            ip_address: null,
+            user_agent: null,
+            metadata: null,
+            created_at: new Date().toISOString(),
+          },
         ],
       };
     };
@@ -118,7 +144,15 @@ describe('GET /api/admin/audit-logs/export', () => {
   it('exports JSON by default', async () => {
     const queryImpl = async () => ({
       rows: [
-        { id: 1, actor_id: 'u1', action: 'login', ip_address: null, user_agent: null, metadata: null, created_at: new Date().toISOString() },
+        {
+          id: 1,
+          actor_id: 'u1',
+          action: 'login',
+          ip_address: null,
+          user_agent: null,
+          metadata: null,
+          created_at: new Date().toISOString(),
+        },
       ],
     });
 
@@ -133,7 +167,15 @@ describe('GET /api/admin/audit-logs/export', () => {
   it('exports CSV when format=csv', async () => {
     const queryImpl = async () => ({
       rows: [
-        { id: 1, actor_id: 'u1', action: 'login', ip_address: null, user_agent: null, metadata: null, created_at: new Date().toISOString() },
+        {
+          id: 1,
+          actor_id: 'u1',
+          action: 'login',
+          ip_address: null,
+          user_agent: null,
+          metadata: null,
+          created_at: new Date().toISOString(),
+        },
       ],
     });
 

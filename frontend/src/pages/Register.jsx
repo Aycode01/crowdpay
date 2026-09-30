@@ -43,8 +43,17 @@ const styles = {
     minHeight: 'auto',
     fontSize: '0.85rem',
   },
-  strengthBarOuter: { height: '4px', borderRadius: '99px', background: '#e5e5e5', overflow: 'hidden' },
-  strengthBarInner: { height: '100%', borderRadius: '99px', transition: 'width 0.2s, background 0.2s' },
+  strengthBarOuter: {
+    height: '4px',
+    borderRadius: '99px',
+    background: '#e5e5e5',
+    overflow: 'hidden',
+  },
+  strengthBarInner: {
+    height: '100%',
+    borderRadius: '99px',
+    transition: 'width 0.2s, background 0.2s',
+  },
   strengthLabel: { fontSize: '0.78rem', fontWeight: 600 },
   strengthMargin: { marginTop: '-0.4rem' },
   confirmInput: { paddingRight: '2.5rem' },
@@ -150,17 +159,9 @@ export default function Register() {
 
   return (
     <main className="container" style={styles.container}>
-      <h1 style={styles.heading}>
-        {t('register.title')}
-      </h1>
-      <p style={styles.subtitle}>
-        {t('register.subtitle')}
-      </p>
-      <form
-        noValidate
-        onSubmit={handleSubmit}
-        style={styles.form}
-      >
+      <h1 style={styles.heading}>{t('register.title')}</h1>
+      <p style={styles.subtitle}>{t('register.subtitle')}</p>
+      <form noValidate onSubmit={handleSubmit} style={styles.form}>
         <input
           placeholder={t('register.fullName')}
           value={form.name}
@@ -209,9 +210,7 @@ export default function Register() {
                     }}
                   />
                 </div>
-                <span style={{ ...styles.strengthLabel, color: s.color }}>
-                  {s.label}
-                </span>
+                <span style={{ ...styles.strengthLabel, color: s.color }}>{s.label}</span>
               </div>
             );
           })()}
@@ -258,9 +257,7 @@ export default function Register() {
             ) : null}
           </div>
         )}
-        {error && (
-          <p style={styles.error}>{error}</p>
-        )}
+        {error && <p style={styles.error}>{error}</p>}
         <button
           type="submit"
           className="btn-primary"

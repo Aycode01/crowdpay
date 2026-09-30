@@ -59,9 +59,10 @@ function buildApp({ queryImpl, authAs = 'none' } = {}) {
         if (authAs === 'none') {
           return res.status(401).json({ error: { message: 'Unauthorized', code: 'UNAUTHORIZED' } });
         }
-        req.user = authAs === 'admin'
-          ? { userId: 'admin-1', role: 'admin', is_admin: true }
-          : { userId: 'user-1', role: 'contributor', is_admin: false };
+        req.user =
+          authAs === 'admin'
+            ? { userId: 'admin-1', role: 'admin', is_admin: true }
+            : { userId: 'user-1', role: 'contributor', is_admin: false };
         return next();
       },
       requireAdmin: (req, res, next) => {
@@ -71,7 +72,7 @@ function buildApp({ queryImpl, authAs = 'none' } = {}) {
         return next();
       },
     },
-    '../utils/asyncHandler': (fn) => (req, res, next) => fn(req, res, next).catch(next),
+    '../utils/asyncHandler': fn => (req, res, next) => fn(req, res, next).catch(next),
   });
 
   const app = express();
@@ -90,7 +91,7 @@ function buildApp({ queryImpl, authAs = 'none' } = {}) {
 
 test('GET /api/campaign-templates — returns active templates without auth', async () => {
   const app = buildApp({
-    queryImpl: async (sql) => {
+    queryImpl: async sql => {
       assert.match(sql, /is_active = TRUE/i, 'should filter by is_active');
       return { rows: [TEMPLATE] };
     },
@@ -136,9 +137,13 @@ test('GET /api/campaign-templates/admin — 403 for non-admin user', async () =>
 test('GET /api/campaign-templates/admin — returns all templates (including inactive) for admin', async () => {
   const app = buildApp({
     authAs: 'admin',
-    queryImpl: async (sql) => {
+    queryImpl: async sql => {
       // The admin query selects all rows — it must NOT have a WHERE is_active = TRUE filter
-      assert.doesNotMatch(sql, /WHERE is_active = TRUE/i, 'admin query should not filter by is_active');
+      assert.doesNotMatch(
+        sql,
+        /WHERE is_active = TRUE/i,
+        'admin query should not filter by is_active'
+      );
       return { rows: [TEMPLATE, INACTIVE_TEMPLATE] };
     },
   });
@@ -213,9 +218,7 @@ test('POST /api/campaign-templates/admin — creates template and returns 201', 
     is_active: true,
   };
 
-  const res = await request(app)
-    .post('/api/campaign-templates/admin')
-    .send(payload);
+  const res = await request(app).post('/api/campaign-templates/admin').send(payload);
 
   assert.equal(res.status, 201);
   assert.equal(res.body.slug, 'new-template');
@@ -281,8 +284,7 @@ test('PATCH /api/campaign-templates/admin/:id — updates template and returns u
 test('DELETE /api/campaign-templates/admin/:id — 401 when unauthenticated', async () => {
   const app = buildApp({ authAs: 'none' });
 
-  const res = await request(app)
-    .delete('/api/campaign-templates/admin/aaaa-bbbb');
+  const res = await request(app).delete('/api/campaign-templates/admin/aaaa-bbbb');
 
   assert.equal(res.status, 401);
 });
@@ -290,8 +292,7 @@ test('DELETE /api/campaign-templates/admin/:id — 401 when unauthenticated', as
 test('DELETE /api/campaign-templates/admin/:id — 403 for non-admin user', async () => {
   const app = buildApp({ authAs: 'user' });
 
-  const res = await request(app)
-    .delete('/api/campaign-templates/admin/aaaa-bbbb');
+  const res = await request(app).delete('/api/campaign-templates/admin/aaaa-bbbb');
 
   assert.equal(res.status, 403);
 });
@@ -302,8 +303,7 @@ test('DELETE /api/campaign-templates/admin/:id — 404 when template does not ex
     queryImpl: async () => ({ rows: [] }),
   });
 
-  const res = await request(app)
-    .delete('/api/campaign-templates/admin/does-not-exist');
+  const res = await request(app).delete('/api/campaign-templates/admin/does-not-exist');
 
   assert.equal(res.status, 404);
 });
@@ -312,14 +312,13 @@ test('DELETE /api/campaign-templates/admin/:id — soft-deletes template and ret
   let capturedSql;
   const app = buildApp({
     authAs: 'admin',
-    queryImpl: async (sql) => {
+    queryImpl: async sql => {
       capturedSql = sql;
       return { rows: [{ id: 'aaaa-bbbb' }] };
     },
   });
 
-  const res = await request(app)
-    .delete('/api/campaign-templates/admin/aaaa-bbbb');
+  const res = await request(app).delete('/api/campaign-templates/admin/aaaa-bbbb');
 
   assert.equal(res.status, 204);
   assert.match(capturedSql, /is_active = FALSE/i, 'delete should be a soft-delete');
@@ -338,7 +337,7 @@ test('route reachability — GET /api/campaign-templates responds (not 404)', as
       requireAuth: (_req, _res, next) => next(),
       requireAdmin: (_req, _res, next) => next(),
     },
-    '../utils/asyncHandler': (fn) => (req, res, next) => fn(req, res, next).catch(next),
+    '../utils/asyncHandler': fn => (req, res, next) => fn(req, res, next).catch(next),
   });
 
   const app = express();
@@ -349,5 +348,9 @@ test('route reachability — GET /api/campaign-templates responds (not 404)', as
   const res = await request(app).get('/api/campaign-templates');
 
   // Any non-404 response means the router was found and executed.
-  assert.notEqual(res.status, 404, 'campaign-templates route must be reachable at /api/campaign-templates');
+  assert.notEqual(
+    res.status,
+    404,
+    'campaign-templates route must be reachable at /api/campaign-templates'
+  );
 });

@@ -18,8 +18,8 @@ import { api } from '../services/api';
 import ReputationGauge from '../components/ReputationGauge';
 import AttestationsPanel from '../components/AttestationsPanel';
 
-const STELLAR_EXPERT_BASE = import.meta.env.VITE_STELLAR_EXPERT_URL ||
-  'https://stellar.expert/explorer/testnet';
+const STELLAR_EXPERT_BASE =
+  import.meta.env.VITE_STELLAR_EXPERT_URL || 'https://stellar.expert/explorer/testnet';
 
 function CopyButton({ value }) {
   const [copied, setCopied] = useState(false);
@@ -66,11 +66,7 @@ function StatCard({ label, value }) {
         textAlign: 'center',
       }}
     >
-      <div
-        style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--color-text)' }}
-      >
-        {value}
-      </div>
+      <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--color-text)' }}>{value}</div>
       <div
         style={{
           fontSize: '0.78rem',
@@ -149,9 +145,7 @@ export default function ContributorIdentityPage() {
         Your on-chain identity anchored to your Stellar public key. No personal data is stored here.
       </p>
 
-      {loading && (
-        <p style={{ color: 'var(--color-text-hint)' }}>Loading identity…</p>
-      )}
+      {loading && <p style={{ color: 'var(--color-text-hint)' }}>Loading identity…</p>}
 
       {error && (
         <div className="alert alert--warning" style={{ marginBottom: '1.5rem' }}>
@@ -161,7 +155,6 @@ export default function ContributorIdentityPage() {
 
       {!loading && profile && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-
           {/* ── DID section ─────────────────────────────────────────────── */}
           <section
             style={{
@@ -260,10 +253,7 @@ export default function ContributorIdentityPage() {
               border: '1px solid var(--color-border)',
             }}
           >
-            <AttestationsPanel
-              attestations={profile.attestations}
-              onStartKyc={handleStartKyc}
-            />
+            <AttestationsPanel attestations={profile.attestations} onStartKyc={handleStartKyc} />
           </section>
 
           {/* ── Contribution stats ───────────────────────────────────── */}
@@ -279,10 +269,7 @@ export default function ContributorIdentityPage() {
               Contribution History
             </h2>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-              <StatCard
-                label="Campaigns Backed"
-                value={profile.contributionStats.totalCampaigns}
-              />
+              <StatCard label="Campaigns Backed" value={profile.contributionStats.totalCampaigns} />
               <StatCard
                 label="Total Contributed (USD)"
                 value={`$${profile.contributionStats.totalAmountUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
@@ -293,7 +280,6 @@ export default function ContributorIdentityPage() {
               />
             </div>
           </section>
-
         </div>
       )}
     </div>

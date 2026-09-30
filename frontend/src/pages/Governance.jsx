@@ -48,7 +48,7 @@ export default function Governance() {
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [voting, setVoting] = useState(false);
-  
+
   const [newProposal, setNewProposal] = useState({
     new_fee_bps: '',
     new_creator_share_bps: '',
@@ -78,7 +78,7 @@ export default function Governance() {
       }
 
       // Check for active proposal
-      const active = proposalsData.proposals?.find(p => p.status === 'active');
+      const active = proposalsData.proposals?.find((p) => p.status === 'active');
       if (active) {
         const detailData = await api.getGovernanceProposal(active.id);
         setActiveProposal(detailData.proposal);
@@ -152,12 +152,12 @@ export default function Governance() {
     const now = new Date();
     const end = new Date(deadline);
     const diff = end - now;
-    
+
     if (diff <= 0) return 'Voting ended';
-    
+
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
+
     if (days > 0) return `${days}d ${hours}h remaining`;
     return `${hours}h remaining`;
   };
@@ -165,7 +165,7 @@ export default function Governance() {
   const getStellarExpertUrl = (contractId) => {
     if (!contractId) return '#';
     const isTestnet = import.meta.env.VITE_STELLAR_NETWORK === 'testnet';
-    return isTestnet 
+    return isTestnet
       ? `https://stellar.expert/testnet/contract/${contractId}`
       : `https://stellar.expert/mainnet/contract/${contractId}`;
   };
@@ -236,10 +236,14 @@ export default function Governance() {
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-500">Can Propose</p>
-                <p className={`text-lg font-semibold ${userTokenBalance.can_propose ? 'text-green-600' : 'text-red-600'}`}>
+                <p
+                  className={`text-lg font-semibold ${userTokenBalance.can_propose ? 'text-green-600' : 'text-red-600'}`}
+                >
                   {userTokenBalance.can_propose ? 'Yes' : 'No'}
                 </p>
-                <p className="text-xs text-gray-400">Minimum: {userTokenBalance.min_required} CROWD</p>
+                <p className="text-xs text-gray-400">
+                  Minimum: {userTokenBalance.min_required} CROWD
+                </p>
               </div>
             </div>
           </div>
@@ -254,13 +258,15 @@ export default function Governance() {
                 <div>
                   <p className="text-sm text-gray-500">Proposed Platform Fee</p>
                   <p className="text-lg font-semibold">
-                    {activeProposal.proposed_fee_bps} bps ({(activeProposal.proposed_fee_bps / 100).toFixed(2)}%)
+                    {activeProposal.proposed_fee_bps} bps (
+                    {(activeProposal.proposed_fee_bps / 100).toFixed(2)}%)
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Proposed Creator Share</p>
                   <p className="text-lg font-semibold">
-                    {activeProposal.proposed_creator_share_bps} bps ({(activeProposal.proposed_creator_share_bps / 100).toFixed(2)}%)
+                    {activeProposal.proposed_creator_share_bps} bps (
+                    {(activeProposal.proposed_creator_share_bps / 100).toFixed(2)}%)
                   </p>
                 </div>
               </div>
@@ -276,15 +282,21 @@ export default function Governance() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Votes For</p>
-                    <p className="text-lg font-semibold text-green-600">{activeProposal.vote_stats.votes_for}</p>
+                    <p className="text-lg font-semibold text-green-600">
+                      {activeProposal.vote_stats.votes_for}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Votes Against</p>
-                    <p className="text-lg font-semibold text-red-600">{activeProposal.vote_stats.votes_against}</p>
+                    <p className="text-lg font-semibold text-red-600">
+                      {activeProposal.vote_stats.votes_against}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Participation</p>
-                    <p className="text-lg font-semibold text-blue-600">{activeProposal.vote_stats.participation_rate}%</p>
+                    <p className="text-lg font-semibold text-blue-600">
+                      {activeProposal.vote_stats.participation_rate}%
+                    </p>
                   </div>
                 </div>
               )}
@@ -297,11 +309,15 @@ export default function Governance() {
               {activeProposal.outcome_projection && (
                 <div>
                   <p className="text-sm text-gray-500">Current Outcome</p>
-                  <p className={`text-lg font-semibold ${
-                    activeProposal.outcome_projection === 'likely_pass' ? 'text-green-600' :
-                    activeProposal.outcome_projection === 'likely_fail' ? 'text-red-600' :
-                    'text-yellow-600'
-                  }`}>
+                  <p
+                    className={`text-lg font-semibold ${
+                      activeProposal.outcome_projection === 'likely_pass'
+                        ? 'text-green-600'
+                        : activeProposal.outcome_projection === 'likely_fail'
+                          ? 'text-red-600'
+                          : 'text-yellow-600'
+                    }`}
+                  >
                     {activeProposal.outcome_projection.replace('_', ' ').toUpperCase()}
                   </p>
                 </div>
@@ -326,14 +342,15 @@ export default function Governance() {
                 </div>
               )}
 
-              {activeProposal.status === 'active' && getTimeRemaining(activeProposal.deadline) === 'Voting ended' && (
-                <button
-                  onClick={handleExecuteProposal}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
-                >
-                  Execute Proposal
-                </button>
-              )}
+              {activeProposal.status === 'active' &&
+                getTimeRemaining(activeProposal.deadline) === 'Voting ended' && (
+                  <button
+                    onClick={handleExecuteProposal}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
+                  >
+                    Execute Proposal
+                  </button>
+                )}
             </div>
           </div>
         )}
@@ -362,7 +379,9 @@ export default function Governance() {
                       max="10000"
                       required
                       value={newProposal.new_fee_bps}
-                      onChange={(e) => setNewProposal({ ...newProposal, new_fee_bps: e.target.value })}
+                      onChange={(e) =>
+                        setNewProposal({ ...newProposal, new_fee_bps: e.target.value })
+                      }
                       className="w-full border border-gray-300 rounded-lg px-3 py-2"
                       placeholder={t('governance.feePlaceholder')}
                     />
@@ -379,7 +398,9 @@ export default function Governance() {
                       max="10000"
                       required
                       value={newProposal.new_creator_share_bps}
-                      onChange={(e) => setNewProposal({ ...newProposal, new_creator_share_bps: e.target.value })}
+                      onChange={(e) =>
+                        setNewProposal({ ...newProposal, new_creator_share_bps: e.target.value })
+                      }
                       className="w-full border border-gray-300 rounded-lg px-3 py-2"
                       placeholder={t('governance.creatorSharePlaceholder')}
                     />
@@ -395,7 +416,9 @@ export default function Governance() {
                       minLength="10"
                       maxLength="1000"
                       value={newProposal.rationale_text}
-                      onChange={(e) => setNewProposal({ ...newProposal, rationale_text: e.target.value })}
+                      onChange={(e) =>
+                        setNewProposal({ ...newProposal, rationale_text: e.target.value })
+                      }
                       className="w-full border border-gray-300 rounded-lg px-3 py-2"
                       rows="3"
                       placeholder={t('governance.rationalePlaceholder')}
@@ -463,12 +486,17 @@ export default function Governance() {
                         {proposal.proposed_creator_share_bps} bps
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          proposal.status === 'executed' ? 'bg-green-100 text-green-800' :
-                          proposal.status === 'failed' ? 'bg-red-100 text-red-800' :
-                          proposal.status === 'active' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            proposal.status === 'executed'
+                              ? 'bg-green-100 text-green-800'
+                              : proposal.status === 'failed'
+                                ? 'bg-red-100 text-red-800'
+                                : proposal.status === 'active'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
                           {proposal.status}
                         </span>
                       </td>

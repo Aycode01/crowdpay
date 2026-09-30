@@ -37,12 +37,7 @@ describe('ThankYouModal and OfflineBanner in French locale', () => {
     await i18n.changeLanguage('fr');
 
     render(
-      <ThankYouModal
-        campaignId="camp-1"
-        contribution={null}
-        onClose={() => {}}
-        onSent={() => {}}
-      />
+      <ThankYouModal campaignId="camp-1" contribution={null} onClose={() => {}} onSent={() => {}} />
     );
 
     expect(screen.getByText('Envoyer un message groupé de remerciement')).toBeInTheDocument();

@@ -5,7 +5,11 @@ import CampaignShare from './CampaignShare';
 
 vi.mock('react-router-dom', () => ({
   useParams: () => ({ id: '123' }),
-  Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
+  Link: ({ children, to, ...props }) => (
+    <a href={to} {...props}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock('../context/AuthContext', () => ({
@@ -47,7 +51,12 @@ describe('CampaignShare', () => {
     render(<CampaignShare />);
 
     await waitFor(() => {
-      expect(screen.getByText((content, element) => element.tagName.toLowerCase() === 'h1' && content.includes('Solar Energy Project'))).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          (content, element) =>
+            element.tagName.toLowerCase() === 'h1' && content.includes('Solar Energy Project')
+        )
+      ).toBeInTheDocument();
     });
 
     expect(screen.getByTestId('campaign-qr-code')).toBeInTheDocument();

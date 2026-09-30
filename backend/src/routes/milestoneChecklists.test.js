@@ -12,14 +12,17 @@ function buildApp({
   service = {},
 } = {}) {
   const defaultService = {
-    validateChecklistInput: (input) => ({ ok: true, items: input?.items ?? null }),
+    validateChecklistInput: input => ({ ok: true, items: input?.items ?? null }),
     replaceChecklist: async () => {},
     getChecklistWithStatus: async () => [],
     recordCompletions: async () => ({ ok: true, recorded: 0 }),
   };
   const router = proxyquire('./milestoneChecklists', {
     '../config/database': {
-      query: async () => ({ rows: milestoneRow ? [milestoneRow] : [], rowCount: milestoneRow ? 1 : 0 }),
+      query: async () => ({
+        rows: milestoneRow ? [milestoneRow] : [],
+        rowCount: milestoneRow ? 1 : 0,
+      }),
     },
     '../config/logger': { info: () => {}, error: () => {}, warn: () => {}, debug: () => {} },
     '../middleware/auth': {
@@ -78,7 +81,12 @@ test('PUT /:id/checklist replaces the template for the owner', async () => {
 
 test('PUT /:id/checklist 403s for a non-owner', async () => {
   const app = buildApp({
-    milestoneRow: { id: MILESTONE_ID, campaign_id: 'c1', status: 'pending', creator_id: 'someone-else' },
+    milestoneRow: {
+      id: MILESTONE_ID,
+      campaign_id: 'c1',
+      status: 'pending',
+      creator_id: 'someone-else',
+    },
   });
 
   const response = await request(app)
@@ -90,7 +98,12 @@ test('PUT /:id/checklist 403s for a non-owner', async () => {
 
 test('PUT /:id/checklist 409s while the milestone is under review', async () => {
   const app = buildApp({
-    milestoneRow: { id: MILESTONE_ID, campaign_id: 'c1', status: 'pending_review', creator_id: 'user-1' },
+    milestoneRow: {
+      id: MILESTONE_ID,
+      campaign_id: 'c1',
+      status: 'pending_review',
+      creator_id: 'user-1',
+    },
   });
 
   const response = await request(app)
@@ -157,7 +170,12 @@ test('POST /:id/checklist/complete rejects missing required items with 422', asy
 
 test('POST /:id/checklist/complete 403s for a non-owner', async () => {
   const app = buildApp({
-    milestoneRow: { id: MILESTONE_ID, campaign_id: 'c1', status: 'pending', creator_id: 'someone-else' },
+    milestoneRow: {
+      id: MILESTONE_ID,
+      campaign_id: 'c1',
+      status: 'pending',
+      creator_id: 'someone-else',
+    },
   });
 
   const response = await request(app)

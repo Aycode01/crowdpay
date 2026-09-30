@@ -53,7 +53,9 @@ export default function ForgotPassword() {
           onSubmit={handleSubmit}
           style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}
         >
-          <label htmlFor="forgot-email" className="sr-only">{t('login.email')}</label>
+          <label htmlFor="forgot-email" className="sr-only">
+            {t('login.email')}
+          </label>
           <input
             id="forgot-email"
             type="email"
@@ -77,7 +79,7 @@ export default function ForgotPassword() {
       )}
 
       <p style={{ marginTop: '1.25rem', color: 'var(--color-text-hint)', fontSize: '0.9rem' }}>
-        {t('forgotPassword.backTo')} {' '}
+        {t('forgotPassword.backTo')}{' '}
         <Link to="/login" style={{ color: 'var(--color-accent)', fontWeight: 600 }}>
           {t('login.logIn')}
         </Link>

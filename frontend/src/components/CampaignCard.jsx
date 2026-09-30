@@ -107,12 +107,15 @@ function CampaignCard({ campaign, featured }) {
         <div style={styles.content}>
           <div style={styles.header}>
             <div style={styles.headerLeft}>
-              {campaign.asset_type && (
-                <span style={styles.assetBadge}>{campaign.asset_type}</span>
-              )}
+              {campaign.asset_type && <span style={styles.assetBadge}>{campaign.asset_type}</span>}
               <CampaignStatusBadge status={campaign.status} />
             </div>
-            <VerificationBadge status={campaign.creator_kyc_status || campaign.creator_verification_status} tier={campaign.creator_verification_tier} compact showTier />
+            <VerificationBadge
+              status={campaign.creator_kyc_status || campaign.creator_verification_status}
+              tier={campaign.creator_verification_tier}
+              compact
+              showTier
+            />
           </div>
 
           <h3 style={styles.title}>{campaign.title}</h3>
@@ -139,9 +142,7 @@ function CampaignCard({ campaign, featured }) {
           </div>
 
           <div style={styles.footer}>
-            <span style={styles.footerStat}>
-              {campaign.contributor_count || 0} donors
-            </span>
+            <span style={styles.footerStat}>{campaign.contributor_count || 0} donors</span>
             {deadline && (
               <span style={styles.footerStat}>
                 {deadline.kind === 'ended'
@@ -180,7 +181,8 @@ const styles = {
     display: 'block',
   },
   placeholder: {
-    background: 'linear-gradient(135deg, var(--color-accent-lighter) 0%, var(--color-teal-light) 100%)',
+    background:
+      'linear-gradient(135deg, var(--color-accent-lighter) 0%, var(--color-teal-light) 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

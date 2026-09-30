@@ -40,7 +40,9 @@ function Drawer({ title, onClose, children }) {
 
   useEffect(() => {
     if (!onClose) return;
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -48,14 +50,25 @@ function Drawer({ title, onClose, children }) {
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
-    const focusable = panel.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const focusable = panel.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
     first?.focus();
     function trapTab(e) {
       if (e.key !== 'Tab') return;
-      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last?.focus(); } }
-      else { if (document.activeElement === last) { e.preventDefault(); first?.focus(); } }
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
     }
     panel.addEventListener('keydown', trapTab);
     return () => panel.removeEventListener('keydown', trapTab);
@@ -292,7 +305,8 @@ function WithdrawalQueue() {
     setEvents([]);
     setCanApprove(false);
     // Fetch review details
-    api.getAdminWithdrawal(row.id)
+    api
+      .getAdminWithdrawal(row.id)
       .then((data) => {
         setDetail(data.withdrawal);
         setContributions(data.contributions || []);
@@ -341,7 +355,8 @@ function WithdrawalQueue() {
 
   // Load initial data
   useEffect(() => {
-    api.getAdminWithdrawals()
+    api
+      .getAdminWithdrawals()
       .then((data) => setRows(data.withdrawals || []))
       .catch((err) => setError(err.message || 'Failed to load withdrawals'));
   }, []);
@@ -562,9 +577,7 @@ function DisputeManagement() {
   async function escalate() {
     try {
       const updated = await api.updateDispute(selected.id, { status: 'under_review' });
-      setDisputes((prev) =>
-        prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d))
-      );
+      setDisputes((prev) => prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d)));
       closeDispute();
     } catch (err) {
       alert(err.message || 'Could not escalate dispute');
@@ -656,14 +669,27 @@ function DisputeManagement() {
                 <strong>Submitted evidence ({detail.evidence.length})</strong>
                 <div style={{ ...cardStyle, marginTop: '0.5rem', display: 'grid', gap: '0.6rem' }}>
                   {detail.evidence.map((ev) => (
-                    <div key={ev.id} style={{ borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.5rem' }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.8rem', textTransform: 'capitalize' }}>
+                    <div
+                      key={ev.id}
+                      style={{
+                        borderBottom: '1px solid var(--color-border-light)',
+                        paddingBottom: '0.5rem',
+                      }}
+                    >
+                      <div
+                        style={{ fontWeight: 600, fontSize: '0.8rem', textTransform: 'capitalize' }}
+                      >
                         {ev.submitted_by_name || 'Unknown'} ({ev.role})
                       </div>
                       <div>{ev.text}</div>
                       {(ev.attachment_urls || []).map((url) => (
                         <div key={url}>
-                          <a href={url} target="_blank" rel="noopener noreferrer" style={{ wordBreak: 'break-all' }}>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ wordBreak: 'break-all' }}
+                          >
                             {url}
                           </a>
                         </div>
@@ -1048,7 +1074,9 @@ function MilestonesQueue() {
                 gap: '0.45rem',
               }}
             >
-              <label htmlFor={`milestone-reject-${m.id}`} className="sr-only">Rejection reason</label>
+              <label htmlFor={`milestone-reject-${m.id}`} className="sr-only">
+                Rejection reason
+              </label>
               <textarea
                 id={`milestone-reject-${m.id}`}
                 value={rejectReason}
@@ -1195,10 +1223,10 @@ function ContractUpgradeModal({ campaign, onClose, onUpgraded }) {
           Contributions and milestone submissions will be paused for this campaign until migration
           completes.
         </p>
-        {error && (
-          <p style={{ fontSize: '0.85rem', color: 'var(--color-error-text)' }}>{error}</p>
-        )}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+        {error && <p style={{ fontSize: '0.85rem', color: 'var(--color-error-text)' }}>{error}</p>}
+        <div
+          style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}
+        >
           <button type="button" onClick={onClose} disabled={upgrading}>
             Cancel
           </button>
@@ -1206,7 +1234,13 @@ function ContractUpgradeModal({ campaign, onClose, onUpgraded }) {
             type="button"
             onClick={confirmUpgrade}
             disabled={upgrading}
-            style={{ background: 'var(--color-teal)', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.4rem 0.8rem' }}
+            style={{
+              background: 'var(--color-teal)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '0.4rem 0.8rem',
+            }}
           >
             {upgrading ? 'Upgrading…' : 'Confirm Upgrade'}
           </button>
@@ -1285,133 +1319,145 @@ function CampaignsQueue() {
   return (
     <div>
       <div style={{ marginBottom: '1rem' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
-          <input 
-            type="checkbox" 
-            checked={flaggedOnly} 
-            onChange={(e) => setFlaggedOnly(e.target.checked)} 
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={flaggedOnly}
+            onChange={(e) => setFlaggedOnly(e.target.checked)}
           />
           Show flagged potential duplicates only
         </label>
       </div>
       <div style={{ display: 'grid', gap: '0.9rem', marginBottom: '2.5rem' }}>
-      {campaigns.map((c) => (
-        <div key={c.id} style={cardStyle}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '0.5rem',
-            }}
-          >
-            <div>
-              <strong>{c.title}</strong>
-              {c.escrow_contract_id && (
+        {campaigns.map((c) => (
+          <div key={c.id} style={cardStyle}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+              }}
+            >
+              <div>
+                <strong>{c.title}</strong>
+                {c.escrow_contract_id && (
+                  <span
+                    title="Milestone escrow contract version"
+                    style={{
+                      marginLeft: '0.5rem',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      padding: '0.1rem 0.4rem',
+                      borderRadius: '4px',
+                      background:
+                        c.escrow_contract_version >= 2
+                          ? 'var(--color-teal)'
+                          : 'var(--color-text-hint)',
+                      color: '#fff',
+                    }}
+                  >
+                    {c.escrow_contract_version >= 2 ? 'V2' : 'V1'}
+                  </span>
+                )}
+                {c.is_flagged_duplicate && (
+                  <span
+                    style={{
+                      marginLeft: '0.5rem',
+                      fontSize: '0.75rem',
+                      padding: '0.1rem 0.4rem',
+                      borderRadius: '4px',
+                      background: 'var(--color-error-bg)',
+                      color: 'var(--color-error-text)',
+                    }}
+                  >
+                    Flagged Duplicate
+                  </span>
+                )}
                 <span
-                  title="Milestone escrow contract version"
                   style={{
                     marginLeft: '0.5rem',
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    padding: '0.1rem 0.4rem',
-                    borderRadius: '4px',
-                    background: c.escrow_contract_version >= 2 ? 'var(--color-teal)' : 'var(--color-text-hint)',
-                    color: '#fff',
+                    fontSize: '0.8rem',
+                    color: 'var(--color-text-hint)',
                   }}
                 >
-                  {c.escrow_contract_version >= 2 ? 'V2' : 'V1'}
+                  {c.status} · #{c.id.slice(0, 8)}
                 </span>
-              )}
-              {c.is_flagged_duplicate && (
-                <span
-                  style={{
-                    marginLeft: '0.5rem',
-                    fontSize: '0.75rem',
-                    padding: '0.1rem 0.4rem',
-                    borderRadius: '4px',
-                    background: 'var(--color-error-bg)',
-                    color: 'var(--color-error-text)',
-                  }}
-                >
-                  Flagged Duplicate
-                </span>
-              )}
-              <span
-                style={{
-                  marginLeft: '0.5rem',
-                  fontSize: '0.8rem',
-                  color: 'var(--color-text-hint)',
-                }}
-              >
-                {c.status} · #{c.id.slice(0, 8)}
-              </span>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {c.is_flagged_duplicate ? (
-                <button
-                  type="button"
-                  onClick={() => unflag(c.id)}
-                  style={{
-                    fontSize: '0.75rem',
-                    padding: '0.25rem 0.7rem',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    background: 'var(--color-teal)',
-                    color: '#fff',
-                    border: 'none',
-                  }}
-                >
-                  Unflag
-                </button>
-              ) : (
-                <>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {c.is_flagged_duplicate ? (
                   <button
                     type="button"
-                    onClick={() => feature(c.id)}
+                    onClick={() => unflag(c.id)}
                     style={{
                       fontSize: '0.75rem',
                       padding: '0.25rem 0.7rem',
                       borderRadius: '6px',
                       cursor: 'pointer',
+                      background: 'var(--color-teal)',
+                      color: '#fff',
+                      border: 'none',
                     }}
                   >
-                    Feature
+                    Unflag
                   </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => feature(c.id)}
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '0.25rem 0.7rem',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Feature
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => unfeature(c.id)}
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '0.25rem 0.7rem',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Unfeature
+                    </button>
+                  </>
+                )}
+                {c.escrow_contract_id && c.escrow_contract_version < 2 && !c.has_active_review && (
                   <button
                     type="button"
-                    onClick={() => unfeature(c.id)}
+                    onClick={() => setUpgradeTarget(c)}
+                    disabled={c.migration_in_progress}
                     style={{
                       fontSize: '0.75rem',
                       padding: '0.25rem 0.7rem',
                       borderRadius: '6px',
-                      cursor: 'pointer',
+                      cursor: c.migration_in_progress ? 'not-allowed' : 'pointer',
                     }}
                   >
-                    Unfeature
+                    {c.migration_in_progress ? 'Migrating…' : 'Upgrade Contract'}
                   </button>
-                </>
-              )}
-              {c.escrow_contract_id && c.escrow_contract_version < 2 && !c.has_active_review && (
-                <button
-                  type="button"
-                  onClick={() => setUpgradeTarget(c)}
-                  disabled={c.migration_in_progress}
-                  style={{
-                    fontSize: '0.75rem',
-                    padding: '0.25rem 0.7rem',
-                    borderRadius: '6px',
-                    cursor: c.migration_in_progress ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  {c.migration_in_progress ? 'Migrating…' : 'Upgrade Contract'}
-                </button>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
       </div>
       {upgradeTarget && (
         <ContractUpgradeModal
@@ -1426,7 +1472,11 @@ function CampaignsQueue() {
 
 function FraudQueue() {
   const [campaigns, setCampaigns] = useState([]);
-  const [stats, setStats] = useState({ false_positives: 0, true_positives: 0, false_positive_rate: 0 });
+  const [stats, setStats] = useState({
+    false_positives: 0,
+    true_positives: 0,
+    false_positive_rate: 0,
+  });
   const [loading, setLoading] = useState(true);
   const toast = useToast();
 
@@ -1485,20 +1535,41 @@ function FraudQueue() {
         }}
       >
         <div style={{ ...cardStyle, textAlign: 'center' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)' }}>Flagged Campaigns</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '0.25rem' }}>{campaigns.length}</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)' }}>
+            Flagged Campaigns
+          </div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '0.25rem' }}>
+            {campaigns.length}
+          </div>
         </div>
         <div style={{ ...cardStyle, textAlign: 'center' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)' }}>True Positives (Frozen)</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '0.25rem' }}>{stats.true_positives}</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)' }}>
+            True Positives (Frozen)
+          </div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '0.25rem' }}>
+            {stats.true_positives}
+          </div>
         </div>
         <div style={{ ...cardStyle, textAlign: 'center' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)' }}>False Positives (Cleared)</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '0.25rem' }}>{stats.false_positives}</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)' }}>
+            False Positives (Cleared)
+          </div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '0.25rem' }}>
+            {stats.false_positives}
+          </div>
         </div>
         <div style={{ ...cardStyle, textAlign: 'center' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)' }}>False Positive Rate</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '0.25rem', color: 'var(--color-accent)' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)' }}>
+            False Positive Rate
+          </div>
+          <div
+            style={{
+              fontSize: '1.5rem',
+              fontWeight: 700,
+              marginTop: '0.25rem',
+              color: 'var(--color-accent)',
+            }}
+          >
             {(stats.false_positive_rate * 100).toFixed(1)}%
           </div>
         </div>
@@ -1512,32 +1583,82 @@ function FraudQueue() {
             const signals = c.fraud_signals || {};
             return (
               <div key={c.id} style={{ ...cardStyle, borderLeft: '4px solid var(--color-danger)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '0.5rem',
+                    marginBottom: '0.5rem',
+                  }}
+                >
                   <div>
                     <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{c.title}</h3>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)', marginTop: '0.25rem' }}>
-                      Creator: {c.creator_name} ({c.creator_email}) · ID: <code>{c.id.slice(0, 8)}</code>
+                    <div
+                      style={{
+                        fontSize: '0.8rem',
+                        color: 'var(--color-text-hint)',
+                        marginTop: '0.25rem',
+                      }}
+                    >
+                      Creator: {c.creator_name} ({c.creator_email}) · ID:{' '}
+                      <code>{c.id.slice(0, 8)}</code>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-danger)' }}>
+                    <div
+                      style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-danger)' }}
+                    >
                       Score: {c.fraud_score}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--color-text-hint)' }}>
-                      Status: <strong style={{ color: c.status === 'suspended' ? 'var(--color-danger)' : 'var(--color-success)' }}>{c.status}</strong>
+                      Status:{' '}
+                      <strong
+                        style={{
+                          color:
+                            c.status === 'suspended'
+                              ? 'var(--color-danger)'
+                              : 'var(--color-success)',
+                        }}
+                      >
+                        {c.status}
+                      </strong>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '0.5rem', margin: '0.5rem 0' }}>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fraud Signals Breakdown:</div>
+                <div
+                  style={{
+                    borderTop: '1px solid var(--color-border-light)',
+                    paddingTop: '0.5rem',
+                    margin: '0.5rem 0',
+                  }}
+                >
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    Fraud Signals Breakdown:
+                  </div>
                   <div style={{ display: 'grid', gap: '0.35rem', fontSize: '0.85rem' }}>
                     {Object.entries(signals).map(([key, value]) => (
-                      <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0.4rem', background: 'var(--color-bg-secondary)', borderRadius: '4px' }}>
+                      <div
+                        key={key}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '0.2rem 0.4rem',
+                          background: 'var(--color-bg-secondary)',
+                          borderRadius: '4px',
+                        }}
+                      >
                         <span style={{ textTransform: 'capitalize' }}>
                           <strong>{key.replace('_', ' ')}:</strong> {value.detail}
                         </span>
-                        <span style={{ fontWeight: 600, color: value.score > 0 ? 'var(--color-danger)' : 'var(--color-text-hint)' }}>
+                        <span
+                          style={{
+                            fontWeight: 600,
+                            color:
+                              value.score > 0 ? 'var(--color-danger)' : 'var(--color-text-hint)',
+                          }}
+                        >
                           +{value.score}
                         </span>
                       </div>
@@ -1806,7 +1927,9 @@ function AuditLogViewer() {
           <div style={{ overflowX: 'auto', marginBottom: '1rem' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
               <thead>
-                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--color-border-light)' }}>
+                <tr
+                  style={{ textAlign: 'left', borderBottom: '1px solid var(--color-border-light)' }}
+                >
                   <th style={{ padding: '0.45rem 0.5rem' }}>Timestamp</th>
                   <th style={{ padding: '0.45rem 0.5rem' }}>Actor</th>
                   <th style={{ padding: '0.45rem 0.5rem' }}>Action</th>
@@ -1868,7 +1991,9 @@ function AuditLogViewer() {
           </div>
 
           {totalPages > 1 && (
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div
+              style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}
+            >
               <button
                 type="button"
                 disabled={page === 0}
@@ -1885,7 +2010,9 @@ function AuditLogViewer() {
               >
                 ← Previous
               </button>
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)', alignSelf: 'center' }}>
+              <span
+                style={{ fontSize: '0.8rem', color: 'var(--color-text-hint)', alignSelf: 'center' }}
+              >
                 Page {page + 1} of {totalPages}
               </span>
               <button
@@ -1930,7 +2057,10 @@ export default function AdminDashboard() {
         Withdrawal approvals, dispute management, KYC oversight, and platform health.
       </p>
 
-      <nav role="tablist" style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+      <nav
+        role="tablist"
+        style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}
+      >
         {TABS.map((t) => (
           <button
             key={t.id}

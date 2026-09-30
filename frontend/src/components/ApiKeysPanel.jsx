@@ -48,7 +48,10 @@ export default function ApiKeysPanel() {
   }
 
   async function revokeKey(id) {
-    if (!window.confirm('Revoke this API key? Integrations using it will stop working immediately.')) return;
+    if (
+      !window.confirm('Revoke this API key? Integrations using it will stop working immediately.')
+    )
+      return;
     setError('');
     try {
       await api.deleteApiKey(id);
@@ -133,56 +136,73 @@ export default function ApiKeysPanel() {
             </tr>
           </thead>
           <tbody>
-            {keys.filter((k) => !k.revoked_at).map((k) => {
-              const status = getStatusLabel(k);
-              return (
-                <tr key={k.id} style={{ borderBottom: '1px solid var(--color-border-lighter)' }}>
-                  <td style={{ padding: '0.45rem' }}>{k.name || k.label}</td>
-                  <td><code>{k.key_prefix}</code></td>
-                  <td style={{ color: 'var(--color-text-hint)' }}>{formatExpiry(k.expires_at)}</td>
-                  <td>
-                    <span style={{
-                      color: status === 'active' ? 'var(--color-success-text)' : 'var(--color-status-error)',
-                      fontWeight: 600,
-                    }}>
-                      {status}
-                    </span>
-                  </td>
-                  <td style={{ color: 'var(--color-text-hint)' }}>
-                    {k.created_at ? new Date(k.created_at).toLocaleDateString() : '—'}
-                  </td>
-                  <td style={{ color: 'var(--color-text-hint)' }}>
-                    {k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '—'}
-                  </td>
-                  <td>
-                    {status === 'active' ? (
+            {keys
+              .filter((k) => !k.revoked_at)
+              .map((k) => {
+                const status = getStatusLabel(k);
+                return (
+                  <tr key={k.id} style={{ borderBottom: '1px solid var(--color-border-lighter)' }}>
+                    <td style={{ padding: '0.45rem' }}>{k.name || k.label}</td>
+                    <td>
+                      <code>{k.key_prefix}</code>
+                    </td>
+                    <td style={{ color: 'var(--color-text-hint)' }}>
+                      {formatExpiry(k.expires_at)}
+                    </td>
+                    <td>
+                      <span
+                        style={{
+                          color:
+                            status === 'active'
+                              ? 'var(--color-success-text)'
+                              : 'var(--color-status-error)',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {status}
+                      </span>
+                    </td>
+                    <td style={{ color: 'var(--color-text-hint)' }}>
+                      {k.created_at ? new Date(k.created_at).toLocaleDateString() : '—'}
+                    </td>
+                    <td style={{ color: 'var(--color-text-hint)' }}>
+                      {k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '—'}
+                    </td>
+                    <td>
+                      {status === 'active' ? (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          style={{
+                            padding: '0.25rem 0.5rem',
+                            fontSize: '0.8rem',
+                            marginRight: '0.25rem',
+                          }}
+                          onClick={() => handleRotate(k.id)}
+                          disabled={rotatingId === k.id}
+                        >
+                          {rotatingId === k.id ? 'Rotating…' : 'Rotate'}
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         className="btn-secondary"
-                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', marginRight: '0.25rem' }}
-                        onClick={() => handleRotate(k.id)}
-                        disabled={rotatingId === k.id}
+                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                        onClick={() => revokeKey(k.id)}
                       >
-                        {rotatingId === k.id ? 'Rotating…' : 'Rotate'}
+                        Revoke
                       </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
-                      onClick={() => revokeKey(k.id)}
-                    >
-                      Revoke
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+                    </td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       </div>
 
-      {rotationError && <p style={{ color: 'var(--color-status-error)', marginBottom: '1rem' }}>{rotationError}</p>}
+      {rotationError && (
+        <p style={{ color: 'var(--color-status-error)', marginBottom: '1rem' }}>{rotationError}</p>
+      )}
 
       {showModal && (
         <div
@@ -221,8 +241,12 @@ export default function ApiKeysPanel() {
                   </pre>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn-secondary" onClick={copyKey}>Copy key</button>
-                  <button type="button" className="btn-primary" onClick={() => setShowModal(false)}>Done</button>
+                  <button type="button" className="btn-secondary" onClick={copyKey}>
+                    Copy key
+                  </button>
+                  <button type="button" className="btn-primary" onClick={() => setShowModal(false)}>
+                    Done
+                  </button>
                 </div>
               </>
             ) : (
@@ -238,7 +262,11 @@ export default function ApiKeysPanel() {
                   style={{ width: '100%', marginBottom: '1rem' }}
                 />
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setShowModal(false)}
+                  >
                     Cancel
                   </button>
                   <button type="submit" className="btn-primary" disabled={creating}>
@@ -288,8 +316,12 @@ export default function ApiKeysPanel() {
               </pre>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn-secondary" onClick={copyRotationKey}>Copy key</button>
-              <button type="button" className="btn-primary" onClick={() => setRotationKey('')}>Done</button>
+              <button type="button" className="btn-secondary" onClick={copyRotationKey}>
+                Copy key
+              </button>
+              <button type="button" className="btn-primary" onClick={() => setRotationKey('')}>
+                Done
+              </button>
             </div>
           </div>
         </div>

@@ -1,6 +1,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { isValidRole, canPostUpdates, canEditCampaignContent, canViewAnalytics, canAssignRole } = require('../lib/campaignPermissions');
+const {
+  isValidRole,
+  canPostUpdates,
+  canEditCampaignContent,
+  canViewAnalytics,
+  canAssignRole,
+} = require('../lib/campaignPermissions');
 
 test('role helpers enforce manager vs editor capabilities', () => {
   assert.equal(canPostUpdates('manager'), true);

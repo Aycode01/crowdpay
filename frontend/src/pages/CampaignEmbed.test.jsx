@@ -39,9 +39,15 @@ describe('CampaignEmbed', () => {
       constructor(cb) {
         resizeCb = () => cb();
       }
-      observe(el) { resizeObserverMock.observe(el); }
-      unobserve() { resizeObserverMock.unobserve(); }
-      disconnect() { resizeObserverMock.disconnect(); }
+      observe(el) {
+        resizeObserverMock.observe(el);
+      }
+      unobserve() {
+        resizeObserverMock.unobserve();
+      }
+      disconnect() {
+        resizeObserverMock.disconnect();
+      }
     };
 
     postMessageSpy = vi.spyOn(window.parent, 'postMessage').mockImplementation(() => {});
@@ -81,7 +87,9 @@ describe('CampaignEmbed', () => {
     await waitFor(() => {
       expect(postMessageSpy).toHaveBeenCalledTimes(2);
     });
-    act(() => { resizeObserverMock.trigger(); });
+    act(() => {
+      resizeObserverMock.trigger();
+    });
     expect(postMessageSpy).toHaveBeenCalledTimes(2);
   });
 
@@ -95,7 +103,9 @@ describe('CampaignEmbed', () => {
       configurable: true,
       writable: true,
     });
-    act(() => { resizeObserverMock.trigger(); });
+    act(() => {
+      resizeObserverMock.trigger();
+    });
     expect(postMessageSpy).toHaveBeenCalledWith(
       { type: 'resize', height: 999 },
       'http://localhost'

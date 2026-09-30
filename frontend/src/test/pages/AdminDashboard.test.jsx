@@ -15,14 +15,23 @@ const apiMocks = vi.hoisted(() => ({
     pending_withdrawals: { count: 1, total_value: '200' },
     open_disputes: 0,
     failed_webhook_deliveries: 0,
-    stellar: { network: 'Testnet', current_ledger: 12345, base_fee_stroops: 100, horizon_latency_ms: 50 },
+    stellar: {
+      network: 'Testnet',
+      current_ledger: 12345,
+      base_fee_stroops: 100,
+      horizon_latency_ms: 50,
+    },
     load_time_ms: 12,
     recent_reconciliation_runs: [],
   }),
   getAdminWebhookDeliveries: vi.fn().mockResolvedValue([]),
   getAdminAuditLogs: vi.fn().mockResolvedValue({ data: [], total: 0, limit: 50, offset: 0 }),
-  exportAdminAuditLogsCsv: vi.fn().mockResolvedValue({ blob: new Blob(['csv']), filename: 'audit.csv' }),
-  exportAdminAuditLogsJson: vi.fn().mockResolvedValue({ blob: new Blob(['json']), filename: 'audit.json' }),
+  exportAdminAuditLogsCsv: vi
+    .fn()
+    .mockResolvedValue({ blob: new Blob(['csv']), filename: 'audit.csv' }),
+  exportAdminAuditLogsJson: vi
+    .fn()
+    .mockResolvedValue({ blob: new Blob(['json']), filename: 'audit.json' }),
 }));
 
 vi.mock('../../services/api', () => ({ api: apiMocks }));
@@ -153,7 +162,20 @@ describe('AdminDashboard page', () => {
 
   it('pagination disables Previous on first page', async () => {
     apiMocks.getAdminAuditLogs.mockResolvedValueOnce({
-      data: [{ id: 'a1', actor_id: 'u1', actor_email: 'a@b.com', action: 'login', resource_type: 'user', resource_id: null, ip_address: null, user_agent: null, metadata: {}, created_at: '2026-01-01T00:00:00Z' }],
+      data: [
+        {
+          id: 'a1',
+          actor_id: 'u1',
+          actor_email: 'a@b.com',
+          action: 'login',
+          resource_type: 'user',
+          resource_id: null,
+          ip_address: null,
+          user_agent: null,
+          metadata: {},
+          created_at: '2026-01-01T00:00:00Z',
+        },
+      ],
       total: 100,
       limit: 50,
       offset: 0,
