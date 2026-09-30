@@ -506,6 +506,49 @@ function createValidateRequest(statusCode) {
   };
 }
 
+const DEDICATION_HONOREE_MAX = 100;
+const DEDICATION_MESSAGE_MAX = 1000;
+const DEDICATION_TYPES = ['in_honor_of', 'in_memory_of'];
+
+/**
+ * Validation for POST /api/contributions/:contributionId/dedication
+ * and PATCH /api/contributions/:contributionId/dedication (all fields optional on update).
+ */
+const dedicationValidation = [
+  body('honoree_name')
+    .customSanitizer(val => (typeof val === 'string' ? stripHtml(val).trim() : val))
+    .notEmpty()
+    .withMessage('honoree_name is required')
+    .isLength({ min: 1, max: DEDICATION_HONOREE_MAX })
+    .withMessage(`honoree_name must be between 1 and ${DEDICATION_HONOREE_MAX} characters`)
+    .custom(value => {
+      if (
+        typeof value === 'string' &&
+        [...value].some(ch => {
+          const c = ch.charCodeAt(0);
+          return c < 0x20 || c === 0x7f || (c >= 0x80 && c <= 0x9f);
+        })
+      ) {
+        throw new Error('honoree_name contains invalid control characters');
+      }
+      return true;
+    }),
+  body('message')
+    .optional({ nullable: true })
+    .customSanitizer(val => (typeof val === 'string' ? stripHtml(val).trim() : val))
+    .isLength({ max: DEDICATION_MESSAGE_MAX })
+    .withMessage(`message must be at most ${DEDICATION_MESSAGE_MAX} characters`),
+  body('dedication_type')
+    .optional({ nullable: true })
+    .customSanitizer(blankToNull)
+    .isIn(DEDICATION_TYPES)
+    .withMessage(`dedication_type must be one of: ${DEDICATION_TYPES.join(', ')}`),
+  body('is_public')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('is_public must be a boolean'),
+];
+
 module.exports = {
   registerValidation,
   loginValidation,
@@ -525,6 +568,7 @@ module.exports = {
   createAnnouncementValidation,
   announcementIdValidation,
   getCampaignsValidation,
+  dedicationValidation,
   handleValidationErrors,
   isUuid,
   blankToNull,
