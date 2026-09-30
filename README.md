@@ -35,13 +35,14 @@ Backend  ───────────────────────�
   ┌────────────────────────────────────────────────────────────────┐
   │ routes: campaigns · contributions · withdrawals · milestones   │
   │         disputes · users · wallets · notifications · webhooks  │
-  │         anchor · admin · api-keys                              │
+  │         anchor · admin · api-keys · comm-prefs · surveys       │
   └────────────────────────────────────────────────────────────────┘
   ┌────────────────────────────────────────────────────────────────┐
   │ services: stellarService · sorobanService · anchorService      │
   │           ledgerMonitor · reconciliation · contributionService │
   │           emailService · kycProvider · webhookDispatcher       │
   │           walletSecrets · campaignStatusService                │
+  │           communicationPreferenceService · outcomeSurveyService│
   └────────────────────────────────────────────────────────────────┘
           │                    │                      │
           ▼                    ▼                      ▼
@@ -276,6 +277,10 @@ source test-env.sh && cd backend && npm test
 **Campaign status cron**: `campaignStatusService.js` runs hourly (via `node-cron` in `backend/src/index.js`) to transition active campaigns to `funded` or `failed` when goals or deadlines are met. Set `ENABLE_CAMPAIGN_STATUS_CRON=false` to disable the in-process scheduler (e.g. when using an external cron that calls `POST /api/campaigns/cron/fail-expired` instead). On each transition, `campaignStatusActions.js` sends emails, fires webhooks, creates in-app notifications, logs the change in `campaign_status_events`, and queues contributor refunds for failed campaigns.
 
 **Weekly digest cron**: `weeklyDigestService.js` runs Sunday evenings by default (`0 18 * * 0`) and sends grouped contributor digests for campaign updates, milestone releases, funded/failed transitions, and upcoming deadlines. Set `ENABLE_WEEKLY_DIGEST_CRON=false` to disable it, or override the schedule with `WEEKLY_DIGEST_CRON`.
+
+**Per-campaign communication preferences**: `notification_preferences` mutes a category across *every* campaign at once. `campaign_communication_preferences` (#961) is the middle layer — a contributor can mute `updates`, `milestones`, `funding_updates`, `messages`, or `surveys` for one campaign and keep receiving everything on the others. Every channel defaults to on and an absent row means "no override", so nothing changes for existing accounts. The preference is applied at the point of contact (update dispatch, follower fan-out, survey invites) rather than at the point of configuration, and the update path **fails open**: a lookup error logs and notifies everybody rather than silently muting the campaign. See [docs/contributor-communication-preferences.md](docs/contributor-communication-preferences.md).
+
+**Outcome surveys**: after a campaign finishes funding, its creator can ask the people who backed it what actually happened. A beneficiary is any contributor to *that* campaign (derived from the contribution ledger, not from follow rows or role), one response per backer is enforced by a `UNIQUE (survey_id, user_id)` constraint, and the lifecycle `draft → open → closed` is a closed state machine built from compare-and-set updates so concurrent open/close/respond calls resolve to a deterministic `409` rather than double-notifying. Individual answers are never exposed: the public read returns the aggregate count and your own response, and the results endpoint selects answer bags without `user_id`. See [docs/outcome-surveys.md](docs/outcome-surveys.md).
 
 ---
 
