@@ -1,4 +1,4 @@
-const test = require('node:test');
+﻿const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');
 const cookieParser = require('cookie-parser');
@@ -73,10 +73,12 @@ function buildApp({ queryImpl, authUser }) {
       getCampaignContributors: async () => ({}),
     },
     '../middleware/validation': {
+      createValidateRequest: () => (req, res, next) => next(),
       createCampaignValidation: [],
       createCampaignUpdateValidation: [],
       getCampaignsValidation: [],
       validateRequest: (_req, _res, next) => next(),
+      updateCampaignValidation: [],
     },
     '../utils/asyncHandler': fn => (req, res, next) => fn(req, res, next).catch(next),
     '../middleware/auth': {
@@ -267,3 +269,5 @@ test('GET /api/campaigns/:id/referrals returns leaderboard for owner', async () 
   assert.equal(response.body[0].referrer_name, 'Alice');
   assert.equal(response.body[0].contribution_count, 2);
 });
+
+

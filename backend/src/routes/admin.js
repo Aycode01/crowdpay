@@ -662,3 +662,37 @@ router.use('/audit-logs', auditLogsRouter);
 router.use('/refunds', creatorRefundsRouter);
 
 module.exports = router;
+
+// ─── Admin reward-fulfillment oversight (issue #958) ────────────────────────
+const {
+  getFulfillmentsByCampaign: _adminGetFulfillments,
+  updateFulfillmentStatus: _adminUpdateFulfillment,
+} = require('../services/rewardTierService');
+
+router.get(
+  '/campaigns/:id/fulfillments',
+  asyncHandler(async (req, res) => {
+    const items = await _adminGetFulfillments(req.params.id, { status: req.query.status });
+    res.json({ data: items });
+  })
+);
+
+router.patch(
+  '/fulfillments/:fulfillmentId',
+  asyncHandler(async (req, res) => {
+    const { status, tracking_number, carrier, notes } = req.body || {};
+    if (!status) return res.status(422).json({ error: 'status is required' });
+    try {
+      const updated = await _adminUpdateFulfillment(req.params.fulfillmentId, status, {
+        trackingNumber: tracking_number, carrier, notes,
+      });
+      await db.query(
+        'INSERT INTO admin_actions (admin_user_id, action_type, target_type, target_id, details) VALUES ($1,$2,$3,$4,$5)',
+        [req.user.userId, 'fulfillment_update', 'reward_fulfillment', req.params.fulfillmentId, JSON.stringify({ status })]
+      );
+      res.json(updated);
+    } catch (err) {
+      res.status(err.statusCode || 400).json({ error: err.message });
+    }
+  })
+);
