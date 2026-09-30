@@ -37,12 +37,17 @@ app.use(cors({ origin: buildCorsOrigin(), credentials: true }));
 app.use(compression);
 
 // Preserve the exact raw request bytes for signature-verified webhook callbacks
-// (Persona KYC + user webhooks). The global JSON parser below would otherwise
-// consume the request stream and destroy the ability to recompute the HMAC the
-// sender signed, so raw parsers MUST run first (#799). Each handler verifies
-// the signature before parsing the JSON body itself.
+// (Persona KYC + user webhooks + SEP-24 anchor callbacks). The global JSON
+// parser below would otherwise consume the request stream and destroy the
+// ability to recompute the HMAC the sender signed, so raw parsers MUST run
+// first (#799). Each handler verifies the signature before parsing the JSON
+// body itself.
 app.use('/api/webhooks/kyc', express.raw({ type: () => true, limit: '1mb' }));
 app.use('/api/webhooks/incoming', express.raw({ type: () => true, limit: '1mb' }));
+// SEP-24 provider callbacks are public (no API-key auth) and protected by
+// HMAC-SHA256 signature verification in the route handler. The raw body must
+// be preserved so the HMAC over the exact bytes can be recomputed.
+app.use('/api/anchor/callbacks', express.raw({ type: () => true, limit: '1mb' }));
 
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
@@ -65,6 +70,7 @@ app.use('/api/campaigns', require('./routes/campaigns'));
 app.use('/api/campaigns', require('./routes/campaignUpdates'));
 app.use('/api/campaigns', require('./routes/translations'));
 app.use('/api/campaigns', require('./routes/campaignRequirements'));
+app.use('/api/campaign-templates', require('./routes/campaignTemplates'));
 app.use('/api/campaign-pools', require('./routes/contributionPools'));
 app.use('/api/contributions', require('./routes/contributions'));
 app.use('/api/contributor-identity', require('./routes/contributorIdentity'));

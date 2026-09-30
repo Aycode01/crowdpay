@@ -79,6 +79,38 @@ async function main() {
         "migration-only table 'reward_tiers' missing — migrations did not run on top of schema.sql"
       );
     }
+
+    // Only created by 20260729_campaign_templates.sql (never by schema.sql).
+    const { rows: templatesTable } = await pool.query(
+      `SELECT 1 FROM information_schema.tables WHERE table_name = 'campaign_templates'`
+    );
+    if (!templatesTable.length) {
+      failures.push(
+        "migration-only table 'campaign_templates' missing — 20260729_campaign_templates.sql migration did not run"
+      );
+    }
+
+    // campaign_templates columns: id, slug, name, category, description, template_data,
+    // is_active, use_count, created_at, updated_at
+    const { rows: templateCols } = await pool.query(
+      `SELECT column_name
+         FROM information_schema.columns
+        WHERE table_name = 'campaign_templates'
+        ORDER BY column_name`
+    );
+    const actualTemplateCols = templateCols.map((r) => r.column_name);
+    const expectedTemplateCols = ['category', 'created_at', 'description', 'id', 'is_active', 'name', 'slug', 'template_data', 'updated_at', 'use_count'];
+    if (JSON.stringify(actualTemplateCols) !== JSON.stringify(expectedTemplateCols)) {
+      failures.push(
+        `campaign_templates columns drift: expected [${expectedTemplateCols.join(', ')}], got [${actualTemplateCols.join(', ')}]`
+      );
+    }
+
+    // Seed rows inserted by the migration.
+    const { rows: templateRows } = await pool.query('SELECT COUNT(*)::int AS n FROM campaign_templates');
+    if (templateRows[0].n < 1) {
+      failures.push('campaign_templates has no seed rows after migration');
+    }
   } finally {
     await pool.end();
   }
