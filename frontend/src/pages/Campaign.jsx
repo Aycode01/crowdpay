@@ -209,6 +209,7 @@ const BackerInsightsCard = React.lazy(() => import('../components/BackerInsights
 import CampaignComments from '../components/CampaignComments';
 import FollowCampaignButton from '../components/FollowCampaignButton';
 import PoolManager from '../components/PoolManager';
+import SponsorMatchingPanel from '../components/SponsorMatchingPanel';
 import LanguageToggle from '../components/LanguageToggle';
 import { addRecentlyViewed } from '../lib/recentlyViewed';
 
@@ -2449,6 +2450,8 @@ export default function Campaign() {
 
       <MilestoneTracker milestones={milestones} assetType={campaign.asset_type} />
       <MilestoneVotePanel milestones={milestones} />
+
+      <SponsorMatchingPanel campaignId={campaign.id} campaignStatus={campaign.status} user={user} />
 
       <BudgetBreakdown
         campaignId={campaign.id}

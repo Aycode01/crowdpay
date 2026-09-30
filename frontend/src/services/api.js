@@ -153,6 +153,23 @@ export const api = {
     const res = await apiClient.post(`/campaigns/${campaignId}/requirements`, data);
     return res.data;
   },
+  // --- Sponsor matching pledges (#948) ---
+  async getCampaignMatchingProgress(campaignId) {
+    const res = await apiClient.get(`/campaigns/${campaignId}/matches`);
+    return res.data;
+  },
+  async createSponsorMatchingPledge(campaignId, data) {
+    const res = await apiClient.post(`/campaigns/${campaignId}/matches`, data);
+    return res.data;
+  },
+  async completeSponsorMatchingPledge(campaignId, matchId) {
+    const res = await apiClient.patch(`/campaigns/${campaignId}/matches/${matchId}/complete`);
+    return res.data;
+  },
+  async getMySponsorMatches() {
+    const res = await apiClient.get('/user/sponsor-matches');
+    return res.data;
+  },
   async approveMilestone(id) {
     const res = await apiClient.post(`/milestones/${id}/approve`);
     return res.data;

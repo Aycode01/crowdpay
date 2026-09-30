@@ -71,6 +71,10 @@ app.use('/api/campaigns', require('./routes/campaigns'));
 app.use('/api/campaigns', require('./routes/campaignUpdates'));
 app.use('/api/campaigns', require('./routes/translations'));
 app.use('/api/campaigns', require('./routes/campaignRequirements'));
+// Sponsor matching pledges live under the campaign they fund; the user-scoped
+// pledge list is served from /api/user/sponsor-matches.
+app.use('/api/campaigns', require('./routes/sponsorMatching').campaignRouter);
+app.use('/api', require('./routes/sponsorMatching').userRouter);
 app.use('/api/campaign-templates', require('./routes/campaignTemplates'));
 app.use('/api/campaign-pools', require('./routes/contributionPools'));
 app.use('/api/contributions', require('./routes/contributions'));
@@ -93,7 +97,9 @@ app.use('/api/referrals', require('./routes/referrals'));
 app.use('/api/refunds', require('./routes/creatorRefunds'));
 app.use('/api/refund-requests', require('./routes/refundRequests'));
 app.use('/api/sessions', require('./routes/sessions'));
-app.use('/api/sponsor-matching', require('./routes/sponsorMatching'));
+// Legacy mount kept so existing /api/sponsor-matching/* clients keep working.
+app.use('/api/sponsor-matching', require('./routes/sponsorMatching').campaignRouter);
+app.use('/api/sponsor-matching', require('./routes/sponsorMatching').userRouter);
 app.use('/api/stellar-transactions', require('./routes/stellarTransactions'));
 app.use('/api', require('./routes/subscriptions'));
 app.use('/api', require('./routes/thankYou'));
