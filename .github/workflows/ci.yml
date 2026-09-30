@@ -42,6 +42,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -61,6 +63,12 @@ jobs:
       - name: Run linter
         working-directory: ./backend
         run: npm run lint
+
+      - name: Check formatting
+        working-directory: ./backend
+        env:
+          FORMAT_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: npm run format:check
 
       - name: Check for blanket eslint-disable
         working-directory: ./backend
@@ -106,6 +114,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -125,6 +135,12 @@ jobs:
       - name: Run linter
         working-directory: ./frontend
         run: npm run lint
+
+      - name: Check formatting
+        working-directory: ./frontend
+        env:
+          FORMAT_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: npm run format:check
 
       - name: Check for blanket eslint-disable
         working-directory: ./frontend

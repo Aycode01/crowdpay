@@ -1,14 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { api, retryQueuedRequests, apiClient } from '../../services/api';
 
+const { responseRejectedHandlers } = vi.hoisted(() => ({ responseRejectedHandlers: [] }));
+
 // Mock axios
 vi.mock('axios', () => {
   const mockAxios = {
     create: vi.fn(() => mockAxios),
     interceptors: {
       request: { use: vi.fn() },
-      response: { use: vi.fn() },
+      response: { use: vi.fn((_success, failure) => responseRejectedHandlers.push(failure)) },
     },
+    request: vi.fn(),
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
@@ -119,103 +122,71 @@ describe('API Service - Offline Retry Queue', () => {
     vi.useRealTimers();
   });
 
-  it('enqueues failed GET requests on network error', async () => {
-    const networkError = new Error('Network Error');
-    networkError.response = undefined;
-    
-    axios.get.mockRejectedValue(networkError);
-    
-    try {
-      await api.getCampaigns({});
-    } catch (e) {
-      // Expected to throw
-    }
+  function rejectNetworkRequest(config = {}) {
+    const error = new Error('Network Error');
+    error.config = { method: 'get', url: '/campaigns', ...config };
+    return responseRejectedHandlers[0](error);
+  }
+
+  it('delivers the replay response to the original GET caller', async () => {
+    const originalRequest = rejectNetworkRequest();
+    const response = { data: { campaigns: [] } };
+    axios.request.mockResolvedValue(response);
+
+    await retryQueuedRequests();
+
+    await expect(originalRequest).resolves.toBe(response);
+    expect(axios.request).toHaveBeenCalledTimes(1);
+    expect(axios.request.mock.calls[0][0]._retried).toBe(true);
   });
 
-  it('replays queued requests on retryQueuedRequests', async () => {
-    // First, cause a network error to queue a request
-    const networkError = new Error('Network Error');
-    networkError.response = undefined;
-    
-    axios.get.mockRejectedValueOnce(networkError);
-    
-    try {
-      await api.getCampaigns({});
-    } catch (e) {
-      // Expected
-    }
-    
-    // Now mock successful response for retry
-    axios.get.mockResolvedValue({ data: { campaigns: [] } });
-    
-    // Call retryQueuedRequests
+  it('shares one replay for duplicate GETs and resolves each original caller', async () => {
+    const firstRequest = rejectNetworkRequest();
+    const secondRequest = rejectNetworkRequest();
+    const response = { data: { campaigns: [] } };
+    axios.request.mockResolvedValue(response);
+
     await retryQueuedRequests();
-    
-    // Should have retried the request
-    expect(axios.get).toHaveBeenCalledTimes(2);
+
+    await expect(Promise.all([firstRequest, secondRequest])).resolves.toEqual([response, response]);
+    expect(axios.request).toHaveBeenCalledTimes(1);
   });
 
-  it('does not retry non-GET requests', async () => {
-    const networkError = new Error('Network Error');
-    networkError.response = undefined;
-    
-    axios.post.mockRejectedValue(networkError);
-    
-    try {
-      await api.createCampaign({ title: 'Test' });
-    } catch (e) {
-      // Expected
-    }
-    
-    axios.post.mockResolvedValue({ data: { success: true } });
-    
-    await retryQueuedRequests();
-    
-    // POST should not be retried (only GET requests are queued)
-    expect(axios.post).toHaveBeenCalledTimes(1);
+  it('propagates replay failures to the original caller and drains the queue', async () => {
+    const originalRequest = rejectNetworkRequest();
+    axios.request.mockRejectedValue({
+      response: { status: 503, data: { error: { message: 'Unavailable', code: 'DOWN' } } },
+    });
+
+    const outcomes = await retryQueuedRequests();
+
+    await expect(originalRequest).rejects.toMatchObject({ status: 503, code: 'DOWN' });
+    expect(outcomes[0].status).toBe('rejected');
+    expect(await retryQueuedRequests()).toEqual([]);
   });
 
-  it('handles retry failure gracefully', async () => {
-    const networkError = new Error('Network Error');
-    networkError.response = undefined;
-    
-    axios.get.mockRejectedValue(networkError);
-    
-    try {
-      await api.getCampaigns({});
-    } catch (e) {
-      // Expected
-    }
-    
-    // Retry also fails
-    axios.get.mockRejectedValue(networkError);
-    
-    // Should not throw
+  it('does not queue non-GET requests', async () => {
+    const error = new Error('Network Error');
+    error.config = { method: 'post', url: '/campaigns' };
+
+    await expect(responseRejectedHandlers[0](error)).rejects.toMatchObject({ status: 0 });
     await retryQueuedRequests();
-    
-    // Both original and retry should have been called
-    expect(axios.get).toHaveBeenCalledTimes(2);
+    expect(axios.request).not.toHaveBeenCalled();
   });
 
-  it('clears queue after retry', async () => {
-    const networkError = new Error('Network Error');
-    networkError.response = undefined;
-    
-    axios.get.mockRejectedValue(networkError);
-    
-    try {
-      await api.getCampaigns({});
-    } catch (e) {
-      // Expected
+  it('caps the queue at 100 requests and rejects an evicted caller', async () => {
+    const pending = [];
+    for (let index = 0; index < 101; index += 1) {
+      const queued = rejectNetworkRequest({ url: `/campaigns/${index}` });
+      pending.push(index === 0 ? queued.catch((error) => error) : queued);
     }
-    
-    axios.get.mockResolvedValue({ data: { campaigns: [] } });
-    
+    axios.request.mockResolvedValue({ data: {} });
+
     await retryQueuedRequests();
-    await retryQueuedRequests(); // Second call should not retry again
-    
-    // Should only have 2 calls (original + first retry)
-    expect(axios.get).toHaveBeenCalledTimes(2);
+    const results = await Promise.all(pending);
+
+    expect(axios.request).toHaveBeenCalledTimes(100);
+    expect(results[0]).toMatchObject({ status: 0, message: 'Network Error' });
   });
 });
 
