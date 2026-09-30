@@ -76,6 +76,7 @@ router.post(
       preview_token,
       selected_path_index,
       idempotency_key,
+      gift,
     } = req.body;
     const userId = req.user.userId;
 
@@ -176,6 +177,7 @@ router.post(
         amount,
         sendAsset,
         displayName: display_name,
+        gift,
         referralCode,
         referralLinkCode: referralLink?.code,
         referralLinkId: referralLink?.id,

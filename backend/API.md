@@ -61,6 +61,15 @@ Get a DEX quote before submitting a conversion contribution.
 Query params:
 
 - `send_asset` (required): `XLM` or `USDC`
+- `gift` (optional): `{ recipient_name, recipient_email, message? }`. The
+  recipient is notified only after the Stellar payment is confirmed and
+  indexed. `recipient_name` is limited to 100 characters, `recipient_email`
+  must be valid, and `message` is limited to 280 characters.
+
+Gift notifications are written to a database-backed outbox in the same
+transaction that records the confirmed contribution. Email delivery retries
+with exponential backoff; registered recipients also receive an in-app
+notification. Gift data is not added to the public contribution response.
 - `dest_asset` (required): `XLM` or `USDC`
 - `dest_amount` (required): amount the campaign should receive
 

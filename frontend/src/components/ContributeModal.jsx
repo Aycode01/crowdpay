@@ -151,6 +151,10 @@ export default function ContributeModal({
   const [freighterChecked, setFreighterChecked] = useState(false);
   const [existingContributions, setExistingContributions] = useState([]);
   const [displayName, setDisplayName] = useState('');
+  const [giftEnabled, setGiftEnabled] = useState(false);
+  const [giftRecipientName, setGiftRecipientName] = useState('');
+  const [giftRecipientEmail, setGiftRecipientEmail] = useState('');
+  const [giftMessage, setGiftMessage] = useState('');
   const anchorPopupRef = useRef(null);
   const submitLockRef = useRef(false);
   const activeSubmissionKeyRef = useRef(null);
@@ -418,6 +422,15 @@ export default function ContributeModal({
         amount: destAmount,
         send_asset: sendAsset,
         display_name: displayName.trim() || undefined,
+        ...(giftEnabled
+          ? {
+              gift: {
+                recipient_name: giftRecipientName.trim(),
+                recipient_email: giftRecipientEmail.trim(),
+                message: giftMessage.trim() || undefined,
+              },
+            }
+          : {}),
         device_fingerprint: device_fingerprint || undefined,
         idempotency_key: activeSubmissionKeyRef.current,
         ...(isPathPayment && previewToken
@@ -550,6 +563,15 @@ export default function ContributeModal({
         amount: destAmount,
         send_asset: effectiveSendAsset,
         display_name: displayName || undefined,
+        ...(giftEnabled
+          ? {
+              gift: {
+                recipient_name: giftRecipientName.trim(),
+                recipient_email: giftRecipientEmail.trim(),
+                message: giftMessage.trim() || undefined,
+              },
+            }
+          : {}),
         idempotency_key: activeSubmissionKeyRef.current,
       },
       referralQuery
@@ -958,6 +980,51 @@ export default function ContributeModal({
                   Visible on the campaign’s backer wall. Leave blank to contribute anonymously.
                 </span>
               </div>
+
+              {paymentMethod !== 'freighter' && (
+                <fieldset className="form-stack" style={{ marginBottom: '1rem' }}>
+                  <legend className="label-strong">Gift this contribution</legend>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={giftEnabled}
+                      onChange={event => setGiftEnabled(event.target.checked)}
+                    />{' '}
+                    Notify someone that you contributed in their honor
+                  </label>
+                  {giftEnabled && (
+                    <>
+                      <label htmlFor="gift-recipient-name">Recipient name</label>
+                      <input
+                        id="gift-recipient-name"
+                        value={giftRecipientName}
+                        onChange={event => setGiftRecipientName(event.target.value)}
+                        maxLength={100}
+                        required
+                      />
+                      <label htmlFor="gift-recipient-email">Recipient email</label>
+                      <input
+                        id="gift-recipient-email"
+                        type="email"
+                        value={giftRecipientEmail}
+                        onChange={event => setGiftRecipientEmail(event.target.value)}
+                        maxLength={254}
+                        required
+                      />
+                      <label htmlFor="gift-message">Message (optional)</label>
+                      <textarea
+                        id="gift-message"
+                        value={giftMessage}
+                        onChange={event => setGiftMessage(event.target.value)}
+                        maxLength={280}
+                      />
+                      <span style={styles.help}>
+                        The recipient is emailed only after the contribution is confirmed on Stellar.
+                      </span>
+                    </>
+                  )}
+                </fieldset>
+              )}
 
               {isPathPayment && (
                 <div className="alert alert--info" style={{ marginTop: '0.85rem' }} role="status">

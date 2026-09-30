@@ -300,6 +300,39 @@ test('contribution validation trims whitespace on valid display_name', async () 
   assert.equal(result.req.body.display_name, 'Alice');
 });
 
+test('contribution validation accepts and sanitizes gift recipient details', async () => {
+  const result = await runValidation(contributionValidation, {
+    campaign_id: '123e4567-e89b-12d3-a456-426614174000',
+    amount: '10',
+    send_asset: 'XLM',
+    gift: {
+      recipient_name: '<b>Ada</b>',
+      recipient_email: 'ADA@example.com',
+      message: '<script>Hi</script>Support you!',
+    },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.req.body.gift.recipient_name, 'Ada');
+  assert.equal(result.req.body.gift.recipient_email, 'ada@example.com');
+  assert.equal(result.req.body.gift.message, 'HiSupport you!');
+});
+
+test('contribution validation rejects invalid gift email and oversized message', async () => {
+  const result = await runValidation(contributionValidation, {
+    campaign_id: '123e4567-e89b-12d3-a456-426614174000',
+    amount: '10',
+    send_asset: 'XLM',
+    gift: {
+      recipient_name: 'Ada',
+      recipient_email: 'not-an-email',
+      message: 'x'.repeat(281),
+    },
+  });
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.path === 'gift.recipient_email'));
+  assert.ok(result.errors.some(e => e.path === 'gift.message'));
+});
+
 test('contribution validation applies the exact-stroop amount rule (#840)', async () => {
   const base = { campaign_id: '123e4567-e89b-12d3-a456-426614174000', send_asset: 'XLM' };
   for (const amount of ['8.29', '19.99', '0.0000001', '922337203685.4775807', '1.50000000']) {
