@@ -1,5 +1,5 @@
 {
-"common": {
+  "common": {
     "back": "Retour",
     "backToCampaigns": "Retour aux campagnes",
     "cancel": "Annuler",
@@ -607,5 +607,24 @@
       "avgContribution": "Contribution moyenne"
     },
     "sendThankYou": "Envoyer un remerciement"
+  },
+  "teamFundraising": {
+    "title": "Équipes de collecte",
+    "loading": "Chargement de l'équipe…",
+    "loadError": "Impossible de charger la page de l'équipe.",
+    "teamTotal": "Total de l'équipe",
+    "totals": "{{raised}} collectés sur {{members}} membres — {{pct}} % de {{target}}",
+    "raisedOf": "{{raised}} collectés sur un objectif de {{target}}",
+    "lead": "chef de file",
+    "remove": "Retirer de l'équipe",
+    "empty": "Cette campagne n'a pas encore de membres.",
+    "emptyOwner": "Cette campagne n'a pas encore de membres. Ajoutez une de vos autres campagnes ci-dessous pour les regrouper sur cette page.",
+    "addTitle": "Ajouter une campagne à cette équipe",
+    "add": "Ajouter",
+    "adding": "Ajout…",
+    "noneAvailable": "Aucune de vos autres campagnes n'est disponible à l'ajout.",
+    "loadingYours": "Chargement de vos campagnes…",
+    "addError": "Impossible d'ajouter le membre.",
+    "removeError": "Impossible de retirer le membre."
   }
 }

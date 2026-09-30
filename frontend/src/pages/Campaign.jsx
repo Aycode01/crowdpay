@@ -9,6 +9,7 @@ import { useToast } from '../context/ToastContext';
 import ContributeModal from '../components/ContributeModal';
 import RefundsSection from '../components/RefundsSection';
 import BudgetBreakdown from '../components/BudgetBreakdown';
+import TeamCampaignsSection from '../components/TeamCampaignsSection';
 
 const SUPPORTED_LOCALES = [
   { code: 'fr', label: 'French (Français)' },
@@ -2439,6 +2440,15 @@ export default function Campaign() {
           {activeTab !== 'analytics' && (
             <>
               <h2 style={styles.sectionTitle}>Team</h2>
+
+              {/* Team fundraising pages (#952): aggregated member campaigns */}
+              <div className="campaign-card" style={{ marginBottom: '1.5rem' }}>
+                <strong style={{ display: 'block', marginBottom: '0.75rem' }}>
+                  Fundraising teams
+                </strong>
+                <TeamCampaignsSection campaignId={campaign.id} canManage={isOwner} />
+              </div>
+
               <div
                 className="campaign-card"
                 style={{ marginBottom: '1.5rem', fontSize: '0.85rem' }}
