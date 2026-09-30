@@ -3588,7 +3588,7 @@ const {
 router.get(
   '/:id/fulfillments',
   requireAuth,
-  requireCampaignMember('owner','manager'),
+  requireCampaignMember('owner', 'manager'),
   asyncHandler(async (req, res) => {
     const items = await getFulfillmentsByCampaign(req.params.id, { status: req.query.status });
     const summary = await getCampaignFulfillmentSummary(req.params.id);
@@ -3599,13 +3599,15 @@ router.get(
 router.patch(
   '/:id/fulfillments/:fulfillmentId',
   requireAuth,
-  requireCampaignMember('owner','manager'),
+  requireCampaignMember('owner', 'manager'),
   asyncHandler(async (req, res) => {
     const { status, tracking_number, carrier, notes } = req.body || {};
     if (!status) return res.status(422).json({ error: 'status is required' });
     try {
       const updated = await updateFulfillmentStatus(req.params.fulfillmentId, status, {
-        trackingNumber: tracking_number, carrier, notes,
+        trackingNumber: tracking_number,
+        carrier,
+        notes,
       });
       res.json(updated);
     } catch (err) {
@@ -3617,14 +3619,34 @@ router.patch(
 router.get(
   '/:id/fulfillments/export.csv',
   requireAuth,
-  requireCampaignMember('owner','manager'),
+  requireCampaignMember('owner', 'manager'),
   asyncHandler(async (req, res) => {
     const items = await getFulfillmentsByCampaign(req.params.id, { status: req.query.status });
-    const headers = ['id','tier_title','status','shipping_name','shipping_address_line1','shipping_address_line2','shipping_city','shipping_region','shipping_postal_code','shipping_country','tracking_number','carrier','created_at'];
-    const escape = v => v == null ? '' : `"${String(v).replace(/"/g,'""')}"`;
-    const csv = [headers.join(','), ...items.map(r => headers.map(h => escape(r[h])).join(','))].join('\n');
+    const headers = [
+      'id',
+      'tier_title',
+      'status',
+      'shipping_name',
+      'shipping_address_line1',
+      'shipping_address_line2',
+      'shipping_city',
+      'shipping_region',
+      'shipping_postal_code',
+      'shipping_country',
+      'tracking_number',
+      'carrier',
+      'created_at',
+    ];
+    const escape = v => (v === null || v === undefined ? '' : `"${String(v).replace(/"/g, '""')}"`);
+    const csv = [
+      headers.join(','),
+      ...items.map(r => headers.map(h => escape(r[h])).join(',')),
+    ].join('\n');
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="fulfillments-${req.params.id}.csv"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="fulfillments-${req.params.id}.csv"`
+    );
     res.send(csv);
   })
 );
