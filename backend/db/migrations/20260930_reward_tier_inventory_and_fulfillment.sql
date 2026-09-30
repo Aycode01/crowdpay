@@ -1,4 +1,4 @@
-﻿-- Reward-tier inventory and fulfillment tracking (issue #958).
+-- Reward-tier inventory and fulfillment tracking (issue #958).
 ALTER TABLE reward_tiers
   ADD COLUMN IF NOT EXISTS inventory_limit INTEGER CHECK (inventory_limit IS NULL OR inventory_limit > 0),
   ADD COLUMN IF NOT EXISTS inventory_claimed INTEGER NOT NULL DEFAULT 0 CHECK (inventory_claimed >= 0),
