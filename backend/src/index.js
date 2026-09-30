@@ -85,6 +85,7 @@ app.use('/api/impact-reports', require('./routes/impactReports'));
 app.use('/api/invites', require('./routes/invites'));
 app.use('/api/webhooks/kyc', require('./routes/kycWebhook'));
 app.use('/api/milestones', require('./routes/milestones'));
+app.use('/api/milestones', require('./routes/milestoneChecklists'));
 app.use('/api/nft-rewards', require('./routes/nftRewards'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/ops', require('./routes/ops'));

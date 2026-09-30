@@ -77,7 +77,13 @@ router.get(
 
     let queryText = `SELECT ${COMMENT_COLUMNS},
               COALESCE(u_cnt.upvotes_count, 0)::int AS upvotes_count,
-              COALESCE(u_user.user_upvoted, false) AS user_upvoted
+              COALESCE(u_user.user_upvoted, false) AS user_upvoted,
+              EXISTS (
+                SELECT 1 FROM contributions contrib
+                WHERE contrib.campaign_id = cc.campaign_id
+                  AND contrib.refunded = FALSE
+                  AND contrib.sender_public_key = u.wallet_public_key
+              ) AS is_supporter
        FROM campaign_comments cc
        JOIN campaigns c ON c.id = cc.campaign_id
        JOIN users u ON u.id = cc.author_id
