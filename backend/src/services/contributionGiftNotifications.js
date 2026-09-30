@@ -94,7 +94,7 @@ async function processPendingGiftNotifications() {
       logger.error('Gift contribution notification delivery failed', {
         notification_id: notification.id,
         attempt: notification.attempts,
-        error: error.message,
+        error_code: error.code || 'DELIVERY_FAILED',
       });
     }
   }

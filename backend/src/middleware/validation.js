@@ -335,6 +335,8 @@ const contributionValidation = [
   body('gift.recipient_email')
     .if(body('gift').isObject({ strict: true }))
     .trim()
+    .isLength({ max: 254 })
+    .withMessage('gift.recipient_email must be at most 254 characters')
     .isEmail()
     .withMessage('gift.recipient_email must be a valid email address')
     .normalizeEmail(),
