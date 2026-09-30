@@ -202,8 +202,8 @@ function isPublicIp(ip) {
  */
 function cleanField(value) {
   if (typeof value !== 'string') return null;
-  // eslint-disable-next-line no-control-regex -- intentionally strips control chars from untrusted provider input
   const cleaned = value
+    // eslint-disable-next-line no-control-regex -- intentionally strips control characters from untrusted provider input
     .replace(/[\u0000-\u001f\u007f]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();

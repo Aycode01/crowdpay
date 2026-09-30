@@ -16,7 +16,7 @@ const requireCampaignCreator = asyncHandler(async (req, res, next) => {
 });
 
 function csvCell(value) {
-  const text = value == null ? '' : String(value);
+  const text = value === null || value === undefined ? '' : String(value);
   return `"${text.replace(/"/g, '""')}"`;
 }
 

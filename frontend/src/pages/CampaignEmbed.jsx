@@ -3,6 +3,7 @@ import MilestoneProgressBar, { normalizeWidgetSize } from '../components/Milesto
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
 const BASE_URL = import.meta.env.VITE_API_URL || `${API_BASE_URL}/api`;
+const POLL_INTERVAL_MS = 30000;
 
 function getParentOrigin() {
   const explicit = new URLSearchParams(window.location.search).get('origin');
@@ -14,23 +15,41 @@ function getParentOrigin() {
   }
 }
 
+function getCampaignId() {
+  const fromPath = window.location.pathname.split('/').filter(Boolean).pop();
+  return fromPath && fromPath !== 'campaigns' ? fromPath : '';
+}
+
+function formatAmount(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return '0';
+  return numeric.toLocaleString(undefined, { maximumFractionDigits: 7 });
+}
+
 export default function CampaignEmbed() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const pathParts = window.location.pathname.split('/');
-  const campaignId = pathParts[pathParts.length - 1];
+  const campaignId = getCampaignId();
   const params = new URLSearchParams(window.location.search);
   const size = normalizeWidgetSize(params.get('size'));
   const theme = params.get('theme') === 'dark' ? 'dark' : 'light';
   const parentOrigin = getParentOrigin();
 
   const fetchStats = useCallback(async () => {
-    if (!campaignId) return;
+    if (!campaignId) {
+      setError('Campaign not available');
+      setLoading(false);
+      return;
+    }
     try {
-      const res = await fetch(`${BASE_URL}/embed/${campaignId}/stats`);
-      if (!res.ok) throw new Error('Campaign stats not found');
+      // Public compact widget payload; honours campaign/contributor privacy
+      // settings on the server (see GET /api/campaigns/:id/widget).
+      const res = await fetch(`${BASE_URL}/campaigns/${encodeURIComponent(campaignId)}/widget`);
+      if (!res.ok) {
+        throw new Error(res.status === 404 ? 'Campaign not found' : 'Could not load campaign');
+      }
       const data = await res.json();
       setStats(data);
       setError('');
@@ -43,7 +62,7 @@ export default function CampaignEmbed() {
 
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchStats, 30000);
+    const interval = setInterval(fetchStats, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [fetchStats]);
 
@@ -104,49 +123,70 @@ export default function CampaignEmbed() {
   const textMuted = isDark ? '#a0aec0' : '#718096';
   const borderColor = isDark ? '#2d3748' : '#e2e8f0';
 
+  const shellStyle = {
+    background: bg,
+    color: textColor,
+    padding: '1rem',
+    fontFamily: 'system-ui, sans-serif',
+    fontSize: '0.85rem',
+    boxSizing: 'border-box',
+    width: '100%',
+  };
+
   if (loading) {
     return (
-      <div
-        style={{
-          background: bg,
-          color: textColor,
-          padding: '1rem',
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: '0.85rem',
-        }}
-      >
-        Loading campaign progress...
+      <div style={shellStyle} role="status" aria-live="polite">
+        Loading campaign progress…
       </div>
     );
   }
 
   if (error || !stats) {
     return (
-      <div
-        style={{
-          background: bg,
-          color: '#e53e3e',
-          padding: '1rem',
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: '0.85rem',
-        }}
-      >
-        {error || 'Campaign not available'}
+      <div style={{ ...shellStyle, color: isDark ? '#feb2b2' : '#c53030' }} role="alert">
+        <span>{error || 'Campaign not available'}</span>
+        <button
+          type="button"
+          onClick={fetchStats}
+          style={{
+            display: 'block',
+            marginTop: '0.5rem',
+            background: 'transparent',
+            border: `1px solid ${borderColor}`,
+            borderRadius: '6px',
+            color: 'inherit',
+            cursor: 'pointer',
+            fontSize: '0.78rem',
+            padding: '0.25rem 0.6rem',
+          }}
+        >
+          Try again
+        </button>
       </div>
     );
   }
 
+  const target = Number(stats.target_amount) || 0;
+  const raised = Number(stats.raised_amount) || 0;
+  const percentage = Number.isFinite(Number(stats.progress_percentage))
+    ? Number(stats.progress_percentage)
+    : target > 0
+      ? Math.round((raised / target) * 10) / 10
+      : 0;
+  const backerCount = Number(stats.contributor_count) || 0;
+  const recentBackers = Array.isArray(stats.recent_backers) ? stats.recent_backers : [];
+  const contributionUrl =
+    stats.contribution_url ||
+    `${window.location.origin}/campaigns/${encodeURIComponent(campaignId)}`;
+
   return (
     <div
       style={{
-        background: bg,
-        color: textColor,
+        ...shellStyle,
         border: `1px solid ${borderColor}`,
         borderRadius: '12px',
         padding: size === 'small' ? '0.75rem' : '1rem',
         fontFamily: 'system-ui, -apple-system, sans-serif',
-        boxSizing: 'border-box',
-        width: '100%',
       }}
     >
       <div
@@ -211,10 +251,9 @@ export default function CampaignEmbed() {
           }}
         >
           <span>
-            {Number(stats.raised_amount).toLocaleString()} /{' '}
-            {Number(stats.target_amount).toLocaleString()} {stats.asset_type}
+            {formatAmount(raised)} / {formatAmount(target)} {stats.asset_type}
           </span>
-          <span style={{ color: textMuted }}>{stats.progress_percentage}%</span>
+          <span style={{ color: textMuted }}>{percentage}%</span>
         </div>
         <div
           style={{
@@ -223,11 +262,16 @@ export default function CampaignEmbed() {
             borderRadius: '99px',
             overflow: 'hidden',
           }}
+          role="progressbar"
+          aria-valuenow={Math.round(percentage)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${Math.round(percentage)}% funded`}
         >
           <div
             style={{
               height: '100%',
-              width: `${Math.min(100, stats.progress_percentage)}%`,
+              width: `${Math.min(100, percentage)}%`,
               background: '#7c3aed',
               borderRadius: '99px',
               transition: 'width 0.3s ease',
@@ -247,15 +291,21 @@ export default function CampaignEmbed() {
           gap: '0.5rem',
         }}
       >
-        <span>👥 {stats.backer_count} backers</span>
-        {stats.days_remaining !== null && <span>⏳ {stats.days_remaining} days left</span>}
+        <span>👥 {backerCount} backers</span>
+        {stats.days_remaining !== null && stats.days_remaining !== undefined && (
+          <span>⏳ {stats.days_remaining} days left</span>
+        )}
       </div>
 
       {size === 'large' && stats.milestones?.length > 0 && (
-        <MilestoneProgressBar milestones={stats.milestones} size={size} />
+        <MilestoneProgressBar
+          milestones={stats.milestones}
+          summary={stats.milestone_summary}
+          size={size}
+        />
       )}
 
-      {size === 'large' && stats.recent_backers?.length > 0 && (
+      {size === 'large' && recentBackers.length > 0 && (
         <div
           style={{
             marginBottom: '0.75rem',
@@ -274,23 +324,31 @@ export default function CampaignEmbed() {
             Recent Backers
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-            {stats.recent_backers.slice(0, 3).map((b, i) => (
+            {recentBackers.slice(0, 3).map((backer, index) => (
               <div
-                key={i}
+                key={`${backer.name}-${index}`}
                 style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}
               >
-                <span>{b.name}</span>
-                <span style={{ fontWeight: 600 }}>
-                  {Number(b.amount).toLocaleString()} {stats.asset_type}
-                </span>
+                <span>{backer.name || 'Anonymous'}</span>
+                {backer.amount !== null && backer.amount !== undefined && (
+                  <span style={{ fontWeight: 600 }}>
+                    {formatAmount(backer.amount)} {stats.asset_type}
+                  </span>
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
 
+      {size !== 'small' && backerCount === 0 && (
+        <p style={{ margin: '0 0 0.75rem', fontSize: '0.78rem', color: textMuted }}>
+          Be the first to back this campaign.
+        </p>
+      )}
+
       <a
-        href={stats.contribution_url}
+        href={contributionUrl}
         target="_blank"
         rel="noopener noreferrer"
         style={{

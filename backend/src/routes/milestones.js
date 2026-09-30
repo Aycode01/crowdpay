@@ -280,8 +280,7 @@ router.post('/', requireAuth, async (req, res) => {
     sort_order: sortOrder,
   } = req.body || {};
 
-  if (!campaignId || !title || releasePercentage == null) {
-    // eslint-disable-line eqeqeq
+  if (!campaignId || !title || releasePercentage === null || releasePercentage === undefined) {
     return res
       .status(400)
       .json({ error: 'campaign_id, title and release_percentage are required' });
@@ -398,11 +397,9 @@ router.post('/:id/submit', requireAuth, async (req, res) => {
     return res.status(err.status || 403).json({ error: err.message });
   }
   if (!['funded', 'in_progress'].includes(milestone.campaign_status)) {
-    return res
-      .status(409)
-      .json({
-        error: `Milestone submission is not available while campaign status is "${milestone.campaign_status}".`,
-      });
+    return res.status(409).json({
+      error: `Milestone submission is not available while campaign status is "${milestone.campaign_status}".`,
+    });
   }
   if (milestone.status === 'released') {
     return res.status(409).json({ error: 'This milestone has already been released' });
@@ -780,11 +777,9 @@ const approveMilestoneReleaseHandler = async (req, res) => {
   const milestone = milestoneRows[0];
 
   if (!['funded', 'in_progress'].includes(milestone.campaign_status)) {
-    return res
-      .status(409)
-      .json({
-        error: `Milestone approval is not available while campaign status is "${milestone.campaign_status}".`,
-      });
+    return res.status(409).json({
+      error: `Milestone approval is not available while campaign status is "${milestone.campaign_status}".`,
+    });
   }
   if (milestone.status !== 'pending_review') {
     return res

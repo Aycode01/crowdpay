@@ -733,5 +733,31 @@
     "loadingYours": "Loading your campaigns…",
     "addError": "Could not add the team member.",
     "removeError": "Could not remove the team member."
+  },
+  "sponsorMatching": {
+    "title": "Sponsor matching",
+    "subtitle": "Sponsors boost every contribution while their matching pool lasts.",
+    "loading": "Loading sponsor matching…",
+    "error": "Could not load sponsor matching progress.",
+    "retry": "Retry",
+    "empty": "No sponsor is matching contributions yet.",
+    "createPledge": "Pledge matching funds",
+    "pledgeAmount": "Pledge amount",
+    "pledgeAmountPlaceholder": "1000",
+    "matchRatio": "Match ratio",
+    "matchRatioHint": "1 means the sponsor adds the same amount the backer gives.",
+    "submit": "Create pledge",
+    "submitting": "Creating…",
+    "invalidAmount": "Enter a positive pledge amount.",
+    "invalidRatio": "Enter a match ratio between 0 and 100.",
+    "created": "Matching pledge created.",
+    "createFailed": "Could not create the matching pledge.",
+    "duplicate": "You already have an active matching pledge for this campaign.",
+    "matchedProgress": "{{matched}} of {{pledged}} matched",
+    "closePledge": "Close pledge",
+    "closing": "Closing…",
+    "closed": "Matching pledge closed.",
+    "closeFailed": "Could not close the matching pledge.",
+    "remainingPool": "{{amount}} of matching funds still available"
   }
 }

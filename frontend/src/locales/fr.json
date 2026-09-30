@@ -733,5 +733,31 @@
     "raised": "raised",
     "removeFromList": "Remove from reading list",
     "view": "View →"
+  },
+  "sponsorMatching": {
+    "title": "Matching des sponsors",
+    "subtitle": "Les sponsors amplifient chaque contribution tant que leur cagnotte le permet.",
+    "loading": "Chargement du matching des sponsors…",
+    "error": "Impossible de charger la progression du matching des sponsors.",
+    "retry": "Réessayer",
+    "empty": "Aucun sponsor ne double les contributions pour le moment.",
+    "createPledge": "Promettre un matching",
+    "pledgeAmount": "Montant promis",
+    "pledgeAmountPlaceholder": "1000",
+    "matchRatio": "Ratio de matching",
+    "matchRatioHint": "1 signifie que le sponsor ajoute le même montant que le contributeur.",
+    "submit": "Créer l'engagement",
+    "submitting": "Création…",
+    "invalidAmount": "Saisissez un montant promis positif.",
+    "invalidRatio": "Saisissez un ratio de matching compris entre 0 et 100.",
+    "created": "Engagement de matching créé.",
+    "createFailed": "Impossible de créer l'engagement de matching.",
+    "duplicate": "Vous avez déjà un engagement de matching actif pour cette campagne.",
+    "matchedProgress": "{{matched}} sur {{pledged}} utilisés",
+    "closePledge": "Clôturer",
+    "closing": "Clôture…",
+    "closed": "Engagement de matching clôturé.",
+    "closeFailed": "Impossible de clôturer l'engagement de matching.",
+    "remainingPool": "{{amount}} de fonds de matching encore disponibles"
   }
 }
