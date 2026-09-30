@@ -239,3 +239,45 @@ test.describe('rewardTierService', () => {
     assert.equal(assigned, null);
   });
 });
+
+// ─── Issue #958 tests ───────────────────────────────────────────────────────
+test.describe('rewardTierService inventory + fulfillment', () => {
+  test('reserveInventory returns true when claim fn returns ok', async () => {
+    const client = mockClient(async (text, params) => {
+      if (/claim_reward_tier_inventory/.test(text)) return { rows: [{ ok: true }] };
+      if (/INSERT INTO reward_tier_inventory_reservations/.test(text)) return { rows: [] };
+      throw new Error(`Unexpected: ${text}`);
+    });
+    const svc = buildService();
+    const ok = await svc.reserveInventory(client, { tierId: 't1', contributionId: 'c1', quantity: 1 });
+    assert.equal(ok, true);
+  });
+
+  test('reserveInventory returns false when claim fn returns false', async () => {
+    const client = mockClient(async () => ({ rows: [{ ok: false }] }));
+    const svc = buildService();
+    const ok = await svc.reserveInventory(client, { tierId: 't1', contributionId: 'c1' });
+    assert.equal(ok, false);
+  });
+
+  test('updateFulfillmentStatus rejects an illegal transition', async () => {
+    const svc = buildService({
+      queryImpl: async (text) => {
+        if (/SELECT rf\.\*/.test(text)) return { rows: [{ id: 'f1', status: 'delivered' }] };
+        return { rows: [] };
+      },
+    });
+    await assert.rejects(
+      () => svc.updateFulfillmentStatus('f1', 'pending'),
+      /Cannot transition fulfillment from delivered to pending/
+    );
+  });
+
+  test('normalizeInventoryFields requires fulfillment_required when inventory_limit is set', async () => {
+    const svc = buildService();
+    assert.throws(
+      () => svc.normalizeInventoryFields({ inventory_limit: 10 }, 'reward_tiers[0]'),
+      /fulfillment_required must be true/
+    );
+  });
+});
