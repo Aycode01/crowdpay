@@ -7,29 +7,25 @@ import { api } from '../../services/api';
 const apiMocks = vi.hoisted(() => ({
   getCampaignCategories: vi.fn().mockResolvedValue([]),
   getFeaturedCampaigns: vi.fn().mockResolvedValue([]),
-  getCampaignFacets: vi
-    .fn()
-    .mockResolvedValue({
-      categories: [],
-      assets: [],
-      countries: [],
-      funding: { min: 0, max: 0 },
-      verified_creators: 0,
-    }),
-  getCampaigns: vi
-    .fn()
-    .mockResolvedValue({
-      campaigns: [
-        {
-          id: '1',
-          title: 'Test campaign',
-          status: 'active',
-          target_amount: '100',
-          asset_type: 'USDC',
-        },
-      ],
-      total: 1,
-    }),
+  getCampaignFacets: vi.fn().mockResolvedValue({
+    categories: [],
+    assets: [],
+    countries: [],
+    funding: { min: 0, max: 0 },
+    verified_creators: 0,
+  }),
+  getCampaigns: vi.fn().mockResolvedValue({
+    campaigns: [
+      {
+        id: '1',
+        title: 'Test campaign',
+        status: 'active',
+        target_amount: '100',
+        asset_type: 'USDC',
+      },
+    ],
+    total: 1,
+  }),
   getCampaign: vi.fn().mockResolvedValue({}),
   getRecommendedCampaigns: vi.fn().mockResolvedValue([]),
 }));
