@@ -6,6 +6,10 @@ const { isKycRequiredForCampaigns } = require('../services/kycProvider');
 const { startKycForUser } = require('../services/kycService');
 const { listCreatorCampaigns, listUserContributions } = require('../services/userDashboardService');
 const { listFollowedCampaigns } = require('../services/campaignFollowService');
+const {
+  listForUser: listCommunicationPreferences,
+  resetAllForUser: resetAllCommunicationPreferences,
+} = require('../services/communicationPreferenceService');
 const { evaluateBadges, getLeaderboard } = require('../services/badgeService');
 const { ensureCustodialAccountFundedAndTrusted } = require('../services/stellarService');
 const { withDecryptedWalletSecret } = require('../services/walletSecrets');
@@ -287,6 +291,31 @@ router.patch(
       ]
     );
     res.json(rows[0]);
+  })
+);
+
+/**
+ * Per-campaign communication overrides (#961). The account-level
+ * `notification_preferences` above is global; these rows are the "just this
+ * one campaign" layer, keyed by (campaign_id, user_id).
+ *
+ * GET    /api/users/me/communication-preferences  — every campaign the caller muted
+ * DELETE /api/users/me/communication-preferences  — reset them all at once
+ */
+router.get(
+  '/me/communication-preferences',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    res.json({ campaigns: await listCommunicationPreferences(req.user.userId) });
+  })
+);
+
+router.delete(
+  '/me/communication-preferences',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const removed = await resetAllCommunicationPreferences(req.user.userId);
+    res.json({ removed });
   })
 );
 
