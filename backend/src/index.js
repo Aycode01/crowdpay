@@ -74,6 +74,8 @@ app.use('/api/campaigns', require('./routes/campaignRequirements'));
 app.use('/api/campaign-templates', require('./routes/campaignTemplates'));
 app.use('/api/campaign-pools', require('./routes/contributionPools'));
 app.use('/api/contributions', require('./routes/contributions'));
+app.use('/api/contributions', require('./routes/contributionDedications'));
+app.use('/api/campaigns', require('./routes/contributionDedications'));
 app.use('/api/contributor-identity', require('./routes/contributorIdentity'));
 app.use('/api/creator', require('./routes/creatorAnalytics'));
 app.use('/api/disputes', require('./routes/disputes'));
