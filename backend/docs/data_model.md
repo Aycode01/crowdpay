@@ -368,6 +368,9 @@ The `campaign_translations` table allows creators to provide campaign descriptio
 
 **Unique constraint:** `(campaign_id, language)` — one translation per language per campaign.
 
+Locale normalization, API behavior, and operational limits are documented in
+[`campaign-localization.md`](campaign-localization.md).
+
 ## Feature Flags (#800)
 
 The `feature_flags` table backs the runtime flag endpoints in
