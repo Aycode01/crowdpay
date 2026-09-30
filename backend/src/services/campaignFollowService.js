@@ -30,7 +30,7 @@ async function followCampaign(userId, campaignId, input = {}) {
   // bare follow never clobbers choices the user made earlier.
   const conflictAction = Object.keys(prefs).length
     ? `DO UPDATE SET ${Object.keys(prefs)
-        .map((column) => `${column} = EXCLUDED.${column}`)
+        .map(column => `${column} = EXCLUDED.${column}`)
         .join(', ')}`
     : 'DO UPDATE SET user_id = campaign_followers.user_id';
 
@@ -132,7 +132,7 @@ async function notifyFollowers(campaignId, preference, message, exclude) {
     [campaignId, excluded]
   );
 
-  const userIds = followers.map((f) => f.user_id);
+  const userIds = followers.map(f => f.user_id);
   try {
     await createNotificationsBulk(userIds, message);
   } catch (err) {

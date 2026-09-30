@@ -39,17 +39,17 @@ function buildService({ queryImpl, stellar = {}, clientQueryImpl, closeImpl }) {
       connect: async () => client,
     },
     '../config/logger': silentLogger,
-'./stellarService': {
-       getSupportedAssetCodes: () => ['XLM', 'USDC'],
-       getCampaignBalance: async () => ({ XLM: '1000' }),
-       ensureCustodialAccountFundedAndTrusted: async () => null,
-       createSubscriptionClaimableBalances: async () => ({ txHash: 'tx', balanceIds: [] }),
-       claimSubscriptionBalanceToCampaign: async () => 'claim-tx-hash',
-       getClaimableBalance: async () => ({ id: 'balance' }),
-       isClaimableBalanceGoneError: () => false,
-       buildUnsignedSubscriptionTransaction: async () => ({ unsignedXdr: 'test' }),
-       submitPreparedSubscriptionTransaction: async () => ({ txHash: 'tx', balanceIds: [] }),
-       ...stellar,
+    './stellarService': {
+      getSupportedAssetCodes: () => ['XLM', 'USDC'],
+      getCampaignBalance: async () => ({ XLM: '1000' }),
+      ensureCustodialAccountFundedAndTrusted: async () => null,
+      createSubscriptionClaimableBalances: async () => ({ txHash: 'tx', balanceIds: [] }),
+      claimSubscriptionBalanceToCampaign: async () => 'claim-tx-hash',
+      getClaimableBalance: async () => ({ id: 'balance' }),
+      isClaimableBalanceGoneError: () => false,
+      buildUnsignedSubscriptionTransaction: async () => ({ unsignedXdr: 'test' }),
+      submitPreparedSubscriptionTransaction: async () => ({ txHash: 'tx', balanceIds: [] }),
+      ...stellar,
     },
     './walletSecrets': {
       withDecryptedWalletSecret: async (_encrypted, _ctx, fn) => fn('SCONTRIBUTORSECRET'),
@@ -85,17 +85,17 @@ function userRow() {
 test('createSubscription creates one claimable balance per period with a 30-day reclaim predicate', async () => {
   let createArgs = null;
   const { service, calls } = buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaigns')) return { rows: [campaignRow()] };
       if (text.includes('FROM users')) return { rows: [userRow()] };
       return { rows: [] };
     },
-    clientQueryImpl: async (text) => {
+    clientQueryImpl: async text => {
       if (text.includes('INSERT INTO subscriptions')) return { rows: [{ id: SUBSCRIPTION_ID }] };
       return { rows: [] };
     },
     stellar: {
-      createSubscriptionClaimableBalances: async (args) => {
+      createSubscriptionClaimableBalances: async args => {
         createArgs = args;
         return {
           txHash: 'tx',
@@ -121,21 +121,27 @@ test('createSubscription creates one claimable balance per period with a 30-day 
   assert.equal(result.subscriptionId, SUBSCRIPTION_ID);
 
   // Period N is due at now + N * periodMonths * 30 days, and reclaimable 30 days later.
-  const inserted = calls.filter((c) => c.text.includes('INSERT INTO subscription_balances'));
+  const inserted = calls.filter(c => c.text.includes('INSERT INTO subscription_balances'));
   assert.equal(inserted.length, 6);
   inserted.forEach((call, index) => {
     const scheduledMs = new Date(call.params[2]).getTime();
     const expectedMs = before + (index + 1) * 30 * DAY_MS;
     assert.ok(Math.abs(scheduledMs - expectedMs) < 5000);
-    assert.equal(createArgs.entries[index].reclaimAfterUnix, Math.floor((scheduledMs + 30 * DAY_MS) / 1000));
+    assert.equal(
+      createArgs.entries[index].reclaimAfterUnix,
+      Math.floor((scheduledMs + 30 * DAY_MS) / 1000)
+    );
   });
 
-  assert.equal(new Date(result.firstPaymentDate).getTime(), new Date(inserted[0].params[2]).getTime());
+  assert.equal(
+    new Date(result.firstPaymentDate).getTime(),
+    new Date(inserted[0].params[2]).getTime()
+  );
 });
 
 test('createSubscription rejects a commitment larger than the wallet balance', async () => {
   const { service } = buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaigns')) return { rows: [campaignRow()] };
       if (text.includes('FROM users')) return { rows: [userRow()] };
       return { rows: [] };
@@ -153,7 +159,7 @@ test('createSubscription rejects a commitment larger than the wallet balance', a
         periodMonths: 1,
         totalPeriods: 6,
       }),
-    (err) => {
+    err => {
       assert.equal(err.code, 'INSUFFICIENT_BALANCE_FOR_SUBSCRIPTION');
       assert.equal(err.statusCode, 400);
       return true;
@@ -183,20 +189,36 @@ test('cancelSubscription cancels distant periods and reports the rest as non-can
   const distant = new Date(Date.now() + 40 * DAY_MS).toISOString();
 
   const { service, calls } = buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM subscriptions'))
         return { rows: [{ id: SUBSCRIPTION_ID, status: 'active' }] };
       return { rows: [] };
     },
-    clientQueryImpl: async (text) => {
+    clientQueryImpl: async text => {
       if (text.includes("status = 'cancellation_requested'")) {
-        return { rows: [{ id: 'b3', stellar_balance_id: 'balance-3', scheduled_date: distant, amount: '10' }] };
+        return {
+          rows: [
+            { id: 'b3', stellar_balance_id: 'balance-3', scheduled_date: distant, amount: '10' },
+          ],
+        };
       }
       if (text.includes('FROM subscription_balances')) {
         return {
           rows: [
-            { id: 'b1', stellar_balance_id: 'balance-1', scheduled_date: soon, amount: '10', status: 'claimed' },
-            { id: 'b2', stellar_balance_id: 'balance-2', scheduled_date: soon, amount: '10', status: 'pending' },
+            {
+              id: 'b1',
+              stellar_balance_id: 'balance-1',
+              scheduled_date: soon,
+              amount: '10',
+              status: 'claimed',
+            },
+            {
+              id: 'b2',
+              stellar_balance_id: 'balance-2',
+              scheduled_date: soon,
+              amount: '10',
+              status: 'pending',
+            },
           ],
         };
       }
@@ -213,14 +235,14 @@ test('cancelSubscription cancels distant periods and reports the rest as non-can
   assert.equal(result.cancelled, 1);
   assert.equal(result.nonCancellable, 2);
   assert.deepEqual(
-    result.non_cancellable_balances.map((b) => b.reason),
+    result.non_cancellable_balances.map(b => b.reason),
     ['already_claimed', 'within_notice_period']
   );
   assert.equal(
     new Date(result.estimatedRefundDate).getTime(),
     new Date(distant).getTime() + 30 * DAY_MS
   );
-  assert.ok(calls.some((c) => c.text.includes("UPDATE subscriptions SET status = 'cancelled'")));
+  assert.ok(calls.some(c => c.text.includes("UPDATE subscriptions SET status = 'cancelled'")));
 });
 
 test('cancelSubscription 404s for a subscription belonging to someone else', async () => {
@@ -233,7 +255,7 @@ test('cancelSubscription 404s for a subscription belonging to someone else', asy
         subscriptionId: SUBSCRIPTION_ID,
         userId: USER_ID,
       }),
-    (err) => err.statusCode === 404
+    err => err.statusCode === 404
   );
 });
 
@@ -255,11 +277,11 @@ function dueBalanceRow(overrides = {}) {
 test('the claim worker claims a due balance and records it as a contribution', async () => {
   let claimArgs = null;
   const { service, calls } = buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM subscription_balances sb')) return { rows: [dueBalanceRow()] };
       return { rows: [] };
     },
-    clientQueryImpl: async (text) => {
+    clientQueryImpl: async text => {
       if (text.includes("SET status = 'claimed'")) return { rows: [{ id: 'sb-1' }] };
       if (text.includes('INSERT INTO contributions')) return { rows: [{ id: 'contribution-1' }] };
       if (text.includes("FILTER (WHERE status = 'pending')")) {
@@ -268,7 +290,7 @@ test('the claim worker claims a due balance and records it as a contribution', a
       return { rows: [] };
     },
     stellar: {
-      claimSubscriptionBalanceToCampaign: async (args) => {
+      claimSubscriptionBalanceToCampaign: async args => {
         claimArgs = args;
         return 'claim-tx-hash';
       },
@@ -281,19 +303,19 @@ test('the claim worker claims a due balance and records it as a contribution', a
   assert.equal(claimArgs.balanceId, 'balance-1');
   assert.equal(claimArgs.destinationPublicKey, CAMPAIGN_WALLET);
 
-  const contribution = calls.find((c) => c.text.includes('INSERT INTO contributions'));
+  const contribution = calls.find(c => c.text.includes('INSERT INTO contributions'));
   assert.equal(contribution.params[4], 'claim-tx-hash');
   assert.ok(contribution.text.includes('subscription_claim'));
-  assert.ok(calls.some((c) => c.text.includes('raised_amount = raised_amount + $1')));
+  assert.ok(calls.some(c => c.text.includes('raised_amount = raised_amount + $1')));
 });
 
 test('the claim worker completes a subscription once every period has been claimed', async () => {
   const { service, calls } = buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM subscription_balances sb')) return { rows: [dueBalanceRow()] };
       return { rows: [] };
     },
-    clientQueryImpl: async (text) => {
+    clientQueryImpl: async text => {
       if (text.includes("SET status = 'claimed'")) return { rows: [{ id: 'sb-1' }] };
       if (text.includes('INSERT INTO contributions')) return { rows: [{ id: 'contribution-1' }] };
       if (text.includes("FILTER (WHERE status = 'pending')")) {
@@ -305,17 +327,17 @@ test('the claim worker completes a subscription once every period has been claim
 
   await service.processDueSubscriptionBalances();
 
-  const settle = calls.find((c) => c.text.includes('UPDATE subscriptions SET status = $2'));
+  const settle = calls.find(c => c.text.includes('UPDATE subscriptions SET status = $2'));
   assert.equal(settle.params[1], 'completed');
 });
 
 test('the claim worker leaves a subscription active while periods are still pending', async () => {
   const { service, calls } = buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM subscription_balances sb')) return { rows: [dueBalanceRow()] };
       return { rows: [] };
     },
-    clientQueryImpl: async (text) => {
+    clientQueryImpl: async text => {
       if (text.includes("SET status = 'claimed'")) return { rows: [{ id: 'sb-1' }] };
       if (text.includes('INSERT INTO contributions')) return { rows: [{ id: 'contribution-1' }] };
       if (text.includes("FILTER (WHERE status = 'pending')")) {
@@ -327,12 +349,12 @@ test('the claim worker leaves a subscription active while periods are still pend
 
   await service.processDueSubscriptionBalances();
 
-  assert.ok(!calls.some((c) => c.text.includes('UPDATE subscriptions SET status = $2')));
+  assert.ok(!calls.some(c => c.text.includes('UPDATE subscriptions SET status = $2')));
 });
 
 test('the claim worker records a contributor reclaim and cancels the subscription', async () => {
   const { service, calls } = buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM subscription_balances sb')) return { rows: [dueBalanceRow()] };
       return { rows: [] };
     },
@@ -342,13 +364,13 @@ test('the claim worker records a contributor reclaim and cancels the subscriptio
   const result = await service.processDueSubscriptionBalances();
 
   assert.deepEqual(result, { claimed: 0, reclaimed: 1, failed: 0, closed: 0 });
-  assert.ok(calls.some((c) => c.text.includes("status = 'contributor_reclaimed'")));
-  assert.ok(calls.some((c) => c.text.includes("UPDATE subscriptions SET status = 'cancelled'")));
+  assert.ok(calls.some(c => c.text.includes("status = 'contributor_reclaimed'")));
+  assert.ok(calls.some(c => c.text.includes("UPDATE subscriptions SET status = 'cancelled'")));
 });
 
 test('the claim worker treats a vanished balance mid-claim as a contributor reclaim', async () => {
   const { service, calls } = buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM subscription_balances sb')) return { rows: [dueBalanceRow()] };
       return { rows: [] };
     },
@@ -363,7 +385,7 @@ test('the claim worker treats a vanished balance mid-claim as a contributor recl
   const result = await service.processDueSubscriptionBalances();
 
   assert.deepEqual(result, { claimed: 0, reclaimed: 1, failed: 0, closed: 0 });
-  assert.ok(calls.some((c) => c.text.includes("status = 'contributor_reclaimed'")));
+  assert.ok(calls.some(c => c.text.includes("status = 'contributor_reclaimed'")));
 });
 
 // --- Campaign closure (#837) --------------------------------------------------
@@ -387,10 +409,22 @@ function closedRow(overrides = {}) {
 test('the claim worker closes installments of a closed campaign instead of claiming them', async () => {
   let claims = 0;
   const { service, calls, notifications } = buildService({
-    closeImpl: async (_text, params) => (params[0] === null ? { rows: [closedRow(), closedRow({ id: 'sb-10', stellar_balance_id: 'balance-10', reclaimable_at: new Date('2027-01-13T00:00:00Z') })] } : { rows: [] }),
+    closeImpl: async (_text, params) =>
+      params[0] === null
+        ? {
+            rows: [
+              closedRow(),
+              closedRow({
+                id: 'sb-10',
+                stellar_balance_id: 'balance-10',
+                reclaimable_at: new Date('2027-01-13T00:00:00Z'),
+              }),
+            ],
+          }
+        : { rows: [] },
     // The due query filters on the campaign predicate, so nothing is due.
     queryImpl: async () => ({ rows: [] }),
-    clientQueryImpl: async (text) => {
+    clientQueryImpl: async text => {
       if (text.includes("FILTER (WHERE status = 'pending')")) {
         return { rows: [{ pending: 0, reclaimed: 0, closed: 2, total: 4, claimed: 2 }] };
       }
@@ -407,38 +441,45 @@ test('the claim worker closes installments of a closed campaign instead of claim
   const result = await service.processDueSubscriptionBalances();
 
   assert.deepEqual(result, { claimed: 0, reclaimed: 0, failed: 0, closed: 2 });
-  assert.equal(claims, 0, 'no claim transaction for a campaign that stopped accepting installments');
+  assert.equal(
+    claims,
+    0,
+    'no claim transaction for a campaign that stopped accepting installments'
+  );
 
   // Ledger balance IDs are kept: closure is an UPDATE to 'closed', never a DELETE.
-  assert.ok(!calls.some((c) => /DELETE FROM subscription_balances/.test(c.text)));
-  const close = calls.find((c) => c.text.includes("SET status = 'closed'"));
+  assert.ok(!calls.some(c => /DELETE FROM subscription_balances/.test(c.text)));
+  const close = calls.find(c => c.text.includes("SET status = 'closed'"));
   assert.match(close.text, /reclaimable_at = sb\.scheduled_date \+/);
   assert.equal(close.params[1], 30, 'reclaimable after the 30-day contributor predicate opens');
 
   // Closure never touches campaign totals, status, rewards or referrals.
-  assert.ok(!calls.some((c) => /UPDATE campaigns/.test(c.text)));
-  assert.ok(!calls.some((c) => /INSERT INTO contributions/.test(c.text)));
-  assert.ok(!calls.some((c) => /reward|referral/i.test(c.text)));
+  assert.ok(!calls.some(c => /UPDATE campaigns/.test(c.text)));
+  assert.ok(!calls.some(c => /INSERT INTO contributions/.test(c.text)));
+  assert.ok(!calls.some(c => /reward|referral/i.test(c.text)));
 
-  const settle = calls.find((c) => c.text.includes('UPDATE subscriptions SET status = $2'));
+  const settle = calls.find(c => c.text.includes('UPDATE subscriptions SET status = $2'));
   assert.equal(settle.params[1], 'closed');
-  assert.ok(calls.some((c) => c.text.includes('closure_reason = $2')));
+  assert.ok(calls.some(c => c.text.includes('closure_reason = $2')));
 
   assert.equal(notifications.length, 1, 'one notification per subscription');
   assert.equal(notifications[0].userId, USER_ID);
   assert.equal(notifications[0].type, 'subscription_closed');
   assert.match(notifications[0].body, /reached its goal/);
-  assert.match(notifications[0].body, /reclaimable to your wallet between 2026-12-14 and 2027-01-13/);
+  assert.match(
+    notifications[0].body,
+    /reclaimable to your wallet between 2026-12-14 and 2027-01-13/
+  );
 });
 
 test('the acceptance predicate covers status, soft-delete and deadline on every claim path', async () => {
   const { service, calls } = buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('SELECT 1')) return { rows: [{ '?column?': 1 }] };
       if (text.includes('FROM subscription_balances sb')) return { rows: [dueBalanceRow()] };
       return { rows: [] };
     },
-    clientQueryImpl: async (text) => {
+    clientQueryImpl: async text => {
       if (text.includes("SET status = 'claimed'")) return { rows: [{ id: 'sb-1' }] };
       return { rows: [] };
     },
@@ -446,7 +487,7 @@ test('the acceptance predicate covers status, soft-delete and deadline on every 
 
   await service.processDueSubscriptionBalances();
 
-  const predicateQueries = calls.filter((c) => c.text.includes("c.status = 'active'"));
+  const predicateQueries = calls.filter(c => c.text.includes("c.status = 'active'"));
   // Bulk closure, due selection, per-balance closure and per-balance re-check.
   assert.ok(predicateQueries.length >= 4);
   for (const q of predicateQueries) {
@@ -464,14 +505,16 @@ test('a campaign funded by an earlier claim in the batch gets no further claims'
       if (funded && params[0] === 'sb-2') return { rows: [closedRow({ id: 'sb-2' })] };
       return { rows: [] };
     },
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('SELECT 1')) return { rows: funded ? [] : [{ '?column?': 1 }] };
       if (text.includes('FROM subscription_balances sb')) {
-        return { rows: [dueBalanceRow(), dueBalanceRow({ id: 'sb-2', stellar_balance_id: 'balance-2' })] };
+        return {
+          rows: [dueBalanceRow(), dueBalanceRow({ id: 'sb-2', stellar_balance_id: 'balance-2' })],
+        };
       }
       return { rows: [] };
     },
-    clientQueryImpl: async (text) => {
+    clientQueryImpl: async text => {
       if (text.includes("SET status = 'claimed'")) return { rows: [{ id: 'sb-1' }] };
       if (text.includes('INSERT INTO contributions')) {
         funded = true;
@@ -483,7 +526,7 @@ test('a campaign funded by an earlier claim in the batch gets no further claims'
       return { rows: [] };
     },
     stellar: {
-      claimSubscriptionBalanceToCampaign: async (args) => {
+      claimSubscriptionBalanceToCampaign: async args => {
         claimed.push(args.balanceId);
         return `tx-${args.balanceId}`;
       },
@@ -499,12 +542,12 @@ test('a campaign funded by an earlier claim in the batch gets no further claims'
 
 test('recording a claim can only move an active campaign to funded', async () => {
   const { service, calls } = buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('SELECT 1')) return { rows: [{ '?column?': 1 }] };
       if (text.includes('FROM subscription_balances sb')) return { rows: [dueBalanceRow()] };
       return { rows: [] };
     },
-    clientQueryImpl: async (text) => {
+    clientQueryImpl: async text => {
       if (text.includes("SET status = 'claimed'")) return { rows: [{ id: 'sb-1' }] };
       if (text.includes('INSERT INTO contributions')) return { rows: [{ id: 'contribution-1' }] };
       return { rows: [] };
@@ -513,23 +556,26 @@ test('recording a claim can only move an active campaign to funded', async () =>
 
   await service.processDueSubscriptionBalances();
 
-  const update = calls.find((c) => c.text.includes('raised_amount = raised_amount + $1'));
-  assert.match(update.text, /WHEN status = 'active' AND raised_amount \+ \$1 >= target_amount THEN 'funded'/);
+  const update = calls.find(c => c.text.includes('raised_amount = raised_amount + $1'));
+  assert.match(
+    update.text,
+    /WHEN status = 'active' AND raised_amount \+ \$1 >= target_amount THEN 'funded'/
+  );
 });
 
 function deadlineService(deadline, onCreate) {
   return buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaigns')) return { rows: [campaignRow({ deadline })] };
       if (text.includes('FROM users')) return { rows: [userRow()] };
       return { rows: [] };
     },
-    clientQueryImpl: async (text) => {
+    clientQueryImpl: async text => {
       if (text.includes('INSERT INTO subscriptions')) return { rows: [{ id: SUBSCRIPTION_ID }] };
       return { rows: [] };
     },
     stellar: {
-      createSubscriptionClaimableBalances: async (args) => {
+      createSubscriptionClaimableBalances: async args => {
         if (onCreate) onCreate(args);
         return { txHash: 'tx', balanceIds: args.entries.map((_e, i) => `balance-${i + 1}`) };
       },
@@ -543,7 +589,9 @@ function isoDateInDays(days) {
 
 test('createSubscription rejects a schedule that runs past the campaign deadline', async () => {
   let locked = false;
-  const { service } = deadlineService(isoDateInDays(100), () => { locked = true; });
+  const { service } = deadlineService(isoDateInDays(100), () => {
+    locked = true;
+  });
 
   await assert.rejects(
     service.createSubscription({
@@ -554,7 +602,7 @@ test('createSubscription rejects a schedule that runs past the campaign deadline
       periodMonths: 1,
       totalPeriods: 6,
     }),
-    (err) => {
+    err => {
       assert.equal(err.statusCode, 400);
       assert.equal(err.code, 'SUBSCRIPTION_EXCEEDS_DEADLINE');
       assert.match(err.message, /at most 3 period/);
@@ -566,7 +614,9 @@ test('createSubscription rejects a schedule that runs past the campaign deadline
 
 test('createSubscription truncates to the funding window only when asked explicitly', async () => {
   let createArgs = null;
-  const { service, calls } = deadlineService(isoDateInDays(100), (args) => { createArgs = args; });
+  const { service, calls } = deadlineService(isoDateInDays(100), args => {
+    createArgs = args;
+  });
 
   const result = await service.createSubscription({
     campaignId: CAMPAIGN_ID,
@@ -583,8 +633,12 @@ test('createSubscription truncates to the funding window only when asked explici
   assert.equal(result.requestedPeriods, 6);
   assert.equal(result.truncatedToDeadline, true);
   assert.equal(result.totalCommitment, 30);
-  const subscriptionInsert = calls.find((c) => c.text.includes('INSERT INTO subscriptions'));
-  assert.equal(subscriptionInsert.params[5], 3, 'persisted total_periods matches the truncated schedule');
+  const subscriptionInsert = calls.find(c => c.text.includes('INSERT INTO subscriptions'));
+  assert.equal(
+    subscriptionInsert.params[5],
+    3,
+    'persisted total_periods matches the truncated schedule'
+  );
   assert.ok(new Date(result.lastPaymentDate) < new Date(`${isoDateInDays(101)}T00:00:00Z`));
 });
 
@@ -601,7 +655,7 @@ test('createSubscription rejects truncation that would leave fewer than the mini
       totalPeriods: 4,
       truncateToDeadline: true,
     }),
-    (err) => err.code === 'SUBSCRIPTION_EXCEEDS_DEADLINE' && /needs at least 2/.test(err.message)
+    err => err.code === 'SUBSCRIPTION_EXCEEDS_DEADLINE' && /needs at least 2/.test(err.message)
   );
 });
 
@@ -609,14 +663,24 @@ test('createSubscription accepts a schedule that ends on the deadline day, or wi
   // Period 2 is due in 60 days; a deadline on that day still accepts it.
   const onDeadline = deadlineService(isoDateInDays(60));
   const result = await onDeadline.service.createSubscription({
-    campaignId: CAMPAIGN_ID, userId: USER_ID, amountPerPeriod: 10, asset: 'XLM', periodMonths: 1, totalPeriods: 2,
+    campaignId: CAMPAIGN_ID,
+    userId: USER_ID,
+    amountPerPeriod: 10,
+    asset: 'XLM',
+    periodMonths: 1,
+    totalPeriods: 2,
   });
   assert.equal(result.totalPeriods, 2);
   assert.equal(result.truncatedToDeadline, false);
 
   const noDeadline = deadlineService(null);
   const open = await noDeadline.service.createSubscription({
-    campaignId: CAMPAIGN_ID, userId: USER_ID, amountPerPeriod: 10, asset: 'XLM', periodMonths: 6, totalPeriods: 24,
+    campaignId: CAMPAIGN_ID,
+    userId: USER_ID,
+    amountPerPeriod: 10,
+    asset: 'XLM',
+    periodMonths: 6,
+    totalPeriods: 24,
   });
   assert.equal(open.totalPeriods, 24);
 });

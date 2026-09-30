@@ -124,7 +124,7 @@ async function getProposalById(proposalId) {
   `;
 
   const result = await db.query(query, [proposalId]);
-  
+
   if (result.rows.length === 0) {
     return null;
   }
@@ -157,7 +157,7 @@ async function getProposalById(proposalId) {
   const votesAgainst = Number(stats.votes_against) || 0;
   const totalTokenWeight = Number(stats.total_token_weight) || 0;
   const participationRate = QUORUM_THRESHOLD > 0 ? (totalTokenWeight / QUORUM_THRESHOLD) * 100 : 0;
-  
+
   let outcomeProjection = 'pending';
   if (proposal.status !== 'active') {
     outcomeProjection = proposal.status;
@@ -197,7 +197,7 @@ async function checkUserTokenBalance(publicKey) {
   try {
     const account = await server.loadAccount(publicKey);
     const balance = account.balances.find(
-      (b) => b.asset_code === 'CROWD' && b.asset_issuer === GOVERNANCE_TOKEN_ID
+      b => b.asset_code === 'CROWD' && b.asset_issuer === GOVERNANCE_TOKEN_ID
     );
 
     if (!balance) {
@@ -225,7 +225,7 @@ async function getUserTokenBalance(publicKey) {
   try {
     const account = await server.loadAccount(publicKey);
     const balance = account.balances.find(
-      (b) => b.asset_code === 'CROWD' && b.asset_issuer === GOVERNANCE_TOKEN_ID
+      b => b.asset_code === 'CROWD' && b.asset_issuer === GOVERNANCE_TOKEN_ID
     );
 
     return balance ? parseFloat(balance.balance) : 0;
@@ -444,7 +444,13 @@ async function recordProposalCreated({
  * @param {string} signerSecret - Decrypted custodial secret for proposerPublicKey
  * @returns {Promise<object>} Created proposal data
  */
-async function createProposal(proposerPublicKey, newFeeBps, newCreatorShareBps, rationaleText, signerSecret) {
+async function createProposal(
+  proposerPublicKey,
+  newFeeBps,
+  newCreatorShareBps,
+  rationaleText,
+  signerSecret
+) {
   if (!FEE_REGISTRY_CONTRACT_ID) {
     throw new Error('FEE_REGISTRY_CONTRACT_ID not configured');
   }
@@ -565,7 +571,12 @@ async function recordVoteCast({ proposalId, voterPublicKey, inFavor, effectiveWe
      VALUES ($1, $2, $3, $4, NOW())`,
     [proposalId, voterPublicKey, inFavor, effectiveWeight]
   );
-  logger.info('Vote recorded', { proposalId, voter: voterPublicKey, inFavor, weight: effectiveWeight });
+  logger.info('Vote recorded', {
+    proposalId,
+    voter: voterPublicKey,
+    inFavor,
+    weight: effectiveWeight,
+  });
   return {
     proposal_id: proposalId,
     voter: voterPublicKey,
@@ -662,9 +673,7 @@ async function executeProposal(proposalId, signerSecret) {
     await invokeContract({
       contractId: FEE_REGISTRY_CONTRACT_ID,
       method: 'execute_proposal',
-      args: [
-        nativeToScVal(proposal.stellar_proposal_id, { type: 'u32' }),
-      ],
+      args: [nativeToScVal(proposal.stellar_proposal_id, { type: 'u32' })],
       signerSecret,
     });
 
@@ -711,7 +720,10 @@ function syncError(code, cause) {
  */
 async function performProposalSync() {
   if (!FEE_REGISTRY_CONTRACT_ID) {
-    throw syncError('PROVIDER_NOT_CONFIGURED', new Error('FEE_REGISTRY_CONTRACT_ID is not configured'));
+    throw syncError(
+      'PROVIDER_NOT_CONFIGURED',
+      new Error('FEE_REGISTRY_CONTRACT_ID is not configured')
+    );
   }
 
   let onChainProposal;

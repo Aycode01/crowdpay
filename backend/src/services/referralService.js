@@ -59,7 +59,10 @@ async function adjustReferralCommissionOnRefund({ contributionId, refundAmount }
 
       if (existingComm.length) {
         const commRow = existingComm[0];
-        const updatedAmount = Math.max(0, parseFloat(commRow.commission_amount) - commissionDifference);
+        const updatedAmount = Math.max(
+          0,
+          parseFloat(commRow.commission_amount) - commissionDifference
+        );
         await client.query(
           'UPDATE referral_commissions SET commission_amount = $1, updated_at = NOW() WHERE id = $2',
           [updatedAmount.toFixed(7), commRow.id]
@@ -81,7 +84,10 @@ async function adjustReferralCommissionOnRefund({ contributionId, refundAmount }
     });
   } catch (err) {
     await client.query('ROLLBACK');
-    logger.error('Failed to adjust referral commission on refund', { error: err.message, contributionId });
+    logger.error('Failed to adjust referral commission on refund', {
+      error: err.message,
+      contributionId,
+    });
     throw err;
   } finally {
     client.release();
@@ -90,5 +96,5 @@ async function adjustReferralCommissionOnRefund({ contributionId, refundAmount }
 
 module.exports = {
   adjustReferralCommissionOnRefund,
-  getReferralCodeFromRequest: (req) => req.query?.ref || req.body?.ref || null,
+  getReferralCodeFromRequest: req => req.query?.ref || req.body?.ref || null,
 };

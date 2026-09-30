@@ -38,15 +38,16 @@ function performPinnedRequest(urlString, resolved, { method, headers, body, time
       path: `${u.pathname}${u.search}`,
       headers: { ...headers, Host: u.host },
       timeout: timeoutMs,
-      lookup: (_hostname, _options, callback) => callback(null, resolved.pinnedAddress, resolved.family || 4),
+      lookup: (_hostname, _options, callback) =>
+        callback(null, resolved.pinnedAddress, resolved.family || 4),
     };
     if (isHttps) {
       requestOptions.servername = u.hostname;
     }
 
-    const req = transport.request(requestOptions, (res) => {
+    const req = transport.request(requestOptions, res => {
       const chunks = [];
-      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('data', chunk => chunks.push(chunk));
       res.on('end', () => {
         const text = Buffer.concat(chunks).toString('utf8');
         resolvePromise({
@@ -95,7 +96,12 @@ async function safeFetch(urlString, options = {}) {
       throw new SsrfBlockedError(resolved.reason);
     }
 
-    const response = await performPinnedRequest(currentUrl, resolved, { method, headers, body, timeoutMs });
+    const response = await performPinnedRequest(currentUrl, resolved, {
+      method,
+      headers,
+      body,
+      timeoutMs,
+    });
 
     if (response.status >= 300 && response.status < 400 && response.headers.location) {
       currentUrl = new URL(response.headers.location, currentUrl).toString();

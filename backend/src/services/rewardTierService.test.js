@@ -7,7 +7,7 @@ const MODULE_PATH = './rewardTierService';
 function buildService({ queryImpl } = {}) {
   return proxyquire(MODULE_PATH, {
     '../config/database': { query: queryImpl || (async () => ({ rows: [] })) },
-    '../lib/sanitize': { stripHtml: (s) => String(s || '') },
+    '../lib/sanitize': { stripHtml: s => String(s || '') },
   });
 }
 
@@ -37,13 +37,22 @@ test.describe('rewardTierService', () => {
 
   test('validateTiersInput requires a title', () => {
     const svc = buildService();
-    assert.throws(() => svc.validateTiersInput([{ title: '', min_amount: 5 }], 'USDC'), /reward_tiers\[0\]: title is required/);
+    assert.throws(
+      () => svc.validateTiersInput([{ title: '', min_amount: 5 }], 'USDC'),
+      /reward_tiers\[0\]: title is required/
+    );
   });
 
   test('validateTiersInput requires a positive min_amount', () => {
     const svc = buildService();
-    assert.throws(() => svc.validateTiersInput([{ title: 'T', min_amount: 0 }], 'USDC'), /min_amount must be a positive number/);
-    assert.throws(() => svc.validateTiersInput([{ title: 'T' }], 'USDC'), /min_amount must be a positive number/);
+    assert.throws(
+      () => svc.validateTiersInput([{ title: 'T', min_amount: 0 }], 'USDC'),
+      /min_amount must be a positive number/
+    );
+    assert.throws(
+      () => svc.validateTiersInput([{ title: 'T' }], 'USDC'),
+      /min_amount must be a positive number/
+    );
   });
 
   test('validateTiersInput requires asset_type to match the campaign asset', () => {
@@ -75,7 +84,11 @@ test.describe('rewardTierService', () => {
   test('validateTiersInput validates estimated_delivery as a date', () => {
     const svc = buildService();
     assert.throws(
-      () => svc.validateTiersInput([{ title: 'T', min_amount: 5, estimated_delivery: 'not-a-date' }], 'USDC'),
+      () =>
+        svc.validateTiersInput(
+          [{ title: 'T', min_amount: 5, estimated_delivery: 'not-a-date' }],
+          'USDC'
+        ),
       /estimated_delivery must be a valid date/
     );
   });
@@ -83,16 +96,18 @@ test.describe('rewardTierService', () => {
   test('validateTiersInput normalizes a full tier object', () => {
     const svc = buildService();
     const tiers = svc.validateTiersInput(
-      [{
-        title: ' <b>Gold</b> ',
-        description: '<i> desc </i>',
-        min_amount: '25',
-        limit: '3',
-        estimated_delivery: '2026-12-31',
-        nft_enabled: true,
-        nft_metadata_url: 'https://x/metadata',
-        nft_artwork_url: 'https://x/art',
-      }],
+      [
+        {
+          title: ' <b>Gold</b> ',
+          description: '<i> desc </i>',
+          min_amount: '25',
+          limit: '3',
+          estimated_delivery: '2026-12-31',
+          nft_enabled: true,
+          nft_metadata_url: 'https://x/metadata',
+          nft_artwork_url: 'https://x/art',
+        },
+      ],
       'USDC'
     );
     assert.deepEqual(tiers[0], {
@@ -121,8 +136,28 @@ test.describe('rewardTierService', () => {
     const svc = buildService();
 
     const created = await svc.insertTiers(client, 'c-1', [
-      { title: 'Basic', description: null, min_amount: 5, asset_type: 'USDC', tier_limit: null, estimated_delivery: null, nft_enabled: false, nft_metadata_url: null, nft_artwork_url: null },
-      { title: 'NFT', description: 'r', min_amount: 10, asset_type: 'USDC', tier_limit: 5, estimated_delivery: null, nft_enabled: true, nft_metadata_url: 'https://m', nft_artwork_url: 'https://a' },
+      {
+        title: 'Basic',
+        description: null,
+        min_amount: 5,
+        asset_type: 'USDC',
+        tier_limit: null,
+        estimated_delivery: null,
+        nft_enabled: false,
+        nft_metadata_url: null,
+        nft_artwork_url: null,
+      },
+      {
+        title: 'NFT',
+        description: 'r',
+        min_amount: 10,
+        asset_type: 'USDC',
+        tier_limit: 5,
+        estimated_delivery: null,
+        nft_enabled: true,
+        nft_metadata_url: 'https://m',
+        nft_artwork_url: 'https://a',
+      },
     ]);
 
     assert.equal(created.length, 2);

@@ -25,23 +25,28 @@ function createRunsTable() {
   let failNextFinish = false;
 
   async function query(text, params = []) {
-    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise(resolve => setImmediate(resolve));
 
     if (/error_code = 'ABANDONED'/.test(text)) {
       const cutoff = clock - params[0];
-      const abandoned = runs.filter((r) => r.status === 'running' && r.started_at.getTime() < cutoff);
+      const abandoned = runs.filter(r => r.status === 'running' && r.started_at.getTime() < cutoff);
       for (const r of abandoned) {
-        Object.assign(r, { status: 'failed', finished_at: now(), error_code: 'ABANDONED', error_message: 'Run did not finish (process crashed or restarted)' });
+        Object.assign(r, {
+          status: 'failed',
+          finished_at: now(),
+          error_code: 'ABANDONED',
+          error_message: 'Run did not finish (process crashed or restarted)',
+        });
       }
-      return { rows: abandoned.map((r) => ({ id: r.id })) };
+      return { rows: abandoned.map(r => ({ id: r.id })) };
     }
 
     if (/INSERT INTO governance_sync_runs/.test(text)) {
       const [trigger, requestedBy, retryOf] = params;
-      if (retryOf && runs.some((r) => r.retry_of_run_id === retryOf)) {
+      if (retryOf && runs.some(r => r.retry_of_run_id === retryOf)) {
         throw uniqueViolation('governance_sync_runs_retry_of_idx');
       }
-      if (runs.some((r) => r.status === 'running')) {
+      if (runs.some(r => r.status === 'running')) {
         throw uniqueViolation('governance_sync_runs_one_running_idx');
       }
       const run = {
@@ -68,7 +73,7 @@ function createRunsTable() {
         failNextFinish = false;
         throw new Error('connection terminated unexpectedly');
       }
-      const run = runs.find((r) => r.id === params[0] && r.status === 'running');
+      const run = runs.find(r => r.id === params[0] && r.status === 'running');
       if (!run) return { rows: [] };
       const [, status, seen, updated, missing, cursor, code, message] = params;
       Object.assign(run, {
@@ -85,19 +90,23 @@ function createRunsTable() {
     }
 
     if (/WHERE status = 'running' LIMIT 1/.test(text)) {
-      return { rows: runs.filter((r) => r.status === 'running').map((r) => ({ ...r })) };
+      return { rows: runs.filter(r => r.status === 'running').map(r => ({ ...r })) };
     }
 
-    if (/SELECT id, status, started_at, finished_at\s+FROM governance_sync_runs WHERE retry_of_run_id = \$1/.test(text)) {
-      return { rows: runs.filter((r) => r.retry_of_run_id === params[0]).map((r) => ({ ...r })) };
+    if (
+      /SELECT id, status, started_at, finished_at\s+FROM governance_sync_runs WHERE retry_of_run_id = \$1/.test(
+        text
+      )
+    ) {
+      return { rows: runs.filter(r => r.retry_of_run_id === params[0]).map(r => ({ ...r })) };
     }
 
     if (/FROM governance_sync_runs WHERE retry_of_run_id = \$1/.test(text)) {
-      return { rows: runs.filter((r) => r.retry_of_run_id === params[0]).map((r) => ({ ...r })) };
+      return { rows: runs.filter(r => r.retry_of_run_id === params[0]).map(r => ({ ...r })) };
     }
 
     if (/FROM governance_sync_runs WHERE id = \$1/.test(text)) {
-      return { rows: runs.filter((r) => r.id === params[0]).map((r) => ({ ...r })) };
+      return { rows: runs.filter(r => r.id === params[0]).map(r => ({ ...r })) };
     }
 
     return { rows: [] };
@@ -106,8 +115,12 @@ function createRunsTable() {
   return {
     query,
     runs,
-    advance: (ms) => { clock += ms; },
-    failNextFinish: () => { failNextFinish = true; },
+    advance: ms => {
+      clock += ms;
+    },
+    failNextFinish: () => {
+      failNextFinish = true;
+    },
   };
 }
 
@@ -119,10 +132,15 @@ function buildService({ table = createRunsTable(), performProposalSync, queryOve
     './governance': {
       performProposalSync:
         performProposalSync ||
-        (async () => ({ proposalsSeen: 1, proposalsUpdated: 1, proposalsMissing: 0, providerCursor: 'proposal:7' })),
+        (async () => ({
+          proposalsSeen: 1,
+          proposalsUpdated: 1,
+          proposalsMissing: 0,
+          providerCursor: 'proposal:7',
+        })),
     },
     './auditService': {
-      logAuditEvent: async (event) => {
+      logAuditEvent: async event => {
         audits.push(event);
       },
     },
@@ -139,7 +157,10 @@ function taggedError(code, message) {
 test('a successful run records exactly one immutable history row with counts and cursor', async () => {
   const { service, table, audits } = buildService();
 
-  const { run, deduplicated } = await service.runGovernanceSync({ trigger: 'manual', requestedBy: 'admin-1' });
+  const { run, deduplicated } = await service.runGovernanceSync({
+    trigger: 'manual',
+    requestedBy: 'admin-1',
+  });
 
   assert.equal(deduplicated, false);
   assert.equal(table.runs.length, 1);
@@ -166,7 +187,10 @@ test('a scheduled run is recorded but not audited as an operator action', async 
 test('a provider failure is recorded as a failed run with a safe error summary', async () => {
   const { service, table } = buildService({
     performProposalSync: async () => {
-      throw taggedError('PROVIDER_ERROR', 'soroban rpc timeout; signer SCVMQUS5EMTHWBLJTE5XCSCMHB2ZOVKRR4ATVTRPUNRCOGKRENIL3LHR');
+      throw taggedError(
+        'PROVIDER_ERROR',
+        'soroban rpc timeout; signer SCVMQUS5EMTHWBLJTE5XCSCMHB2ZOVKRR4ATVTRPUNRCOGKRENIL3LHR'
+      );
     },
   });
 
@@ -184,7 +208,10 @@ test('a provider failure is recorded as a failed run with a safe error summary',
 test('a database failure during sync is recorded as a failed run', async () => {
   const { service } = buildService({
     performProposalSync: async () => {
-      throw taggedError('DATABASE_ERROR', 'connect ECONNREFUSED postgres://crowdpay:hunter2@db:5432/crowdpay');
+      throw taggedError(
+        'DATABASE_ERROR',
+        'connect ECONNREFUSED postgres://crowdpay:hunter2@db:5432/crowdpay'
+      );
     },
   });
 
@@ -196,7 +223,11 @@ test('a database failure during sync is recorded as a failed run', async () => {
 });
 
 test('an unexpected error without a code is recorded as SYNC_ERROR', async () => {
-  const { service } = buildService({ performProposalSync: async () => { throw new TypeError('boom'); } });
+  const { service } = buildService({
+    performProposalSync: async () => {
+      throw new TypeError('boom');
+    },
+  });
   const { run } = await service.runGovernanceSync({ trigger: 'manual' });
   assert.equal(run.error_code, 'SYNC_ERROR');
 });
@@ -205,7 +236,9 @@ test('when the database dies before the run can be finalized, the next run final
   const table = createRunsTable();
   const { service } = buildService({
     table,
-    performProposalSync: async () => { throw taggedError('DATABASE_ERROR', 'connection lost'); },
+    performProposalSync: async () => {
+      throw taggedError('DATABASE_ERROR', 'connection lost');
+    },
   });
 
   table.failNextFinish();
@@ -231,13 +264,20 @@ test('concurrent triggers are deduplicated: one run executes, the others get it 
   const { service, table } = buildService({
     performProposalSync: async () => {
       executions += 1;
-      await new Promise((resolve) => { release = resolve; });
-      return { proposalsSeen: 1, proposalsUpdated: 0, proposalsMissing: 0, providerCursor: 'proposal:7' };
+      await new Promise(resolve => {
+        release = resolve;
+      });
+      return {
+        proposalsSeen: 1,
+        proposalsUpdated: 0,
+        proposalsMissing: 0,
+        providerCursor: 'proposal:7',
+      };
     },
   });
 
   const first = service.runGovernanceSync({ trigger: 'manual' });
-  while (!release) await new Promise((resolve) => setImmediate(resolve));
+  while (!release) await new Promise(resolve => setImmediate(resolve));
   const [second, third] = await Promise.all([
     service.runGovernanceSync({ trigger: 'scheduled' }),
     service.runGovernanceSync({ trigger: 'manual' }),
@@ -258,7 +298,12 @@ test('a retry creates a new run linked to the failed one and leaves history unto
   const { service, table, audits } = buildService({
     performProposalSync: async () => {
       if (fail) throw taggedError('PROVIDER_ERROR', 'rpc down');
-      return { proposalsSeen: 1, proposalsUpdated: 1, proposalsMissing: 0, providerCursor: 'proposal:7' };
+      return {
+        proposalsSeen: 1,
+        proposalsUpdated: 1,
+        proposalsMissing: 0,
+        providerCursor: 'proposal:7',
+      };
     },
   });
 
@@ -266,7 +311,9 @@ test('a retry creates a new run linked to the failed one and leaves history unto
   const failedSnapshot = { ...table.runs[0] };
   fail = false;
 
-  const { run: retry, deduplicated } = await service.retryRun(failed.id, { requestedBy: 'admin-2' });
+  const { run: retry, deduplicated } = await service.retryRun(failed.id, {
+    requestedBy: 'admin-2',
+  });
 
   assert.equal(deduplicated, false);
   assert.equal(table.runs.length, 2);
@@ -277,7 +324,10 @@ test('a retry creates a new run linked to the failed one and leaves history unto
   assert.equal(audits.at(-1).action, 'governance_sync_retried');
 
   const detail = await service.getRun(failed.id);
-  assert.deepEqual(detail.retries.map((r) => r.id), [retry.id]);
+  assert.deepEqual(
+    detail.retries.map(r => r.id),
+    [retry.id]
+  );
 });
 
 test('retrying the same failed run again is idempotent', async () => {
@@ -286,14 +336,22 @@ test('retrying the same failed run again is idempotent', async () => {
     performProposalSync: async () => {
       syncs += 1;
       if (syncs === 1) throw taggedError('PROVIDER_ERROR', 'rpc down');
-      return { proposalsSeen: 1, proposalsUpdated: 1, proposalsMissing: 0, providerCursor: 'proposal:7' };
+      return {
+        proposalsSeen: 1,
+        proposalsUpdated: 1,
+        proposalsMissing: 0,
+        providerCursor: 'proposal:7',
+      };
     },
   });
   const { run: failed } = await service.runGovernanceSync({ trigger: 'manual' });
 
   const first = await service.retryRun(failed.id);
   const second = await service.retryRun(failed.id);
-  const [third, fourth] = await Promise.all([service.retryRun(failed.id), service.retryRun(failed.id)]);
+  const [third, fourth] = await Promise.all([
+    service.retryRun(failed.id),
+    service.retryRun(failed.id),
+  ]);
 
   assert.equal(syncs, 2, 'proposal state is synced once for the retry, never duplicated');
   assert.equal(table.runs.length, 2);
@@ -310,19 +368,26 @@ test('concurrent retries of one failed run create a single retry', async () => {
     performProposalSync: async () => {
       syncs += 1;
       if (syncs === 1) throw taggedError('PROVIDER_ERROR', 'rpc down');
-      await new Promise((resolve) => { release = resolve; });
-      return { proposalsSeen: 1, proposalsUpdated: 1, proposalsMissing: 0, providerCursor: 'proposal:7' };
+      await new Promise(resolve => {
+        release = resolve;
+      });
+      return {
+        proposalsSeen: 1,
+        proposalsUpdated: 1,
+        proposalsMissing: 0,
+        providerCursor: 'proposal:7',
+      };
     },
   });
   const { run: failed } = await service.runGovernanceSync({ trigger: 'manual' });
 
   const a = service.retryRun(failed.id);
-  while (!release) await new Promise((resolve) => setImmediate(resolve));
+  while (!release) await new Promise(resolve => setImmediate(resolve));
   const b = await service.retryRun(failed.id);
   release();
   const aResult = await a;
 
-  assert.equal(table.runs.filter((r) => r.trigger === 'retry').length, 1);
+  assert.equal(table.runs.filter(r => r.trigger === 'retry').length, 1);
   assert.equal(b.deduplicated, true);
   assert.equal(b.run.id, aResult.run.id);
 });
@@ -331,8 +396,11 @@ test('only failed runs are retryable and unknown runs 404', async () => {
   const { service } = buildService();
   const { run } = await service.runGovernanceSync({ trigger: 'manual' });
 
-  await assert.rejects(service.retryRun(run.id), (err) => err.statusCode === 409 && err.code === 'SYNC_RUN_NOT_RETRYABLE');
-  await assert.rejects(service.retryRun(crypto.randomUUID()), (err) => err.statusCode === 404);
+  await assert.rejects(
+    service.retryRun(run.id),
+    err => err.statusCode === 409 && err.code === 'SYNC_RUN_NOT_RETRYABLE'
+  );
+  await assert.rejects(service.retryRun(crypto.randomUUID()), err => err.statusCode === 404);
 });
 
 test('listRuns validates filters and binds a bounded page', async () => {
@@ -345,15 +413,23 @@ test('listRuns validates filters and binds a bounded page', async () => {
     },
   });
 
-  const page = await service.listRuns({ status: 'failed', trigger: 'retry', limit: 10, offset: 20 });
+  const page = await service.listRuns({
+    status: 'failed',
+    trigger: 'retry',
+    limit: 10,
+    offset: 20,
+  });
 
   assert.deepEqual(page, { data: [{ id: 'r1' }], total: 3, limit: 10, offset: 20 });
   assert.match(calls[1].text, /WHERE status = \$1 AND trigger = \$2/);
   assert.match(calls[1].text, /ORDER BY started_at DESC, id DESC\s+LIMIT \$3 OFFSET \$4/);
   assert.deepEqual(calls[1].params, ['failed', 'retry', 10, 20]);
 
-  await assert.rejects(service.listRuns({ status: "failed' OR 1=1" }), (err) => err.statusCode === 400);
-  await assert.rejects(service.listRuns({ trigger: 'cron' }), (err) => err.code === 'INVALID_FILTER');
+  await assert.rejects(
+    service.listRuns({ status: "failed' OR 1=1" }),
+    err => err.statusCode === 400
+  );
+  await assert.rejects(service.listRuns({ trigger: 'cron' }), err => err.code === 'INVALID_FILTER');
 });
 
 test('safeErrorMessage bounds length', () => {

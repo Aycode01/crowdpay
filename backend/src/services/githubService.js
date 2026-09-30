@@ -21,7 +21,7 @@ function parseGithubUrl(url) {
 
 /**
  * Fetches stats for a GitHub repository
- * @param {string} repoUrl 
+ * @param {string} repoUrl
  * @returns {Promise<Object|null>}
  */
 async function fetchGithubRepoStats(repoUrl) {
@@ -30,8 +30,8 @@ async function fetchGithubRepoStats(repoUrl) {
 
   const { owner, repo } = repoInfo;
   const headers = {
-    'Accept': 'application/vnd.github.v3+json',
-    'User-Agent': 'CrowdPay-Backend'
+    Accept: 'application/vnd.github.v3+json',
+    'User-Agent': 'CrowdPay-Backend',
   };
 
   try {
@@ -48,14 +48,17 @@ async function fetchGithubRepoStats(repoUrl) {
 
     // Fetch top 5 contributors
     let topContributors = [];
-    const contribRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contributors?per_page=5`, { headers });
+    const contribRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contributors?per_page=5`,
+      { headers }
+    );
     if (contribRes.ok) {
       const contribData = await contribRes.json();
       if (Array.isArray(contribData)) {
         topContributors = contribData.map(c => ({
           login: c.login,
           avatar_url: c.avatar_url,
-          html_url: c.html_url
+          html_url: c.html_url,
         }));
       }
     }
@@ -66,7 +69,7 @@ async function fetchGithubRepoStats(repoUrl) {
       open_issues: repoData.open_issues_count,
       last_commit_date: repoData.pushed_at || repoData.updated_at,
       license: repoData.license ? repoData.license.spdx_id : null,
-      top_contributors: topContributors
+      top_contributors: topContributors,
     };
   } catch (error) {
     logger.error('Failed to fetch GitHub repo stats', { repoUrl, error: error.message });
@@ -76,5 +79,5 @@ async function fetchGithubRepoStats(repoUrl) {
 
 module.exports = {
   fetchGithubRepoStats,
-  parseGithubUrl
+  parseGithubUrl,
 };

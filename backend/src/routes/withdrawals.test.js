@@ -3,18 +3,19 @@ const assert = require('node:assert/strict');
 const express = require('express');
 const request = require('supertest');
 const proxyquire = require('proxyquire').noCallThru();
-const {
-  Keypair,
-  TransactionBuilder,
-  Asset,
-  Operation,
-  Networks,
-} = require('@stellar/stellar-sdk');
+const { Keypair, TransactionBuilder, Asset, Operation, Networks } = require('@stellar/stellar-sdk');
 const actualStellarService = require('../services/stellarService');
 
 const TESTNET_PASSPHRASE = Networks.TESTNET;
 
-function buildApp({ queryImpl, stellarImpl, referralImpl, userId = 'creator-1', role = 'creator', platformApproverUserId } = {}) {
+function buildApp({
+  queryImpl,
+  stellarImpl,
+  referralImpl,
+  userId = 'creator-1',
+  role = 'creator',
+  platformApproverUserId,
+} = {}) {
   const prevApprover = process.env.PLATFORM_APPROVER_USER_ID;
   if (platformApproverUserId !== false) {
     process.env.PLATFORM_APPROVER_USER_ID = platformApproverUserId ?? userId;
@@ -24,15 +25,18 @@ function buildApp({ queryImpl, stellarImpl, referralImpl, userId = 'creator-1', 
     buildWithdrawalTransaction: async () => 'xdr-base',
     getAccountMultisigConfig: async () => ({
       thresholds: { med_threshold: 2 },
-      signers: [{ key: 'GCREATOR', weight: 1 }, { key: 'GPLATFORM', weight: 1 }],
+      signers: [
+        { key: 'GCREATOR', weight: 1 },
+        { key: 'GPLATFORM', weight: 1 },
+      ],
     }),
-    signTransactionXdr: (params) => {
+    signTransactionXdr: params => {
       if (params && typeof params.xdr === 'string' && params.xdr.startsWith('AAAA')) {
         return actualStellarService.signTransactionXdr(params);
       }
       return 'xdr-signed';
     },
-    signatureCountFromXdr: (xdr) => {
+    signatureCountFromXdr: xdr => {
       if (typeof xdr === 'string' && xdr.startsWith('AAAA')) {
         return actualStellarService.signatureCountFromXdr(xdr);
       }
@@ -40,7 +44,7 @@ function buildApp({ queryImpl, stellarImpl, referralImpl, userId = 'creator-1', 
     },
     submitSignedWithdrawal: async () => 'tx-hash',
     // Default: XDR is not expired. Override in specific tests via stellarImpl.
-    isXdrExpired: (xdr) => {
+    isXdrExpired: xdr => {
       if (typeof xdr === 'string' && xdr.startsWith('AAAA')) {
         return actualStellarService.isXdrExpired(xdr);
       }
@@ -49,10 +53,10 @@ function buildApp({ queryImpl, stellarImpl, referralImpl, userId = 'creator-1', 
     PLATFORM_PUBLIC_KEY: 'GPLATFORM',
     getPlatformPublicKey: () => 'GPLATFORM',
     getArbitratorPublicKey: () => 'GARBITRATOR',
-    validateSubmittedWithdrawalXdr: (params) => {
+    validateSubmittedWithdrawalXdr: params => {
       return actualStellarService.validateSubmittedWithdrawalXdr(params);
     },
-    validateWithdrawalForPlatformSigning: (params) => {
+    validateWithdrawalForPlatformSigning: params => {
       if (params && typeof params.xdr === 'string' && params.xdr.startsWith('AAAA')) {
         return actualStellarService.validateWithdrawalForPlatformSigning(params);
       }
@@ -62,7 +66,11 @@ function buildApp({ queryImpl, stellarImpl, referralImpl, userId = 'creator-1', 
   };
 
   const referralStub = {
-    calculateCommissions: async () => ({ program: null, commissions: [], totalCommission: '0.0000000' }),
+    calculateCommissions: async () => ({
+      program: null,
+      commissions: [],
+      totalCommission: '0.0000000',
+    }),
     settleCommissions: async () => {},
     ...referralImpl,
   };
@@ -85,12 +93,14 @@ function buildApp({ queryImpl, stellarImpl, referralImpl, userId = 'creator-1', 
         req.user = { userId, role };
         next();
       },
-      requireRole: (...roles) => (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
-          return res.status(403).json({ error: 'Insufficient role for this action' });
-        }
-        next();
-      },
+      requireRole:
+        (...roles) =>
+        (req, res, next) => {
+          if (!roles.includes(req.user.role)) {
+            return res.status(403).json({ error: 'Insufficient role for this action' });
+          }
+          next();
+        },
     },
   });
 
@@ -98,10 +108,13 @@ function buildApp({ queryImpl, stellarImpl, referralImpl, userId = 'creator-1', 
   app.use(express.json());
   app.use('/api/withdrawals', router);
 
-  return { app, cleanup: () => {
-    if (prevApprover === undefined) delete process.env.PLATFORM_APPROVER_USER_ID;
-    else process.env.PLATFORM_APPROVER_USER_ID = prevApprover;
-  } };
+  return {
+    app,
+    cleanup: () => {
+      if (prevApprover === undefined) delete process.env.PLATFORM_APPROVER_USER_ID;
+      else process.env.PLATFORM_APPROVER_USER_ID = prevApprover;
+    },
+  };
 }
 
 const VALID_DESTINATION = 'GASXEYHSSVN3WSHD4WSZ4O37HC2AG4JH2EB6UPHM6IXDXDRJRDJD4RZK';
@@ -124,7 +137,9 @@ test('GET /api/withdrawals/capabilities reflects platform approver status', asyn
     role: 'admin',
     platformApproverUserId: 'platform-1',
   });
-  const res = await request(app).get('/api/withdrawals/capabilities').set('Authorization', 'Bearer t');
+  const res = await request(app)
+    .get('/api/withdrawals/capabilities')
+    .set('Authorization', 'Bearer t');
   cleanup();
   assert.equal(res.status, 200);
   assert.equal(res.body.can_approve_platform, true);
@@ -137,7 +152,9 @@ test('GET /api/withdrawals/capabilities denies when user is not platform approve
     role: 'admin',
     platformApproverUserId: 'platform-1',
   });
-  const res = await request(app).get('/api/withdrawals/capabilities').set('Authorization', 'Bearer t');
+  const res = await request(app)
+    .get('/api/withdrawals/capabilities')
+    .set('Authorization', 'Bearer t');
   cleanup();
   assert.equal(res.status, 200);
   assert.equal(res.body.can_approve_platform, false);
@@ -152,14 +169,16 @@ test('POST /api/withdrawals/request creates pending request and logs event', asy
       if (text.includes('FROM campaigns WHERE id')) {
         return { rows: [campaignRow()] };
       }
-      if (text.includes("FROM withdrawal_requests") && text.includes("status = 'pending'")) {
+      if (text.includes('FROM withdrawal_requests') && text.includes("status = 'pending'")) {
         return { rows: [] };
       }
       if (text.includes('wallet_public_key FROM users')) {
         return { rows: [{ wallet_public_key: 'GCREATOR' }] };
       }
       if (text.includes('INSERT INTO withdrawal_requests')) {
-        return { rows: [{ id: 'w-1', status: 'pending', creator_signed: false, platform_signed: false }] };
+        return {
+          rows: [{ id: 'w-1', status: 'pending', creator_signed: false, platform_signed: false }],
+        };
       }
       if (text.includes('INSERT INTO withdrawal_approval_events')) {
         return { rows: [] };
@@ -174,18 +193,22 @@ test('POST /api/withdrawals/request creates pending request and logs event', asy
   const response = await request(app)
     .post('/api/withdrawals/request')
     .set('Authorization', 'Bearer token')
-    .send({ campaign_id: '11111111-1111-1111-1111-111111111111', destination_key: VALID_DESTINATION, amount: '10.0000000' });
+    .send({
+      campaign_id: '11111111-1111-1111-1111-111111111111',
+      destination_key: VALID_DESTINATION,
+      amount: '10.0000000',
+    });
 
   cleanup();
   assert.equal(response.status, 201);
   assert.equal(response.body.status, 'pending');
-  assert.ok(calls.some((c) => c.includes('INSERT INTO withdrawal_approval_events')));
-  assert.ok(calls.some((c) => c.includes('INSERT INTO stellar_transactions')));
+  assert.ok(calls.some(c => c.includes('INSERT INTO withdrawal_approval_events')));
+  assert.ok(calls.some(c => c.includes('INSERT INTO stellar_transactions')));
 });
 
 test('POST /api/withdrawals/request rejects an invalid Stellar public key with 422', async () => {
   const { app, cleanup } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaigns WHERE id')) {
         return { rows: [campaignRow()] };
       }
@@ -196,7 +219,11 @@ test('POST /api/withdrawals/request rejects an invalid Stellar public key with 4
   const response = await request(app)
     .post('/api/withdrawals/request')
     .set('Authorization', 'Bearer token')
-    .send({ campaign_id: '11111111-1111-1111-1111-111111111111', destination_key: 'not-a-valid-key', amount: '10.0000000' });
+    .send({
+      campaign_id: '11111111-1111-1111-1111-111111111111',
+      destination_key: 'not-a-valid-key',
+      amount: '10.0000000',
+    });
 
   cleanup();
   assert.equal(response.status, 422);
@@ -206,7 +233,7 @@ test('POST /api/withdrawals/request rejects an invalid Stellar public key with 4
 test('POST /api/withdrawals/request returns 400 for failed campaigns', async () => {
   const { app, cleanup } = buildApp({
     role: 'admin',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaigns WHERE id')) {
         return { rows: [campaignRow({ status: 'failed' })] };
       }
@@ -217,7 +244,11 @@ test('POST /api/withdrawals/request returns 400 for failed campaigns', async () 
   const response = await request(app)
     .post('/api/withdrawals/request')
     .set('Authorization', 'Bearer token')
-    .send({ campaign_id: '11111111-1111-1111-1111-111111111111', destination_key: VALID_DESTINATION, amount: '10.0000000' });
+    .send({
+      campaign_id: '11111111-1111-1111-1111-111111111111',
+      destination_key: VALID_DESTINATION,
+      amount: '10.0000000',
+    });
 
   cleanup();
   assert.equal(response.status, 400);
@@ -227,7 +258,7 @@ test('POST /api/withdrawals/request returns 400 for failed campaigns', async () 
 test('POST /api/withdrawals/request blocks when campaign not active or funded', async () => {
   const { app, cleanup } = buildApp({
     role: 'admin',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaigns WHERE id')) {
         return { rows: [campaignRow({ status: 'closed' })] };
       }
@@ -238,7 +269,11 @@ test('POST /api/withdrawals/request blocks when campaign not active or funded', 
   const response = await request(app)
     .post('/api/withdrawals/request')
     .set('Authorization', 'Bearer token')
-    .send({ campaign_id: '11111111-1111-1111-1111-111111111111', destination_key: VALID_DESTINATION, amount: '10.0000000' });
+    .send({
+      campaign_id: '11111111-1111-1111-1111-111111111111',
+      destination_key: VALID_DESTINATION,
+      amount: '10.0000000',
+    });
 
   cleanup();
   assert.equal(response.status, 409);
@@ -246,7 +281,7 @@ test('POST /api/withdrawals/request blocks when campaign not active or funded', 
 
 test('POST /api/withdrawals/request blocks duplicate pending', async () => {
   const { app, cleanup } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaigns WHERE id')) {
         return { rows: [campaignRow()] };
       }
@@ -260,7 +295,11 @@ test('POST /api/withdrawals/request blocks duplicate pending', async () => {
   const response = await request(app)
     .post('/api/withdrawals/request')
     .set('Authorization', 'Bearer token')
-    .send({ campaign_id: '11111111-1111-1111-1111-111111111111', destination_key: VALID_DESTINATION, amount: '10.0000000' });
+    .send({
+      campaign_id: '11111111-1111-1111-1111-111111111111',
+      destination_key: VALID_DESTINATION,
+      amount: '10.0000000',
+    });
 
   cleanup();
   assert.equal(response.status, 409);
@@ -268,7 +307,7 @@ test('POST /api/withdrawals/request blocks duplicate pending', async () => {
 
 test('POST /api/withdrawals/request denies invalid multisig config', async () => {
   const { app, cleanup } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaigns WHERE id')) {
         return { rows: [campaignRow()] };
       }
@@ -289,7 +328,11 @@ test('POST /api/withdrawals/request denies invalid multisig config', async () =>
   const response = await request(app)
     .post('/api/withdrawals/request')
     .set('Authorization', 'Bearer token')
-    .send({ campaign_id: '11111111-1111-1111-1111-111111111111', destination_key: VALID_DESTINATION, amount: '10.0000000' });
+    .send({
+      campaign_id: '11111111-1111-1111-1111-111111111111',
+      destination_key: VALID_DESTINATION,
+      amount: '10.0000000',
+    });
 
   cleanup();
   assert.equal(response.status, 422);
@@ -318,7 +361,7 @@ test('POST /api/withdrawals/:id/approve/platform denies demoted user who is no l
     role: 'contributor',
     platformApproverUserId: 'platform-1',
     queryImpl: async (text, params) => {
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'contributor', is_admin: false }] };
       }
       return { rows: [] };
@@ -355,19 +398,21 @@ test('POST /api/withdrawals/:id/approve/platform denies when PLATFORM_APPROVER_U
 test('POST /api/withdrawals/:id/approve/platform denies before creator approval', async () => {
   const { app, cleanup } = buildApp({
     role: 'admin',
-    queryImpl: async (text) => {
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+    queryImpl: async text => {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       return {
-        rows: [{
-          id: 'w-1',
-          status: 'pending',
-          creator_signed: false,
-          platform_signed: false,
-          unsigned_xdr: 'xdr-base',
-          campaign_status: 'active',
-        }],
+        rows: [
+          {
+            id: 'w-1',
+            status: 'pending',
+            creator_signed: false,
+            platform_signed: false,
+            unsigned_xdr: 'xdr-base',
+            campaign_status: 'active',
+          },
+        ],
       };
     },
   });
@@ -385,7 +430,7 @@ test('POST /api/withdrawals/:id/approve/platform denies before creator approval'
 test('POST /api/withdrawals/:id/approve/creator signs withdrawal request', async () => {
   const calls = [];
   const { app, cleanup } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       calls.push(text);
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
       if (text.includes('SELECT creator_id FROM campaigns WHERE id')) {
@@ -393,16 +438,18 @@ test('POST /api/withdrawals/:id/approve/creator signs withdrawal request', async
       }
       if (text.includes('FROM withdrawal_requests wr')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: false,
-            platform_signed: false,
-            unsigned_xdr: 'xdr-base',
-            creator_id: 'creator-1',
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            campaign_status: 'active',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: false,
+              platform_signed: false,
+              unsigned_xdr: 'xdr-base',
+              creator_id: 'creator-1',
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              campaign_status: 'active',
+            },
+          ],
         };
       }
       if (text.includes('wallet_secret_encrypted') && text.includes('FROM users')) {
@@ -424,25 +471,27 @@ test('POST /api/withdrawals/:id/approve/creator signs withdrawal request', async
   cleanup();
   assert.equal(response.status, 200);
   assert.equal(response.body.creator_signed, true);
-  assert.ok(calls.some((c) => c.includes('creator_signed')));
+  assert.ok(calls.some(c => c.includes('creator_signed')));
 });
 
 test('POST /api/withdrawals/:id/approve/platform denies insufficient signatures', async () => {
   const { app, cleanup } = buildApp({
     role: 'admin',
-    queryImpl: async (text) => {
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+    queryImpl: async text => {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       return {
-        rows: [{
-          id: 'w-1',
-          status: 'pending',
-          creator_signed: true,
-          platform_signed: false,
-          unsigned_xdr: 'xdr-base',
-          campaign_status: 'active',
-        }],
+        rows: [
+          {
+            id: 'w-1',
+            status: 'pending',
+            creator_signed: true,
+            platform_signed: false,
+            unsigned_xdr: 'xdr-base',
+            campaign_status: 'active',
+          },
+        ],
       };
     },
     stellarImpl: {
@@ -463,22 +512,24 @@ test('POST /api/withdrawals/:id/approve/platform submits with dual signatures', 
   const calls = [];
   const { app, cleanup } = buildApp({
     role: 'admin',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       calls.push(text);
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('SELECT wr.*, c.status')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: true,
-            platform_signed: false,
-            unsigned_xdr: 'xdr-creator-signed',
-            campaign_status: 'active',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: true,
+              platform_signed: false,
+              unsigned_xdr: 'xdr-creator-signed',
+              campaign_status: 'active',
+            },
+          ],
         };
       }
       if (text.includes('UPDATE withdrawal_requests') && text.includes("status = 'approved'")) {
@@ -503,29 +554,31 @@ test('POST /api/withdrawals/:id/approve/platform submits with dual signatures', 
   cleanup();
   assert.equal(response.status, 200);
   assert.equal(response.body.status, 'submitted');
-  assert.ok(calls.some((c) => c.includes("status = 'submitted'")));
-  assert.ok(calls.some((c) => c.includes('UPDATE stellar_transactions')));
+  assert.ok(calls.some(c => c.includes("status = 'submitted'")));
+  assert.ok(calls.some(c => c.includes('UPDATE stellar_transactions')));
 });
 
 test('POST /api/withdrawals/:id/approve/platform rejects duplicate approval after first request updates status', async () => {
   let currentStatus = 'pending';
   const { app, cleanup } = buildApp({
     role: 'admin',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('SELECT wr.*, c.status')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: currentStatus,
-            creator_signed: true,
-            platform_signed: false,
-            unsigned_xdr: 'xdr-creator-signed',
-            campaign_status: 'active',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: currentStatus,
+              creator_signed: true,
+              platform_signed: false,
+              unsigned_xdr: 'xdr-creator-signed',
+              campaign_status: 'active',
+            },
+          ],
         };
       }
       if (text.includes('UPDATE withdrawal_requests') && text.includes("status = 'approved'")) {
@@ -556,18 +609,23 @@ test('POST /api/withdrawals/:id/approve/platform rejects duplicate approval afte
 
   cleanup();
   assert.equal(duplicateResponse.status, 409);
-  assert.match(duplicateResponse.body.error, /already being processed|platform has already approved|withdrawal request changed/);
+  assert.match(
+    duplicateResponse.body.error,
+    /already being processed|platform has already approved|withdrawal request changed/
+  );
 });
 
 test('POST /api/withdrawals/:id/cancel denies after creator signed', async () => {
   const { app, cleanup } = buildApp({
     queryImpl: async () => ({
-      rows: [{
-        id: 'w-1',
-        status: 'pending',
-        creator_signed: true,
-        creator_id: 'creator-1',
-      }],
+      rows: [
+        {
+          id: 'w-1',
+          status: 'pending',
+          creator_signed: true,
+          creator_id: 'creator-1',
+        },
+      ],
     }),
   });
 
@@ -582,20 +640,22 @@ test('POST /api/withdrawals/:id/cancel denies after creator signed', async () =>
 
 test('POST /api/withdrawals/:id/cancel succeeds before creator signs', async () => {
   const { app, cleanup } = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
       if (text.includes('SELECT creator_id FROM campaigns WHERE id')) {
         return { rows: [{ creator_id: 'creator-1' }] };
       }
       if (text.includes('FROM withdrawal_requests wr')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: false,
-            creator_id: 'creator-1',
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: false,
+              creator_id: 'creator-1',
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+            },
+          ],
         };
       }
       if (text.includes("SET status = 'denied'")) {
@@ -622,17 +682,19 @@ test('POST /api/withdrawals/:id/reject marks denied after creator signed', async
     role: 'admin',
     queryImpl: async (text, params) => {
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('SELECT * FROM withdrawal_requests WHERE id')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: true,
-            platform_signed: false,
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: true,
+              platform_signed: false,
+            },
+          ],
         };
       }
       if (text.includes("SET status = 'denied'")) {
@@ -656,21 +718,23 @@ test('POST /api/withdrawals/:id/reject marks denied after creator signed', async
 test('POST /api/withdrawals/:id/approve/platform logs failure when Stellar rejects', async () => {
   const { app, cleanup } = buildApp({
     role: 'admin',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('SELECT wr.*, c.status')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: true,
-            platform_signed: false,
-            unsigned_xdr: 'xdr',
-            campaign_status: 'active',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: true,
+              platform_signed: false,
+              unsigned_xdr: 'xdr',
+              campaign_status: 'active',
+            },
+          ],
         };
       }
       if (text.includes('UPDATE withdrawal_requests') && text.includes("status = 'approved'")) {
@@ -702,20 +766,22 @@ test('POST /api/withdrawals/:id/approve/platform logs failure when Stellar rejec
 test('POST /api/withdrawals/:id/approve/platform returns 410 when XDR time bounds are expired', async () => {
   const { app, cleanup } = buildApp({
     role: 'admin',
-    queryImpl: async (text) => {
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+    queryImpl: async text => {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('SELECT wr.*, c.status')) {
         return {
-          rows: [{
-            id: 'w-expired',
-            status: 'pending',
-            creator_signed: true,
-            platform_signed: false,
-            unsigned_xdr: 'xdr-expired',
-            campaign_status: 'active',
-          }],
+          rows: [
+            {
+              id: 'w-expired',
+              status: 'pending',
+              creator_signed: true,
+              platform_signed: false,
+              unsigned_xdr: 'xdr-expired',
+              campaign_status: 'active',
+            },
+          ],
         };
       }
       return { rows: [] };
@@ -761,7 +827,7 @@ test('POST /api/withdrawals/request splits the payout between the creator and re
       }),
     },
     stellarImpl: {
-      buildWithdrawalTransaction: async (params) => {
+      buildWithdrawalTransaction: async params => {
         builtWith = params;
         return 'xdr-base';
       },
@@ -769,10 +835,14 @@ test('POST /api/withdrawals/request splits the payout between the creator and re
     queryImpl: async (text, params) => {
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
       if (text.includes('FROM campaigns WHERE id')) return { rows: [campaignRow()] };
-      if (text.includes('FROM withdrawal_requests') && text.includes("status = 'pending'")) return { rows: [] };
-      if (text.includes('wallet_public_key FROM users')) return { rows: [{ wallet_public_key: 'GCREATOR' }] };
+      if (text.includes('FROM withdrawal_requests') && text.includes("status = 'pending'"))
+        return { rows: [] };
+      if (text.includes('wallet_public_key FROM users'))
+        return { rows: [{ wallet_public_key: 'GCREATOR' }] };
       if (text.includes('INSERT INTO withdrawal_requests')) {
-        return { rows: [{ id: 'w-1', status: 'pending', creator_signed: false, platform_signed: false }] };
+        return {
+          rows: [{ id: 'w-1', status: 'pending', creator_signed: false, platform_signed: false }],
+        };
       }
       if (text.includes('INSERT INTO stellar_transactions')) {
         insertedMetadata = JSON.parse(params[4]);
@@ -796,8 +866,14 @@ test('POST /api/withdrawals/request splits the payout between the creator and re
   // Creator receives the requested amount less the 90 owed to referrers
   assert.equal(builtWith.amount, '910.0000000');
   assert.equal(builtWith.commissions.length, 2);
-  assert.deepEqual(builtWith.commissions[0], { destinationPublicKey: 'GALICE', amount: '60.0000000' });
-  assert.deepEqual(builtWith.commissions[1], { destinationPublicKey: 'GBOB', amount: '30.0000000' });
+  assert.deepEqual(builtWith.commissions[0], {
+    destinationPublicKey: 'GALICE',
+    amount: '60.0000000',
+  });
+  assert.deepEqual(builtWith.commissions[1], {
+    destinationPublicKey: 'GBOB',
+    amount: '30.0000000',
+  });
   assert.equal(insertedMetadata.referral_commissions.length, 2);
   assert.equal(response.body.creator_amount, '910.0000000');
 });
@@ -818,10 +894,12 @@ test('POST /api/withdrawals/request rejects a withdrawal smaller than the commis
         totalCommission: '60.0000000',
       }),
     },
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaigns WHERE id')) return { rows: [campaignRow()] };
-      if (text.includes('FROM withdrawal_requests') && text.includes("status = 'pending'")) return { rows: [] };
-      if (text.includes('wallet_public_key FROM users')) return { rows: [{ wallet_public_key: 'GCREATOR' }] };
+      if (text.includes('FROM withdrawal_requests') && text.includes("status = 'pending'"))
+        return { rows: [] };
+      if (text.includes('wallet_public_key FROM users'))
+        return { rows: [{ wallet_public_key: 'GCREATOR' }] };
       return { rows: [] };
     },
   });
@@ -848,42 +926,55 @@ test('POST /api/withdrawals/:id/approve/platform settles the commissions it subm
         settled = commissions;
       },
     },
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('FROM withdrawal_requests wr')) {
         return {
-          rows: [{
-            id: 'w-1',
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            status: 'pending',
-            creator_signed: true,
-            platform_signed: false,
-            unsigned_xdr: 'xdr-creator-signed',
-            amount: '910.0000000',
-            destination_key: VALID_DESTINATION,
-            campaign_status: 'active',
-            creator_id: 'creator-1',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              status: 'pending',
+              creator_signed: true,
+              platform_signed: false,
+              unsigned_xdr: 'xdr-creator-signed',
+              amount: '910.0000000',
+              destination_key: VALID_DESTINATION,
+              campaign_status: 'active',
+              creator_id: 'creator-1',
+            },
+          ],
         };
       }
       if (text.includes('UPDATE withdrawal_requests') && text.includes("status = 'approved'")) {
         return { rows: [{ id: 'w-1', status: 'approved' }] };
       }
       if (text.includes('UPDATE withdrawal_requests') && text.includes("status = 'submitted'")) {
-        return { rows: [{ id: 'w-1', status: 'submitted', campaign_id: '11111111-1111-1111-1111-111111111111', amount: '910.0000000' }] };
+        return {
+          rows: [
+            {
+              id: 'w-1',
+              status: 'submitted',
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              amount: '910.0000000',
+            },
+          ],
+        };
       }
       if (text.includes('SELECT metadata FROM stellar_transactions')) {
         return {
-          rows: [{
-            metadata: {
-              referral_commissions: [
-                { referral_link_id: 'link-1', code: 'aaaa1111', commission_owed: '60.0000000' },
-              ],
+          rows: [
+            {
+              metadata: {
+                referral_commissions: [
+                  { referral_link_id: 'link-1', code: 'aaaa1111', commission_owed: '60.0000000' },
+                ],
+              },
             },
-          }],
+          ],
         };
       }
       return { rows: [] };
@@ -956,35 +1047,39 @@ test('POST /api/withdrawals/:id/approve/creator (Freighter) succeeds when signed
 
   const { app, cleanup } = buildApp({
     userId: 'creator-1',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
       if (text.includes('SELECT creator_id FROM campaigns WHERE id')) {
         return { rows: [{ creator_id: 'creator-1' }] };
       }
       if (text.includes('FROM withdrawal_requests wr')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: false,
-            platform_signed: false,
-            unsigned_xdr: unsignedXdr,
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            campaign_wallet_public_key: campaignKeypair.publicKey(),
-            destination_key: destinationKeypair.publicKey(),
-            amount: '10.0000000',
-            asset_type: 'XLM',
-            campaign_status: 'active',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: false,
+              platform_signed: false,
+              unsigned_xdr: unsignedXdr,
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              campaign_wallet_public_key: campaignKeypair.publicKey(),
+              destination_key: destinationKeypair.publicKey(),
+              amount: '10.0000000',
+              asset_type: 'XLM',
+              campaign_status: 'active',
+            },
+          ],
         };
       }
       if (text.includes('wallet_secret_encrypted') && text.includes('FROM users')) {
         return {
-          rows: [{
-            wallet_secret_encrypted: null,
-            wallet_public_key: creatorKeypair.publicKey(),
-            wallet_type: 'freighter',
-          }],
+          rows: [
+            {
+              wallet_secret_encrypted: null,
+              wallet_public_key: creatorKeypair.publicKey(),
+              wallet_type: 'freighter',
+            },
+          ],
         };
       }
       if (text.includes('UPDATE withdrawal_requests') && text.includes('creator_signed = TRUE')) {
@@ -1008,30 +1103,34 @@ test('POST /api/withdrawals/:id/approve/creator (Freighter) succeeds when signed
 test('POST /api/withdrawals/:id/approve/creator (Freighter) rejects missing signed_xdr with 400', async () => {
   const { app, cleanup } = buildApp({
     userId: 'creator-1',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('SELECT creator_id FROM campaigns WHERE id')) {
         return { rows: [{ creator_id: 'creator-1' }] };
       }
       if (text.includes('FROM withdrawal_requests wr')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: false,
-            platform_signed: false,
-            unsigned_xdr: 'xdr-base',
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            campaign_status: 'active',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: false,
+              platform_signed: false,
+              unsigned_xdr: 'xdr-base',
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              campaign_status: 'active',
+            },
+          ],
         };
       }
       if (text.includes('wallet_secret_encrypted') && text.includes('FROM users')) {
         return {
-          rows: [{
-            wallet_secret_encrypted: null,
-            wallet_public_key: 'GCREATOR',
-            wallet_type: 'freighter',
-          }],
+          rows: [
+            {
+              wallet_secret_encrypted: null,
+              wallet_public_key: 'GCREATOR',
+              wallet_type: 'freighter',
+            },
+          ],
         };
       }
       return { rows: [] };
@@ -1072,34 +1171,38 @@ test('POST /api/withdrawals/:id/approve/creator (Freighter) rejects tampered XDR
 
   const { app, cleanup } = buildApp({
     userId: 'creator-1',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('SELECT creator_id FROM campaigns WHERE id')) {
         return { rows: [{ creator_id: 'creator-1' }] };
       }
       if (text.includes('FROM withdrawal_requests wr')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: false,
-            platform_signed: false,
-            unsigned_xdr: serverUnsignedXdr,
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            campaign_wallet_public_key: campaignKeypair.publicKey(),
-            destination_key: destinationKeypair.publicKey(),
-            amount: '10.0000000',
-            asset_type: 'XLM',
-            campaign_status: 'active',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: false,
+              platform_signed: false,
+              unsigned_xdr: serverUnsignedXdr,
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              campaign_wallet_public_key: campaignKeypair.publicKey(),
+              destination_key: destinationKeypair.publicKey(),
+              amount: '10.0000000',
+              asset_type: 'XLM',
+              campaign_status: 'active',
+            },
+          ],
         };
       }
       if (text.includes('wallet_secret_encrypted') && text.includes('FROM users')) {
         return {
-          rows: [{
-            wallet_secret_encrypted: null,
-            wallet_public_key: creatorKeypair.publicKey(),
-            wallet_type: 'freighter',
-          }],
+          rows: [
+            {
+              wallet_secret_encrypted: null,
+              wallet_public_key: creatorKeypair.publicKey(),
+              wallet_type: 'freighter',
+            },
+          ],
         };
       }
       return { rows: [] };
@@ -1141,34 +1244,38 @@ test('POST /api/withdrawals/:id/approve/creator (Freighter) rejects arbitrary de
 
   const { app, cleanup } = buildApp({
     userId: 'creator-1',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('SELECT creator_id FROM campaigns WHERE id')) {
         return { rows: [{ creator_id: 'creator-1' }] };
       }
       if (text.includes('FROM withdrawal_requests wr')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: false,
-            platform_signed: false,
-            unsigned_xdr: serverUnsignedXdr,
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            campaign_wallet_public_key: campaignKeypair.publicKey(),
-            destination_key: approvedDestination.publicKey(),
-            amount: '10.0000000',
-            asset_type: 'XLM',
-            campaign_status: 'active',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: false,
+              platform_signed: false,
+              unsigned_xdr: serverUnsignedXdr,
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              campaign_wallet_public_key: campaignKeypair.publicKey(),
+              destination_key: approvedDestination.publicKey(),
+              amount: '10.0000000',
+              asset_type: 'XLM',
+              campaign_status: 'active',
+            },
+          ],
         };
       }
       if (text.includes('wallet_secret_encrypted') && text.includes('FROM users')) {
         return {
-          rows: [{
-            wallet_secret_encrypted: null,
-            wallet_public_key: creatorKeypair.publicKey(),
-            wallet_type: 'freighter',
-          }],
+          rows: [
+            {
+              wallet_secret_encrypted: null,
+              wallet_public_key: creatorKeypair.publicKey(),
+              wallet_type: 'freighter',
+            },
+          ],
         };
       }
       return { rows: [] };
@@ -1182,7 +1289,10 @@ test('POST /api/withdrawals/:id/approve/creator (Freighter) rejects arbitrary de
 
   cleanup();
   assert.equal(response.status, 422);
-  assert.match(response.body.error, /Signed transaction does not match|destination does not match/i);
+  assert.match(
+    response.body.error,
+    /Signed transaction does not match|destination does not match/i
+  );
 });
 
 test('POST /api/withdrawals/:id/approve/creator (Freighter) rejects arbitrary asset with 422', async () => {
@@ -1211,34 +1321,38 @@ test('POST /api/withdrawals/:id/approve/creator (Freighter) rejects arbitrary as
 
   const { app, cleanup } = buildApp({
     userId: 'creator-1',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('SELECT creator_id FROM campaigns WHERE id')) {
         return { rows: [{ creator_id: 'creator-1' }] };
       }
       if (text.includes('FROM withdrawal_requests wr')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: false,
-            platform_signed: false,
-            unsigned_xdr: serverUnsignedXdr,
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            campaign_wallet_public_key: campaignKeypair.publicKey(),
-            destination_key: destinationKeypair.publicKey(),
-            amount: '10.0000000',
-            asset_type: 'XLM',
-            campaign_status: 'active',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: false,
+              platform_signed: false,
+              unsigned_xdr: serverUnsignedXdr,
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              campaign_wallet_public_key: campaignKeypair.publicKey(),
+              destination_key: destinationKeypair.publicKey(),
+              amount: '10.0000000',
+              asset_type: 'XLM',
+              campaign_status: 'active',
+            },
+          ],
         };
       }
       if (text.includes('wallet_secret_encrypted') && text.includes('FROM users')) {
         return {
-          rows: [{
-            wallet_secret_encrypted: null,
-            wallet_public_key: creatorKeypair.publicKey(),
-            wallet_type: 'freighter',
-          }],
+          rows: [
+            {
+              wallet_secret_encrypted: null,
+              wallet_public_key: creatorKeypair.publicKey(),
+              wallet_type: 'freighter',
+            },
+          ],
         };
       }
       return { rows: [] };
@@ -1274,34 +1388,38 @@ test('POST /api/withdrawals/:id/approve/creator (Freighter) rejects invalid sign
 
   const { app, cleanup } = buildApp({
     userId: 'creator-1',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('SELECT creator_id FROM campaigns WHERE id')) {
         return { rows: [{ creator_id: 'creator-1' }] };
       }
       if (text.includes('FROM withdrawal_requests wr')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: false,
-            platform_signed: false,
-            unsigned_xdr: unsignedXdr,
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            campaign_wallet_public_key: campaignKeypair.publicKey(),
-            destination_key: destinationKeypair.publicKey(),
-            amount: '10.0000000',
-            asset_type: 'XLM',
-            campaign_status: 'active',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: false,
+              platform_signed: false,
+              unsigned_xdr: unsignedXdr,
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              campaign_wallet_public_key: campaignKeypair.publicKey(),
+              destination_key: destinationKeypair.publicKey(),
+              amount: '10.0000000',
+              asset_type: 'XLM',
+              campaign_status: 'active',
+            },
+          ],
         };
       }
       if (text.includes('wallet_secret_encrypted') && text.includes('FROM users')) {
         return {
-          rows: [{
-            wallet_secret_encrypted: null,
-            wallet_public_key: creatorKeypair.publicKey(),
-            wallet_type: 'freighter',
-          }],
+          rows: [
+            {
+              wallet_secret_encrypted: null,
+              wallet_public_key: creatorKeypair.publicKey(),
+              wallet_type: 'freighter',
+            },
+          ],
         };
       }
       return { rows: [] };
@@ -1346,34 +1464,38 @@ test('POST /api/withdrawals/:id/approve/creator (Freighter) rejects non-payment 
 
   const { app, cleanup } = buildApp({
     userId: 'creator-1',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('SELECT creator_id FROM campaigns WHERE id')) {
         return { rows: [{ creator_id: 'creator-1' }] };
       }
       if (text.includes('FROM withdrawal_requests wr')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: false,
-            platform_signed: false,
-            unsigned_xdr: serverUnsignedXdr,
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            campaign_wallet_public_key: campaignKeypair.publicKey(),
-            destination_key: destinationKeypair.publicKey(),
-            amount: '10.0000000',
-            asset_type: 'XLM',
-            campaign_status: 'active',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: false,
+              platform_signed: false,
+              unsigned_xdr: serverUnsignedXdr,
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              campaign_wallet_public_key: campaignKeypair.publicKey(),
+              destination_key: destinationKeypair.publicKey(),
+              amount: '10.0000000',
+              asset_type: 'XLM',
+              campaign_status: 'active',
+            },
+          ],
         };
       }
       if (text.includes('wallet_secret_encrypted') && text.includes('FROM users')) {
         return {
-          rows: [{
-            wallet_secret_encrypted: null,
-            wallet_public_key: creatorKeypair.publicKey(),
-            wallet_type: 'freighter',
-          }],
+          rows: [
+            {
+              wallet_secret_encrypted: null,
+              wallet_public_key: creatorKeypair.publicKey(),
+              wallet_type: 'freighter',
+            },
+          ],
         };
       }
       return { rows: [] };
@@ -1387,7 +1509,10 @@ test('POST /api/withdrawals/:id/approve/creator (Freighter) rejects non-payment 
 
   cleanup();
   assert.equal(response.status, 422);
-  assert.match(response.body.error, /Signed transaction does not match|only payment operations are allowed/i);
+  assert.match(
+    response.body.error,
+    /Signed transaction does not match|only payment operations are allowed/i
+  );
 });
 
 test('POST /api/withdrawals/:id/approve/platform validates real XDR parameters before platform signing', async () => {
@@ -1407,27 +1532,29 @@ test('POST /api/withdrawals/:id/approve/platform validates real XDR parameters b
 
   const { app, cleanup } = buildApp({
     role: 'admin',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('SELECT wr.*, c.status')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: true,
-            platform_signed: false,
-            unsigned_xdr: creatorSignedXdr,
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            campaign_wallet_public_key: campaignKeypair.publicKey(),
-            destination_key: destinationKeypair.publicKey(),
-            amount: '10.0000000',
-            asset_type: 'XLM',
-            campaign_status: 'active',
-            requested_by: 'creator-1',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: true,
+              platform_signed: false,
+              unsigned_xdr: creatorSignedXdr,
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              campaign_wallet_public_key: campaignKeypair.publicKey(),
+              destination_key: destinationKeypair.publicKey(),
+              amount: '10.0000000',
+              asset_type: 'XLM',
+              campaign_status: 'active',
+              requested_by: 'creator-1',
+            },
+          ],
         };
       }
       if (text.includes('SELECT wallet_public_key FROM users WHERE id')) {
@@ -1474,27 +1601,29 @@ test('POST /api/withdrawals/:id/approve/platform rejects tampered arbitrary dest
 
   const { app, cleanup } = buildApp({
     role: 'admin',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('SELECT wr.*, c.status')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: true,
-            platform_signed: false,
-            unsigned_xdr: creatorSignedAttackerXdr,
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            campaign_wallet_public_key: campaignKeypair.publicKey(),
-            destination_key: approvedDestination.publicKey(), // approved destination is different!
-            amount: '10.0000000',
-            asset_type: 'XLM',
-            campaign_status: 'active',
-            requested_by: 'creator-1',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: true,
+              platform_signed: false,
+              unsigned_xdr: creatorSignedAttackerXdr,
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              campaign_wallet_public_key: campaignKeypair.publicKey(),
+              destination_key: approvedDestination.publicKey(), // approved destination is different!
+              amount: '10.0000000',
+              asset_type: 'XLM',
+              campaign_status: 'active',
+              requested_by: 'creator-1',
+            },
+          ],
         };
       }
       if (text.includes('SELECT wallet_public_key FROM users WHERE id')) {
@@ -1527,27 +1656,29 @@ test('POST /api/withdrawals/:id/approve/platform rejects stored XDR missing crea
 
   const { app, cleanup } = buildApp({
     role: 'admin',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('SELECT wr.*, c.status')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: true,
-            platform_signed: false,
-            unsigned_xdr: unsignedXdr, // Unsigned!
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            campaign_wallet_public_key: campaignKeypair.publicKey(),
-            destination_key: destinationKeypair.publicKey(),
-            amount: '10.0000000',
-            asset_type: 'XLM',
-            campaign_status: 'active',
-            requested_by: 'creator-1',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: true,
+              platform_signed: false,
+              unsigned_xdr: unsignedXdr, // Unsigned!
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              campaign_wallet_public_key: campaignKeypair.publicKey(),
+              destination_key: destinationKeypair.publicKey(),
+              amount: '10.0000000',
+              asset_type: 'XLM',
+              campaign_status: 'active',
+              requested_by: 'creator-1',
+            },
+          ],
         };
       }
       if (text.includes('SELECT wallet_public_key FROM users WHERE id')) {
@@ -1588,27 +1719,29 @@ test('POST /api/withdrawals/:id/approve/platform rejects stored XDR with non-pay
 
   const { app, cleanup } = buildApp({
     role: 'admin',
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('SELECT wr.*, c.status')) {
         return {
-          rows: [{
-            id: 'w-1',
-            status: 'pending',
-            creator_signed: true,
-            platform_signed: false,
-            unsigned_xdr: creatorSignedMergeXdr,
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            campaign_wallet_public_key: campaignKeypair.publicKey(),
-            destination_key: destinationKeypair.publicKey(),
-            amount: '10.0000000',
-            asset_type: 'XLM',
-            campaign_status: 'active',
-            requested_by: 'creator-1',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: true,
+              platform_signed: false,
+              unsigned_xdr: creatorSignedMergeXdr,
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              campaign_wallet_public_key: campaignKeypair.publicKey(),
+              destination_key: destinationKeypair.publicKey(),
+              amount: '10.0000000',
+              asset_type: 'XLM',
+              campaign_status: 'active',
+              requested_by: 'creator-1',
+            },
+          ],
         };
       }
       if (text.includes('SELECT wallet_public_key FROM users WHERE id')) {
@@ -1634,7 +1767,7 @@ test('POST /api/withdrawals/request calculates and persists creator_share and co
 
   const { app, cleanup } = buildApp({
     stellarImpl: {
-      buildWithdrawalTransaction: async (params) => {
+      buildWithdrawalTransaction: async params => {
         builtWith = params;
         return 'xdr-creator-share';
       },
@@ -1642,13 +1775,25 @@ test('POST /api/withdrawals/request calculates and persists creator_share and co
     queryImpl: async (text, params) => {
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
       if (text.includes('FROM campaigns WHERE id')) return { rows: [campaignRow()] };
-      if (text.includes('FROM withdrawal_requests') && text.includes("status = 'pending'")) return { rows: [] };
-      if (text.includes('wallet_public_key FROM users')) return { rows: [{ wallet_public_key: 'GCREATOR' }] };
+      if (text.includes('FROM withdrawal_requests') && text.includes("status = 'pending'"))
+        return { rows: [] };
+      if (text.includes('wallet_public_key FROM users'))
+        return { rows: [{ wallet_public_key: 'GCREATOR' }] };
       if (text.includes('FROM contributions') && text.includes('platform_fee_amount')) {
         return { rows: [{ total_fees: '200.0000000' }] };
       }
       if (text.includes('INSERT INTO withdrawal_requests')) {
-        return { rows: [{ id: 'w-1', status: 'pending', creator_signed: false, platform_signed: false, amount: '1000.0000000' }] };
+        return {
+          rows: [
+            {
+              id: 'w-1',
+              status: 'pending',
+              creator_signed: false,
+              platform_signed: false,
+              amount: '1000.0000000',
+            },
+          ],
+        };
       }
       if (text.includes('INSERT INTO stellar_transactions')) {
         insertedMetadata = JSON.parse(params[4]);
@@ -1685,24 +1830,26 @@ test('POST /api/withdrawals/:id/approve/platform finalization logs creator share
     role: 'admin',
     queryImpl: async (text, params) => {
       if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rows: [] };
-      if (text.includes("SELECT role, is_admin FROM users WHERE id")) {
+      if (text.includes('SELECT role, is_admin FROM users WHERE id')) {
         return { rows: [{ role: 'admin', is_admin: true }] };
       }
       if (text.includes('FROM withdrawal_requests wr')) {
         return {
-          rows: [{
-            id: 'w-1',
-            campaign_id: '11111111-1111-1111-1111-111111111111',
-            status: 'pending',
-            creator_signed: true,
-            platform_signed: false,
-            unsigned_xdr: 'xdr-creator-signed',
-            amount: '1000.0000000',
-            destination_key: VALID_DESTINATION,
-            campaign_status: 'active',
-            creator_id: 'creator-1',
-            requested_by: 'creator-1',
-          }],
+          rows: [
+            {
+              id: 'w-1',
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              status: 'pending',
+              creator_signed: true,
+              platform_signed: false,
+              unsigned_xdr: 'xdr-creator-signed',
+              amount: '1000.0000000',
+              destination_key: VALID_DESTINATION,
+              campaign_status: 'active',
+              creator_id: 'creator-1',
+              requested_by: 'creator-1',
+            },
+          ],
         };
       }
       if (text.includes('wallet_public_key')) {
@@ -1715,7 +1862,16 @@ test('POST /api/withdrawals/:id/approve/platform finalization logs creator share
         return { rows: [{ id: 'w-1', status: 'approved' }] };
       }
       if (text.includes('UPDATE withdrawal_requests') && text.includes("status = 'submitted'")) {
-        return { rows: [{ id: 'w-1', status: 'submitted', campaign_id: '11111111-1111-1111-1111-111111111111', amount: '1000.0000000' }] };
+        return {
+          rows: [
+            {
+              id: 'w-1',
+              status: 'submitted',
+              campaign_id: '11111111-1111-1111-1111-111111111111',
+              amount: '1000.0000000',
+            },
+          ],
+        };
       }
       if (text.includes('INSERT INTO withdrawal_approval_events')) {
         loggedEvents.push({ action: params[2], metadata: params[4] ? JSON.parse(params[4]) : {} });
@@ -1725,7 +1881,17 @@ test('POST /api/withdrawals/:id/approve/platform finalization logs creator share
         return { rows: [{ metadata: {} }] };
       }
       if (text.includes('SELECT u.email, u.name')) {
-        return { rows: [{ email: 'creator@example.com', name: 'Creator', creator_id: 'creator-1', title: 'Campaign', asset_type: 'USDC' }] };
+        return {
+          rows: [
+            {
+              email: 'creator@example.com',
+              name: 'Creator',
+              creator_id: 'creator-1',
+              title: 'Campaign',
+              asset_type: 'USDC',
+            },
+          ],
+        };
       }
       if (text.includes('SELECT creator_id FROM campaigns')) {
         return { rows: [{ creator_id: 'creator-1' }] };
@@ -1742,10 +1908,9 @@ test('POST /api/withdrawals/:id/approve/platform finalization logs creator share
   cleanup();
   assert.equal(response.status, 200);
   assert.equal(response.body.status, 'submitted');
-  const creatorShareEvent = loggedEvents.find((e) => e.action === 'creator_share_calculated');
+  const creatorShareEvent = loggedEvents.find(e => e.action === 'creator_share_calculated');
   assert.ok(creatorShareEvent, 'creator_share_calculated event must be logged');
   assert.equal(creatorShareEvent.metadata.collected_fees, 100);
   assert.equal(creatorShareEvent.metadata.creator_share, 5);
   assert.equal(creatorShareEvent.metadata.creator_public_key, 'GCREATOR_WALLET');
 });
-

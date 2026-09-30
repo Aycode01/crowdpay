@@ -23,7 +23,10 @@ function validateMigrationFiles() {
 }
 
 function listAllMigrationFilenames() {
-  return fs.readdirSync(MIGRATIONS_DIR).filter((f) => !f.startsWith('.')).sort();
+  return fs
+    .readdirSync(MIGRATIONS_DIR)
+    .filter(f => !f.startsWith('.'))
+    .sort();
 }
 
 function sha256(str) {
@@ -66,9 +69,7 @@ async function ensureSchemaMigrationsTable(client) {
     )
   `);
   // Backfill the hash column on databases created before hash tracking was added.
-  await client.query(
-    'ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS file_hash TEXT'
-  );
+  await client.query('ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS file_hash TEXT');
 }
 
 async function loadApplied(client) {

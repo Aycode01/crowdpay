@@ -155,7 +155,8 @@ router.post(
   '/campaigns/:id/subscriptions',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { amountPerPeriod, asset, periodMonths, totalPeriods, truncateToDeadline } = req.body || {};
+    const { amountPerPeriod, asset, periodMonths, totalPeriods, truncateToDeadline } =
+      req.body || {};
     try {
       const subscription = await createSubscription({
         campaignId: req.params.id,

@@ -77,7 +77,7 @@ async function recoverAbandonedRuns() {
     [RUN_ABANDON_AFTER_MS]
   );
   if (rows.length) {
-    logger.warn('governance-sync: finalized abandoned runs', { runIds: rows.map((r) => r.id) });
+    logger.warn('governance-sync: finalized abandoned runs', { runIds: rows.map(r => r.id) });
   }
   return rows.length;
 }
@@ -144,7 +144,12 @@ async function auditTrigger({ run, requestedBy, req }) {
  * Execute one synchronization run and record it.
  * @returns {Promise<{ run: object, deduplicated: boolean }>}
  */
-async function runGovernanceSync({ trigger = 'manual', requestedBy = null, retryOfRunId = null, req = null } = {}) {
+async function runGovernanceSync({
+  trigger = 'manual',
+  requestedBy = null,
+  retryOfRunId = null,
+  req = null,
+} = {}) {
   if (!RUN_TRIGGERS.includes(trigger)) throw httpError(`Unknown trigger: ${trigger}`, 400);
 
   await recoverAbandonedRuns();
@@ -184,7 +189,12 @@ async function runGovernanceSync({ trigger = 'manual', requestedBy = null, retry
         runId: run.id,
         error: finishErr.message,
       });
-      finished = { ...run, status: 'failed', error_code: errorCode, error_message: safeErrorMessage(err) };
+      finished = {
+        ...run,
+        status: 'failed',
+        error_code: errorCode,
+        error_message: safeErrorMessage(err),
+      };
     }
   }
 
@@ -244,10 +254,9 @@ async function listRuns({ status, trigger, limit = 20, offset = 0 } = {}) {
 
 /** One run with the retries that point at it. */
 async function getRun(runId) {
-  const { rows } = await db.query(
-    `SELECT ${RUN_COLUMNS} FROM governance_sync_runs WHERE id = $1`,
-    [runId]
-  );
+  const { rows } = await db.query(`SELECT ${RUN_COLUMNS} FROM governance_sync_runs WHERE id = $1`, [
+    runId,
+  ]);
   if (!rows.length) return null;
   const { rows: retries } = await db.query(
     `SELECT id, status, started_at, finished_at

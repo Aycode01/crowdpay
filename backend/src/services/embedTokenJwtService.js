@@ -60,7 +60,7 @@ function validateOrigin(originHeader, allowedOrigins = []) {
   if (allowedOrigins.includes('*')) return true;
 
   const normalizedOrigin = originHeader.trim().replace(/\/+$/, '').toLowerCase();
-  return allowedOrigins.some((allowed) => {
+  return allowedOrigins.some(allowed => {
     if (allowed === '*') return true;
     if (typeof allowed !== 'string') return false;
     const normalizedAllowed = allowed.trim().replace(/\/+$/, '').toLowerCase();

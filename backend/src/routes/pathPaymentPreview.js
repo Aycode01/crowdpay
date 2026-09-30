@@ -22,10 +22,9 @@ router.post(
       return res.status(400).json({ error: 'send_asset and amount are required' });
     }
 
-    const { rows } = await db.query(
-      'SELECT id, asset_type, status FROM campaigns WHERE id = $1',
-      [campaignId]
-    );
+    const { rows } = await db.query('SELECT id, asset_type, status FROM campaigns WHERE id = $1', [
+      campaignId,
+    ]);
     const campaign = rows[0];
     if (!campaign) {
       return res.status(404).json({ error: 'Campaign not found' });

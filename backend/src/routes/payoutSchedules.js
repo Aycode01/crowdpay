@@ -127,7 +127,11 @@ router.post(
   requireAuth,
   requireCampaignOwner,
   asyncHandler(async (req, res) => {
-    const updated = await pausePayoutSchedule(req.params.scheduleId, req.params.id, req.user.userId);
+    const updated = await pausePayoutSchedule(
+      req.params.scheduleId,
+      req.params.id,
+      req.user.userId
+    );
     res.json(updated);
   })
 );
@@ -146,7 +150,11 @@ router.post(
   requireAuth,
   requireCampaignOwner,
   asyncHandler(async (req, res) => {
-    const updated = await resumePayoutSchedule(req.params.scheduleId, req.params.id, req.user.userId);
+    const updated = await resumePayoutSchedule(
+      req.params.scheduleId,
+      req.params.id,
+      req.user.userId
+    );
     res.json(updated);
   })
 );
@@ -165,7 +173,11 @@ router.delete(
   requireAuth,
   requireCampaignOwner,
   asyncHandler(async (req, res) => {
-    const cancelled = await cancelPayoutSchedule(req.params.scheduleId, req.params.id, req.user.userId);
+    const cancelled = await cancelPayoutSchedule(
+      req.params.scheduleId,
+      req.params.id,
+      req.user.userId
+    );
     res.json(cancelled);
   })
 );

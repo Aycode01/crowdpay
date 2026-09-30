@@ -29,7 +29,7 @@ async function main() {
         WHERE table_name = 'feature_flags'
         ORDER BY column_name`
     );
-    const actual = featureFlagCols.map((r) => r.column_name);
+    const actual = featureFlagCols.map(r => r.column_name);
     const expected = ['default_enabled', 'description', 'enabled', 'key', 'updated_at'];
     if (JSON.stringify(actual) !== JSON.stringify(expected)) {
       failures.push(
@@ -98,8 +98,19 @@ async function main() {
         WHERE table_name = 'campaign_templates'
         ORDER BY column_name`
     );
-    const actualTemplateCols = templateCols.map((r) => r.column_name);
-    const expectedTemplateCols = ['category', 'created_at', 'description', 'id', 'is_active', 'name', 'slug', 'template_data', 'updated_at', 'use_count'];
+    const actualTemplateCols = templateCols.map(r => r.column_name);
+    const expectedTemplateCols = [
+      'category',
+      'created_at',
+      'description',
+      'id',
+      'is_active',
+      'name',
+      'slug',
+      'template_data',
+      'updated_at',
+      'use_count',
+    ];
     if (JSON.stringify(actualTemplateCols) !== JSON.stringify(expectedTemplateCols)) {
       failures.push(
         `campaign_templates columns drift: expected [${expectedTemplateCols.join(', ')}], got [${actualTemplateCols.join(', ')}]`
@@ -107,7 +118,9 @@ async function main() {
     }
 
     // Seed rows inserted by the migration.
-    const { rows: templateRows } = await pool.query('SELECT COUNT(*)::int AS n FROM campaign_templates');
+    const { rows: templateRows } = await pool.query(
+      'SELECT COUNT(*)::int AS n FROM campaign_templates'
+    );
     if (templateRows[0].n < 1) {
       failures.push('campaign_templates has no seed rows after migration');
     }
@@ -124,7 +137,7 @@ async function main() {
   console.log('[verify-schema] OK: schema.sql and migrations converge.');
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error('[verify-schema] Failed to run check:', err.message);
   process.exitCode = 1;
 });

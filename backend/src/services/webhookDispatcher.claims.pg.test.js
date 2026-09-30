@@ -24,7 +24,7 @@ async function openPool() {
   return null;
 }
 
-test('claim SQL against Postgres', async (t) => {
+test('claim SQL against Postgres', async t => {
   const pool = await openPool();
   if (!pool) {
     t.skip('DATABASE_URL not set or not migrated');
@@ -75,8 +75,13 @@ test('claim SQL against Postgres', async (t) => {
     return rows[0].id;
   }
 
-  const fetchRow = async (id) =>
-    (await pool.query('SELECT status, attempt_count, lease_token FROM webhook_deliveries WHERE id = $1', [id])).rows[0];
+  const fetchRow = async id =>
+    (
+      await pool.query(
+        'SELECT status, attempt_count, lease_token FROM webhook_deliveries WHERE id = $1',
+        [id]
+      )
+    ).rows[0];
 
   try {
     await t.test('only one of many concurrent claims wins', async () => {
@@ -92,8 +97,16 @@ test('claim SQL against Postgres', async (t) => {
 
     await t.test('concurrent workers send one request and record one attempt', async () => {
       sent.length = 0;
-      const id = await insertDelivery({ status: 'retrying', attempt_count: 1, next_retry_at: new Date(Date.now() - 1000) });
-      await Promise.all([dispatcher.processDelivery(id), dispatcher.processDelivery(id), dispatcher.processDelivery(id)]);
+      const id = await insertDelivery({
+        status: 'retrying',
+        attempt_count: 1,
+        next_retry_at: new Date(Date.now() - 1000),
+      });
+      await Promise.all([
+        dispatcher.processDelivery(id),
+        dispatcher.processDelivery(id),
+        dispatcher.processDelivery(id),
+      ]);
       assert.deepEqual(sent, [id]);
       const row = await fetchRow(id);
       assert.equal(row.status, 'delivered');
@@ -102,10 +115,20 @@ test('claim SQL against Postgres', async (t) => {
     });
 
     await t.test('a live lease blocks reclaim; an expired lease is recoverable', async () => {
-      const live = await insertDelivery({ status: 'delivering', attempt_count: 1, lease_token: 'other', lease_expires_at: new Date(Date.now() + 60_000) });
+      const live = await insertDelivery({
+        status: 'delivering',
+        attempt_count: 1,
+        lease_token: 'other',
+        lease_expires_at: new Date(Date.now() + 60_000),
+      });
       assert.equal(await dispatcher.claimDelivery('user', live), null);
 
-      const expired = await insertDelivery({ status: 'delivering', attempt_count: 1, lease_token: 'dead', lease_expires_at: new Date(Date.now() - 1000) });
+      const expired = await insertDelivery({
+        status: 'delivering',
+        attempt_count: 1,
+        lease_token: 'dead',
+        lease_expires_at: new Date(Date.now() - 1000),
+      });
       const claimed = await dispatcher.claimDelivery('user', expired);
       assert.ok(claimed);
       assert.equal(claimed.attempt_count, 2);

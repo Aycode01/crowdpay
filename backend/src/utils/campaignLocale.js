@@ -1,6 +1,24 @@
 const SUPPORTED_LANGUAGES = new Set([
-  'en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh',
-  'ar', 'hi', 'bn', 'pa', 'tr', 'nl', 'pl', 'sv', 'da', 'fi',
+  'en',
+  'es',
+  'fr',
+  'de',
+  'it',
+  'pt',
+  'ru',
+  'ja',
+  'ko',
+  'zh',
+  'ar',
+  'hi',
+  'bn',
+  'pa',
+  'tr',
+  'nl',
+  'pl',
+  'sv',
+  'da',
+  'fi',
 ]);
 
 /** Resolve a BCP 47 locale to a supported campaign language (for example, fr-CA to fr). */

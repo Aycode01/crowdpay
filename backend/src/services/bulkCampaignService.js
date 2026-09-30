@@ -6,7 +6,8 @@ const { MILESTONE_LIMIT } = require('../config/constants');
 
 const SUPPORTED_ASSETS = ['USDC', 'XLM'];
 
-const CSV_HEADER = 'title,description,target_amount,asset_type,deadline,category,cover_image_url,country,min_contribution,max_contribution,milestones,reward_tiers';
+const CSV_HEADER =
+  'title,description,target_amount,asset_type,deadline,category,cover_image_url,country,min_contribution,max_contribution,milestones,reward_tiers';
 
 const SAMPLE_CSV = `${CSV_HEADER}
 "Clean Water Project","Solar-powered well construction",25000,USDC,2027-12-31T23:59:59Z,community,"https://images.unsplash.com/photo-water",US,10,5000,"[{""title"":""Phase 1"",""description"":""Drilling"",""release_percentage"":100}]","[{""title"":""Supporter"",""amount"":50,""description"":""Name on plaque""}]"
@@ -61,14 +62,14 @@ function parseCsv(content) {
       } else if (char === '\r') {
         if (nextChar === '\n') i++;
         row.push(cell.trim());
-        if (row.some((c) => c !== '')) lines.push(row);
+        if (row.some(c => c !== '')) lines.push(row);
         row = [];
         cell = '';
         i++;
         continue;
       } else if (char === '\n') {
         row.push(cell.trim());
-        if (row.some((c) => c !== '')) lines.push(row);
+        if (row.some(c => c !== '')) lines.push(row);
         row = [];
         cell = '';
         i++;
@@ -83,12 +84,12 @@ function parseCsv(content) {
 
   if (cell !== '' || row.length > 0) {
     row.push(cell.trim());
-    if (row.some((c) => c !== '')) lines.push(row);
+    if (row.some(c => c !== '')) lines.push(row);
   }
 
   if (lines.length < 2) return [];
 
-  const headers = lines[0].map((h) => h.toLowerCase().trim());
+  const headers = lines[0].map(h => h.toLowerCase().trim());
   const rows = [];
 
   for (let r = 1; r < lines.length; r++) {
@@ -123,11 +124,17 @@ function validateCampaignRow(row, rowIndex) {
   // Target amount validation
   const targetAmount = Number(row.target_amount);
   if (isNaN(targetAmount) || targetAmount <= 0) {
-    errors.push({ row: rowIndex, field: 'target_amount', reason: 'Target amount must be a positive number' });
+    errors.push({
+      row: rowIndex,
+      field: 'target_amount',
+      reason: 'Target amount must be a positive number',
+    });
   }
 
   // Asset type validation
-  const assetType = String(row.asset_type || '').toUpperCase().trim();
+  const assetType = String(row.asset_type || '')
+    .toUpperCase()
+    .trim();
   if (!SUPPORTED_ASSETS.includes(assetType)) {
     errors.push({
       row: rowIndex,
@@ -150,35 +157,60 @@ function validateCampaignRow(row, rowIndex) {
   if (row.cover_image_url && row.cover_image_url.trim()) {
     const url = row.cover_image_url.trim();
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      errors.push({ row: rowIndex, field: 'cover_image_url', reason: 'Cover image URL must start with http:// or https://' });
+      errors.push({
+        row: rowIndex,
+        field: 'cover_image_url',
+        reason: 'Cover image URL must start with http:// or https://',
+      });
     }
   }
 
   // Milestones validation
   if (row.milestones && row.milestones.trim()) {
     try {
-      const parsed = typeof row.milestones === 'string' ? JSON.parse(row.milestones) : row.milestones;
+      const parsed =
+        typeof row.milestones === 'string' ? JSON.parse(row.milestones) : row.milestones;
       if (!Array.isArray(parsed)) {
-        errors.push({ row: rowIndex, field: 'milestones', reason: 'Milestones must be a JSON array' });
+        errors.push({
+          row: rowIndex,
+          field: 'milestones',
+          reason: 'Milestones must be a JSON array',
+        });
       } else {
         if (parsed.length > MILESTONE_LIMIT) {
-          errors.push({ row: rowIndex, field: 'milestones', reason: `At most ${MILESTONE_LIMIT} milestones are allowed` });
+          errors.push({
+            row: rowIndex,
+            field: 'milestones',
+            reason: `At most ${MILESTONE_LIMIT} milestones are allowed`,
+          });
         }
         let sum = 0;
         for (let m = 0; m < parsed.length; m++) {
           const item = parsed[m];
           if (!item.title || !item.description) {
-            errors.push({ row: rowIndex, field: 'milestones', reason: `Milestone ${m + 1} requires title and description` });
+            errors.push({
+              row: rowIndex,
+              field: 'milestones',
+              reason: `Milestone ${m + 1} requires title and description`,
+            });
           }
           const pct = Number(item.release_percentage);
           if (isNaN(pct) || pct <= 0) {
-            errors.push({ row: rowIndex, field: 'milestones', reason: `Milestone ${m + 1} release_percentage must be > 0` });
+            errors.push({
+              row: rowIndex,
+              field: 'milestones',
+              reason: `Milestone ${m + 1} release_percentage must be > 0`,
+            });
           } else {
             sum += pct;
           }
         }
         if (parsed.length > 0 && Math.abs(sum - 100) > 0.01) {
-          errors.push({ row: rowIndex, field: 'milestones', reason: `Milestone release percentages must sum to 100% (got ${sum}%)` });
+          errors.push({
+            row: rowIndex,
+            field: 'milestones',
+            reason: `Milestone release percentages must sum to 100% (got ${sum}%)`,
+          });
         }
       }
     } catch {
@@ -189,23 +221,40 @@ function validateCampaignRow(row, rowIndex) {
   // Reward tiers validation
   if (row.reward_tiers && row.reward_tiers.trim()) {
     try {
-      const parsed = typeof row.reward_tiers === 'string' ? JSON.parse(row.reward_tiers) : row.reward_tiers;
+      const parsed =
+        typeof row.reward_tiers === 'string' ? JSON.parse(row.reward_tiers) : row.reward_tiers;
       if (!Array.isArray(parsed)) {
-        errors.push({ row: rowIndex, field: 'reward_tiers', reason: 'Reward tiers must be a JSON array' });
+        errors.push({
+          row: rowIndex,
+          field: 'reward_tiers',
+          reason: 'Reward tiers must be a JSON array',
+        });
       } else {
         for (let t = 0; t < parsed.length; t++) {
           const tier = parsed[t];
           if (!tier.title || typeof tier.title !== 'string') {
-            errors.push({ row: rowIndex, field: 'reward_tiers', reason: `Reward tier ${t + 1} requires a title` });
+            errors.push({
+              row: rowIndex,
+              field: 'reward_tiers',
+              reason: `Reward tier ${t + 1} requires a title`,
+            });
           }
           const amt = Number(tier.amount);
           if (isNaN(amt) || amt <= 0) {
-            errors.push({ row: rowIndex, field: 'reward_tiers', reason: `Reward tier ${t + 1} amount must be > 0` });
+            errors.push({
+              row: rowIndex,
+              field: 'reward_tiers',
+              reason: `Reward tier ${t + 1} amount must be > 0`,
+            });
           }
         }
       }
     } catch {
-      errors.push({ row: rowIndex, field: 'reward_tiers', reason: 'Reward tiers must be valid JSON' });
+      errors.push({
+        row: rowIndex,
+        field: 'reward_tiers',
+        reason: 'Reward tiers must be valid JSON',
+      });
     }
   }
 
@@ -292,21 +341,23 @@ async function createImportJob({ userId, csvContent, idempotencyKey = null }) {
   const job = insertedJob[0];
 
   // Log in audit log
-  await db.query(
-    `INSERT INTO audit_logs (action, actor_id, target_type, target_id, details)
+  await db
+    .query(
+      `INSERT INTO audit_logs (action, actor_id, target_type, target_id, details)
      VALUES ($1, $2, $3, $4, $5::jsonb)`,
-    [
-      'bulk_campaign_import_started',
-      userId,
-      'bulk_import',
-      job.id,
-      JSON.stringify({ total_rows: rows.length, content_hash: contentHash }),
-    ]
-  ).catch(() => {});
+      [
+        'bulk_campaign_import_started',
+        userId,
+        'bulk_import',
+        job.id,
+        JSON.stringify({ total_rows: rows.length, content_hash: contentHash }),
+      ]
+    )
+    .catch(() => {});
 
   // Run import job asynchronously
   setImmediate(() => {
-    executeImportJob(job.id, userId, rows).catch((err) => {
+    executeImportJob(job.id, userId, rows).catch(err => {
       logger.error('Bulk campaign import background execution failed', {
         jobId: job.id,
         error: err.message,
@@ -338,7 +389,7 @@ async function executeImportJob(jobId, userId, rows) {
         row: rowNum,
         success: false,
         title: row.title || 'Untitled',
-        errors: rowErrors.map((e) => e.reason),
+        errors: rowErrors.map(e => e.reason),
       });
       continue;
     }
@@ -385,21 +436,29 @@ async function executeImportJob(jobId, userId, rows) {
 
       // Milestones
       if (row.milestones && row.milestones.trim()) {
-        const milestones = typeof row.milestones === 'string' ? JSON.parse(row.milestones) : row.milestones;
+        const milestones =
+          typeof row.milestones === 'string' ? JSON.parse(row.milestones) : row.milestones;
         for (let m = 0; m < milestones.length; m++) {
           const item = milestones[m];
           await client.query(
             `INSERT INTO milestones
                (campaign_id, title, description, release_percentage, sort_order)
              VALUES ($1, $2, $3, $4, $5)`,
-            [campaign.id, item.title.trim(), item.description.trim(), Number(item.release_percentage).toFixed(4), m]
+            [
+              campaign.id,
+              item.title.trim(),
+              item.description.trim(),
+              Number(item.release_percentage).toFixed(4),
+              m,
+            ]
           );
         }
       }
 
       // Reward tiers
       if (row.reward_tiers && row.reward_tiers.trim()) {
-        const tiers = typeof row.reward_tiers === 'string' ? JSON.parse(row.reward_tiers) : row.reward_tiers;
+        const tiers =
+          typeof row.reward_tiers === 'string' ? JSON.parse(row.reward_tiers) : row.reward_tiers;
         for (let t = 0; t < tiers.length; t++) {
           const tier = tiers[t];
           await client.query(

@@ -102,7 +102,10 @@ function renderReportContent(doc, report) {
     doc.fontSize(10).fillColor(LABEL_COLOR).text('Asset Breakdown:');
     doc.moveDown(0.2);
     for (const a of e.asset_breakdown) {
-      doc.fontSize(9).fillColor(TEXT_COLOR).text(`  ${a.asset}: ${a.count} contributions — ${formatCurrency(a.total, a.asset)}`);
+      doc
+        .fontSize(9)
+        .fillColor(TEXT_COLOR)
+        .text(`  ${a.asset}: ${a.count} contributions — ${formatCurrency(a.total, a.asset)}`);
     }
   }
 
@@ -111,13 +114,19 @@ function renderReportContent(doc, report) {
   if (!report.top_contributors || report.top_contributors.length === 0) {
     doc.fontSize(10).fillColor(MUTED_COLOR).text('No contributors yet.');
   } else {
-    doc.fontSize(9).fillColor(BRAND_COLOR).text('Rank  Contributor                  Wallet               Count   Total');
+    doc
+      .fontSize(9)
+      .fillColor(BRAND_COLOR)
+      .text('Rank  Contributor                  Wallet               Count   Total');
     doc.moveDown(0.2);
     for (let idx = 0; idx < report.top_contributors.length; idx++) {
       const tc = report.top_contributors[idx];
-      doc.fontSize(9).fillColor(TEXT_COLOR).text(
-        `${String(idx + 1).padEnd(5)} ${(tc.display_name || '').padEnd(28)} ${(tc.truncated_key || '').padEnd(20)} ${String(tc.contribution_count).padEnd(7)} ${formatCurrency(tc.total_amount, asset)}`
-      );
+      doc
+        .fontSize(9)
+        .fillColor(TEXT_COLOR)
+        .text(
+          `${String(idx + 1).padEnd(5)} ${(tc.display_name || '').padEnd(28)} ${(tc.truncated_key || '').padEnd(20)} ${String(tc.contribution_count).padEnd(7)} ${formatCurrency(tc.total_amount, asset)}`
+        );
       doc.moveDown(0.3);
     }
   }
@@ -129,9 +138,12 @@ function renderReportContent(doc, report) {
   } else {
     for (const m of report.milestones) {
       doc.fontSize(10).fillColor(BRAND_COLOR).text(m.title, { bold: true });
-      doc.fontSize(9).fillColor(LABEL_COLOR).text(
-        `Release: ${m.release_percentage}%  |  Status: ${STATUS_LABELS[m.status] || m.status}  |  Progress: ${m.progress_pct}%`
-      );
+      doc
+        .fontSize(9)
+        .fillColor(LABEL_COLOR)
+        .text(
+          `Release: ${m.release_percentage}%  |  Status: ${STATUS_LABELS[m.status] || m.status}  |  Progress: ${m.progress_pct}%`
+        );
       if (m.description) {
         doc.fontSize(9).fillColor(MUTED_COLOR).text(m.description, { indent: 10 });
       }
@@ -148,9 +160,12 @@ function renderReportContent(doc, report) {
     doc.fontSize(9).fillColor(LABEL_COLOR).text('Daily contribution summary:');
     doc.moveDown(0.3);
     for (const d of report.daily_series) {
-      doc.fontSize(9).fillColor(TEXT_COLOR).text(
-        `  ${d.day}: ${d.count} contribution${d.count === 1 ? '' : 's'} — ${formatCurrency(d.amount, asset)}`
-      );
+      doc
+        .fontSize(9)
+        .fillColor(TEXT_COLOR)
+        .text(
+          `  ${d.day}: ${d.count} contribution${d.count === 1 ? '' : 's'} — ${formatCurrency(d.amount, asset)}`
+        );
     }
   }
 
@@ -158,18 +173,22 @@ function renderReportContent(doc, report) {
   if (report.timeline && report.timeline.length > 0) {
     drawSectionHeader(doc, 'Status Change Timeline');
     for (const t of report.timeline) {
-      doc.fontSize(9).fillColor(TEXT_COLOR).text(
-        `  ${formatValue(t.at)}: ${t.from || '(none)'} → ${t.to}`
-      );
+      doc
+        .fontSize(9)
+        .fillColor(TEXT_COLOR)
+        .text(`  ${formatValue(t.at)}: ${t.from || '(none)'} → ${t.to}`);
     }
   }
 
   // ── Footer ──
   doc.moveDown(3);
-  doc.fontSize(8).fillColor(MUTED_COLOR).text(
-    'CrowdPay — Blockchain-powered crowdfunding. All contribution data is recorded on the Stellar network.',
-    { align: 'center' }
-  );
+  doc
+    .fontSize(8)
+    .fillColor(MUTED_COLOR)
+    .text(
+      'CrowdPay — Blockchain-powered crowdfunding. All contribution data is recorded on the Stellar network.',
+      { align: 'center' }
+    );
 }
 
 /**
@@ -193,7 +212,7 @@ function generateCampaignReportPdfBuffer(report) {
     const chunks = [];
     const doc = new PDFDocument({ margin: PAGE_MARGIN });
 
-    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('data', chunk => chunks.push(chunk));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 

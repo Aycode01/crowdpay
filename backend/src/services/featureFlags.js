@@ -88,7 +88,8 @@ const FLAGS = {
     allowedUserIds: null,
   },
   'scheduled-publish-cron': {
-    description: 'Enable the cron that auto-publishes draft campaigns at their scheduled_publish_at time',
+    description:
+      'Enable the cron that auto-publishes draft campaigns at their scheduled_publish_at time',
     envVar: 'ENABLE_SCHEDULED_PUBLISH_CRON',
     defaultValue: true,
     rolloutPct: null,

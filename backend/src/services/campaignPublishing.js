@@ -37,7 +37,7 @@ async function publishDraftCampaign(campaignId) {
     'SELECT title, description, release_percentage, sort_order FROM milestones WHERE campaign_id = $1 ORDER BY sort_order ASC',
     [campaignId]
   );
-  const milestones = milestoneRows.map((m) => ({
+  const milestones = milestoneRows.map(m => ({
     title: m.title,
     description: m.description,
     release_percentage: Number(m.release_percentage).toFixed(4),
@@ -49,7 +49,9 @@ async function publishDraftCampaign(campaignId) {
 
   const platformPublicKey = Keypair.fromSecret(process.env.PLATFORM_SECRET_KEY).publicKey();
   const platformFeeBps = parseInt(process.env.PLATFORM_FEE_BPS || '0', 10);
-  const deadlineUnix = campaign.deadline ? Math.floor(new Date(campaign.deadline).getTime() / 1000) : 0;
+  const deadlineUnix = campaign.deadline
+    ? Math.floor(new Date(campaign.deadline).getTime() / 1000)
+    : 0;
   const assetContractAddress = process.env.USDC_CONTRACT_ADDRESS || process.env.USDC_ISSUER;
 
   const { escrowContractId, milestonesContractId } = await deployCampaignContracts({
@@ -65,10 +67,7 @@ async function publishDraftCampaign(campaignId) {
   });
 
   // When Soroban is enabled, refuse to activate without verified contract IDs.
-  if (
-    process.env.SOROBAN_ENABLED === 'true' &&
-    (!escrowContractId || !milestonesContractId)
-  ) {
+  if (process.env.SOROBAN_ENABLED === 'true' && (!escrowContractId || !milestonesContractId)) {
     throw new CampaignNotPublishableError(
       'Soroban is enabled but campaign contract deployment returned no contract IDs'
     );

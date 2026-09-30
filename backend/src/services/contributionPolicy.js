@@ -20,13 +20,17 @@ async function assertContributionPolicy(campaign, destinationAmount, senderPubli
   }
 
   if (campaign.min_contribution && amount < parseFloat(campaign.min_contribution)) {
-    const err = new Error(`Contribution amount is below the minimum of ${campaign.min_contribution}`);
+    const err = new Error(
+      `Contribution amount is below the minimum of ${campaign.min_contribution}`
+    );
     err.statusCode = 400;
     throw err;
   }
 
   if (campaign.max_contribution && amount > parseFloat(campaign.max_contribution)) {
-    const err = new Error(`Contribution amount exceeds the maximum of ${campaign.max_contribution}`);
+    const err = new Error(
+      `Contribution amount exceeds the maximum of ${campaign.max_contribution}`
+    );
     err.statusCode = 400;
     throw err;
   }
@@ -40,7 +44,9 @@ async function assertContributionPolicy(campaign, destinationAmount, senderPubli
     );
     const totalSoFar = parseFloat(rows[0].total) || 0;
     if (totalSoFar + amount > parseFloat(campaign.max_per_user)) {
-      const err = new Error(`Contribution exceeds the per-contributor cap of ${campaign.max_per_user}`);
+      const err = new Error(
+        `Contribution exceeds the per-contributor cap of ${campaign.max_per_user}`
+      );
       err.statusCode = 400;
       throw err;
     }

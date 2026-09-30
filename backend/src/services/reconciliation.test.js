@@ -40,26 +40,30 @@ function buildReconciliation(overrides = {}) {
       }
       if (text.includes('FROM campaigns WHERE id = $1')) {
         return {
-          rows: [{
-            id: 'camp-1',
-            wallet_public_key: 'GWALLET',
-            asset_type: 'USDC',
-            raised_amount: '100',
-            target_amount: '1000',
-            status: 'active',
-          }],
+          rows: [
+            {
+              id: 'camp-1',
+              wallet_public_key: 'GWALLET',
+              asset_type: 'USDC',
+              raised_amount: '100',
+              target_amount: '1000',
+              status: 'active',
+            },
+          ],
         };
       }
       if (text.includes('FROM campaigns') && text.includes("status IN ('active', 'funded')")) {
         return {
-          rows: [{
-            id: 'camp-1',
-            wallet_public_key: 'GWALLET',
-            asset_type: 'USDC',
-            raised_amount: '100',
-            target_amount: '1000',
-            status: 'active',
-          }],
+          rows: [
+            {
+              id: 'camp-1',
+              wallet_public_key: 'GWALLET',
+              asset_type: 'USDC',
+              raised_amount: '100',
+              target_amount: '1000',
+              status: 'active',
+            },
+          ],
         };
       }
       return { rows: [] };
@@ -68,7 +72,7 @@ function buildReconciliation(overrides = {}) {
   };
 
   const mockSentry = {
-    withScope: (fn) => {
+    withScope: fn => {
       const scope = {
         setLevel: () => {},
         setTag: () => {},
@@ -76,7 +80,7 @@ function buildReconciliation(overrides = {}) {
       };
       fn(scope);
     },
-    captureMessage: (message) => {
+    captureMessage: message => {
       sentryMessages.push(message);
     },
   };
@@ -146,9 +150,15 @@ test('reconcileCampaign updates raised_amount and records stellar_transactions o
   assert.strictEqual(result.diff, 50);
   assert.strictEqual(result.stellar_transaction_id, 'stellar-tx-1');
 
-  assert.ok(queryLog.some((q) => q.text.includes('UPDATE campaigns') && q.text.includes('raised_amount')));
   assert.ok(
-    queryLog.some((q) => q.text.includes('INSERT INTO stellar_transactions') || q.text === 'insertReconciliationAdjustment')
+    queryLog.some(q => q.text.includes('UPDATE campaigns') && q.text.includes('raised_amount'))
+  );
+  assert.ok(
+    queryLog.some(
+      q =>
+        q.text.includes('INSERT INTO stellar_transactions') ||
+        q.text === 'insertReconciliationAdjustment'
+    )
   );
 });
 
@@ -158,7 +168,9 @@ test('reconcileCampaign skips campaigns with pending withdrawals', async () => {
 
   assert.strictEqual(result.skipped, true);
   assert.strictEqual(result.reason, 'pending_withdrawal');
-  assert.ok(!queryLog.some((q) => q.text.includes('UPDATE campaigns') && q.text.includes('raised_amount')));
+  assert.ok(
+    !queryLog.some(q => q.text.includes('UPDATE campaigns') && q.text.includes('raised_amount'))
+  );
 });
 
 test('reconcileCampaign fires Sentry when diff exceeds threshold', async () => {
@@ -190,12 +202,10 @@ test('applyReconciliationCorrection inserts a reconciliation_adjustment contribu
   const reconciliation = buildReconciliation();
   await reconciliation.reconcileSingleCampaign('camp-1');
 
-  const contributionInsert = queryLog.find(
-    (q) => q.text === 'insertContributionAdjustment'
-  );
+  const contributionInsert = queryLog.find(q => q.text === 'insertContributionAdjustment');
   assert.ok(contributionInsert, 'insertContributionAdjustment should be called');
   assert.strictEqual(contributionInsert.row.campaignId, 'camp-1');
-  assert.strictEqual(contributionInsert.row.amount, 50);   // liveBalance - dbBalance = 150 - 100
+  assert.strictEqual(contributionInsert.row.amount, 50); // liveBalance - dbBalance = 150 - 100
   assert.strictEqual(contributionInsert.row.assetType, 'USDC');
   assert.ok(contributionInsert.row.adjustedAt instanceof Date, 'adjustedAt should be a Date');
 });
@@ -205,11 +215,17 @@ test('contribution adjustment INSERT uses reconciliation_adjustment payment_type
   await reconciliation.reconcileSingleCampaign('camp-1');
 
   const rawInsert = queryLog.find(
-    (q) => q.via === 'client' && q.text.includes('INSERT INTO contributions')
+    q => q.via === 'client' && q.text.includes('INSERT INTO contributions')
   );
   assert.ok(rawInsert, 'contributions INSERT should be executed via client');
-  assert.ok(rawInsert.text.includes("'reconciliation_adjustment'"), 'payment_type must be reconciliation_adjustment');
-  assert.ok(rawInsert.text.includes('NULL'), 'tx_hash must be NULL for system-generated adjustments');
+  assert.ok(
+    rawInsert.text.includes("'reconciliation_adjustment'"),
+    'payment_type must be reconciliation_adjustment'
+  );
+  assert.ok(
+    rawInsert.text.includes('NULL'),
+    'tx_hash must be NULL for system-generated adjustments'
+  );
 });
 
 test('contribution adjustment and campaign UPDATE run in the same transaction', async () => {
@@ -217,8 +233,8 @@ test('contribution adjustment and campaign UPDATE run in the same transaction', 
   await reconciliation.reconcileSingleCampaign('camp-1');
 
   const txEvents = queryLog
-    .filter((q) => q.via === 'client')
-    .map((q) => {
+    .filter(q => q.via === 'client')
+    .map(q => {
       if (q.text === 'BEGIN') return 'BEGIN';
       if (q.text === 'COMMIT') return 'COMMIT';
       if (q.text.includes('UPDATE campaigns')) return 'UPDATE_CAMPAIGN';
@@ -244,9 +260,7 @@ test('negative diff (on-chain < db) is recorded as a negative adjustment amount'
   const reconciliation = buildReconciliation({ onChainBalance: { USDC: '80' } });
   await reconciliation.reconcileSingleCampaign('camp-1');
 
-  const contributionInsert = queryLog.find(
-    (q) => q.text === 'insertContributionAdjustment'
-  );
+  const contributionInsert = queryLog.find(q => q.text === 'insertContributionAdjustment');
   assert.ok(contributionInsert, 'insertContributionAdjustment should be called');
   // diff = 80 - 100 = -20
   assert.strictEqual(contributionInsert.row.amount, -20);
@@ -257,18 +271,22 @@ test('no contribution adjustment is inserted when there is no discrepancy', asyn
   const reconciliation = buildReconciliation({ onChainBalance: { USDC: '100' } });
   await reconciliation.reconcileSingleCampaign('camp-1');
 
-  const contributionInsert = queryLog.find(
-    (q) => q.text === 'insertContributionAdjustment'
+  const contributionInsert = queryLog.find(q => q.text === 'insertContributionAdjustment');
+  assert.strictEqual(
+    contributionInsert,
+    undefined,
+    'no adjustment should be inserted when balances match'
   );
-  assert.strictEqual(contributionInsert, undefined, 'no adjustment should be inserted when balances match');
 });
 
 test('no contribution adjustment is inserted when campaign has a pending withdrawal', async () => {
   const reconciliation = buildReconciliation({ pendingWithdrawal: true });
   await reconciliation.reconcileSingleCampaign('camp-1');
 
-  const contributionInsert = queryLog.find(
-    (q) => q.text === 'insertContributionAdjustment'
+  const contributionInsert = queryLog.find(q => q.text === 'insertContributionAdjustment');
+  assert.strictEqual(
+    contributionInsert,
+    undefined,
+    'no adjustment should be inserted for skipped campaigns'
   );
-  assert.strictEqual(contributionInsert, undefined, 'no adjustment should be inserted for skipped campaigns');
 });

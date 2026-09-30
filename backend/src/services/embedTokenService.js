@@ -54,7 +54,14 @@ async function createEmbedToken(userId, { label, defaultTopic, defaultAsset } = 
     `INSERT INTO embed_tokens (user_id, label, token_hash, token_prefix, default_topic, default_asset)
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [userId, label || 'Discovery widget', tokenHash, tokenPrefix, defaultTopic || null, defaultAsset || null]
+    [
+      userId,
+      label || 'Discovery widget',
+      tokenHash,
+      tokenPrefix,
+      defaultTopic || null,
+      defaultAsset || null,
+    ]
   );
 
   return { ...mapTokenRow(rows[0]), token: rawToken };
@@ -98,9 +105,14 @@ async function validateEmbedToken(rawToken) {
     // eslint-disable-next-line no-await-in-loop
     const matches = await bcrypt.compare(rawToken, row.token_hash);
     if (matches) {
-      db.query(`UPDATE embed_tokens SET last_used_at = NOW() WHERE id = $1`, [row.id]).catch((err) => {
-        logger.warn('Failed to update embed token last_used_at', { error: err.message, id: row.id });
-      });
+      db.query(`UPDATE embed_tokens SET last_used_at = NOW() WHERE id = $1`, [row.id]).catch(
+        err => {
+          logger.warn('Failed to update embed token last_used_at', {
+            error: err.message,
+            id: row.id,
+          });
+        }
+      );
       return row;
     }
   }

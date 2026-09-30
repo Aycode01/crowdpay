@@ -1,6 +1,8 @@
-process.env.USDC_ISSUER = process.env.USDC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
+process.env.USDC_ISSUER =
+  process.env.USDC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'testsecret';
-process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:password@localhost:5432/test';
+process.env.DATABASE_URL =
+  process.env.DATABASE_URL || 'postgres://postgres:password@localhost:5432/test';
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -11,7 +13,14 @@ const proxyquire = require('proxyquire').noCallThru();
 const CAMPAIGN_ID = 'camp-1';
 const USER_ID = 'user-1';
 const CAMPAIGN_ROW = { id: CAMPAIGN_ID, creator_id: USER_ID, title: 'Test Campaign' };
-const THANK_YOU_ROW = { id: 'ty-1', campaign_id: CAMPAIGN_ID, creator_id: USER_ID, message: 'Thanks', type: 'bulk', sent_at: '2024-01-01T00:00:00Z' };
+const THANK_YOU_ROW = {
+  id: 'ty-1',
+  campaign_id: CAMPAIGN_ID,
+  creator_id: USER_ID,
+  message: 'Thanks',
+  type: 'bulk',
+  sent_at: '2024-01-01T00:00:00Z',
+};
 
 function denyAuth() {
   return (_req, res) => res.status(401).json({ error: 'Unauthorized' });
@@ -24,7 +33,9 @@ function buildApp({ queryImpl, role = 'user', authed = true } = {}) {
     calls.queries.push({ sql, params });
     calls.lastQuery = { sql, params };
     if (sql.includes('SELECT id, creator_id, title FROM campaigns')) {
-      return { rows: role === 'admin' ? [{ ...CAMPAIGN_ROW, creator_id: 'other-user' }] : [CAMPAIGN_ROW] };
+      return {
+        rows: role === 'admin' ? [{ ...CAMPAIGN_ROW, creator_id: 'other-user' }] : [CAMPAIGN_ROW],
+      };
     }
     if (sql.includes('INSERT INTO thank_you_messages')) {
       calls.insertParams = params;
@@ -125,7 +136,7 @@ test('POST /api/contributions/:id/thank-you sends an individual thank-you to a c
 });
 
 test('POST /api/contributions/:id/thank-you returns 404 for unknown contribution', async () => {
-  const queryImpl = async (sql) => {
+  const queryImpl = async sql => {
     if (sql.includes('SELECT ct.id, ct.campaign_id')) {
       return { rows: [] };
     }
@@ -151,7 +162,7 @@ test('POST /api/contributions/:id/thank-you returns 403 for non-creator', async 
     campaign_title: 'Test Campaign',
   };
 
-  const queryImpl = async (sql) => {
+  const queryImpl = async sql => {
     if (sql.includes('SELECT ct.id, ct.campaign_id')) {
       return { rows: [contributionRow] };
     }
@@ -250,7 +261,7 @@ test('POST /api/campaigns/:id/thank-you rejects messages over 500 characters', a
 
 test('POST /api/campaigns/:id/thank-you returns 404 for unknown campaign', async () => {
   const { app } = buildApp({
-    queryImpl: async (sql) => (sql.includes('FROM campaigns') ? { rows: [] } : { rows: [] }),
+    queryImpl: async sql => (sql.includes('FROM campaigns') ? { rows: [] } : { rows: [] }),
   });
 
   const res = await request(app)
@@ -263,8 +274,9 @@ test('POST /api/campaigns/:id/thank-you returns 404 for unknown campaign', async
 
 test('POST /api/campaigns/:id/thank-you returns 403 for a non-creator', async () => {
   const { app } = buildApp({
-    queryImpl: async (sql) => {
-      if (sql.includes('FROM campaigns')) return { rows: [{ ...CAMPAIGN_ROW, creator_id: 'other' }] };
+    queryImpl: async sql => {
+      if (sql.includes('FROM campaigns'))
+        return { rows: [{ ...CAMPAIGN_ROW, creator_id: 'other' }] };
       return { rows: [] };
     },
   });
@@ -315,13 +327,13 @@ test('bulk thank-you uses proper DISTINCT ON and ORDER BY u.id query', async () 
 
   assert.equal(res.status, 201);
   assert.equal(res.body.recipient_count, 2);
-  const distinctQuery = queries.find((q) => q.sql.includes('DISTINCT ON'));
+  const distinctQuery = queries.find(q => q.sql.includes('DISTINCT ON'));
   assert.ok(distinctQuery, 'DISTINCT ON query was executed');
   assert.ok(distinctQuery.sql.includes('ORDER BY u.id'), 'query includes ORDER BY u.id');
 });
 
 test('bulk thank-you returns 500 when database lookup fails', async () => {
-  const queryImpl = async (sql) => {
+  const queryImpl = async sql => {
     if (sql.includes('SELECT id, creator_id, title FROM campaigns')) {
       return { rows: [CAMPAIGN_ROW] };
     }

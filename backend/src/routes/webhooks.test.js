@@ -9,7 +9,7 @@ function buildApp({ deliveryRow = null, currentRow = null } = {}) {
   const queued = [];
   const router = proxyquire('./webhooks', {
     '../config/database': {
-      query: async (sql) => {
+      query: async sql => {
         if (sql.includes('SELECT d.id, d.webhook_id')) {
           return { rows: [] };
         }
@@ -30,7 +30,7 @@ function buildApp({ deliveryRow = null, currentRow = null } = {}) {
     },
     '../services/webhookDispatcher': {
       ALL_WEBHOOK_EVENTS: ['campaign.funded'],
-      processDelivery: async (deliveryId) => {
+      processDelivery: async deliveryId => {
         queued.push(deliveryId);
       },
     },
@@ -40,7 +40,12 @@ function buildApp({ deliveryRow = null, currentRow = null } = {}) {
     '../services/webhookService': {
       processIncomingWebhook: async () => ({}),
       verifyWebhookSignature: () => true,
-      WebhookError: class extends Error { constructor(m, s = 400) { super(m); this.status = s; } },
+      WebhookError: class extends Error {
+        constructor(m, s = 400) {
+          super(m);
+          this.status = s;
+        }
+      },
     },
   });
 
@@ -53,9 +58,7 @@ function buildApp({ deliveryRow = null, currentRow = null } = {}) {
 test('POST /api/webhooks/deliveries/:id/replay requeues a failed delivery for the current user', async () => {
   const { app, queued } = buildApp({ deliveryRow: { id: 'delivery-1' } });
 
-  const res = await request(app)
-    .post('/api/webhooks/deliveries/delivery-1/replay')
-    .expect(200);
+  const res = await request(app).post('/api/webhooks/deliveries/delivery-1/replay').expect(200);
 
   assert.equal(res.body.message, 'Replay queued');
   assert.deepEqual(queued, ['delivery-1']);
@@ -71,7 +74,9 @@ test('POST /api/webhooks/deliveries/:id/replay is idempotent while a replay is a
 });
 
 test('POST /api/webhooks/deliveries/:id/replay rejects an already delivered delivery with 409', async () => {
-  const { app, queued } = buildApp({ currentRow: { delivery_id: 'delivery-1', status: 'delivered' } });
+  const { app, queued } = buildApp({
+    currentRow: { delivery_id: 'delivery-1', status: 'delivered' },
+  });
   await request(app).post('/api/webhooks/deliveries/delivery-1/replay').expect(409);
   assert.deepEqual(queued, []);
 });
@@ -175,9 +180,11 @@ test('POST /incoming/:id acknowledges a valid contribution.confirmed for an un-i
 
 test('POST /incoming/:id links a matching contribution and returns success', async () => {
   const { app } = buildIncomingApp({
-    serviceQuery: async (sql) => {
+    serviceQuery: async sql => {
       if (sql.includes('FROM contributions')) {
-        return { rows: [{ id: 'c-1', campaign_id: 'cam-1', amount: '10', asset: 'USDC', title: 'T' }] };
+        return {
+          rows: [{ id: 'c-1', campaign_id: 'cam-1', amount: '10', asset: 'USDC', title: 'T' }],
+        };
       }
       return { rows: [] };
     },
@@ -256,7 +263,15 @@ function buildCreateApp({ safeUrlResult = { safe: true, reason: '' } } = {}) {
   const router = proxyquire('./webhooks', {
     '../config/database': {
       query: async () => ({
-        rows: [{ id: 'wh-new', url: 'https://example.com/hook', events: ['campaign.funded'], backoff_strategy: null, created_at: new Date().toISOString() }],
+        rows: [
+          {
+            id: 'wh-new',
+            url: 'https://example.com/hook',
+            events: ['campaign.funded'],
+            backoff_strategy: null,
+            created_at: new Date().toISOString(),
+          },
+        ],
       }),
     },
     '../middleware/auth': {
@@ -275,7 +290,12 @@ function buildCreateApp({ safeUrlResult = { safe: true, reason: '' } } = {}) {
     '../services/webhookService': {
       processIncomingWebhook: async () => ({}),
       verifyWebhookSignature: () => true,
-      WebhookError: class extends Error { constructor(m, s = 400) { super(m); this.status = s; } },
+      WebhookError: class extends Error {
+        constructor(m, s = 400) {
+          super(m);
+          this.status = s;
+        }
+      },
     },
   });
 
@@ -297,7 +317,10 @@ test('POST / creates a webhook with a safe HTTPS URL', async () => {
 
 test('POST / rejects webhook URL pointing to a private IP (10.x.x.x)', async () => {
   const { app } = buildCreateApp({
-    safeUrlResult: { safe: false, reason: 'Hostname resolves to a private/internal address: 10.0.0.1' },
+    safeUrlResult: {
+      safe: false,
+      reason: 'Hostname resolves to a private/internal address: 10.0.0.1',
+    },
   });
   const res = await request(app)
     .post('/api/webhooks')
@@ -309,7 +332,10 @@ test('POST / rejects webhook URL pointing to a private IP (10.x.x.x)', async () 
 
 test('POST / rejects webhook URL pointing to AWS cloud metadata (169.254.169.254)', async () => {
   const { app } = buildCreateApp({
-    safeUrlResult: { safe: false, reason: 'Hostname resolves to a private/internal address: 169.254.169.254' },
+    safeUrlResult: {
+      safe: false,
+      reason: 'Hostname resolves to a private/internal address: 169.254.169.254',
+    },
   });
   const res = await request(app)
     .post('/api/webhooks')
@@ -333,7 +359,10 @@ test('POST / rejects webhook URL pointing to localhost over non-HTTP protocol', 
 
 test('POST / rejects webhook URL pointing to Docker internal hostname', async () => {
   const { app } = buildCreateApp({
-    safeUrlResult: { safe: false, reason: 'Hostname resolves to a private/internal network: backend' },
+    safeUrlResult: {
+      safe: false,
+      reason: 'Hostname resolves to a private/internal network: backend',
+    },
   });
   const res = await request(app)
     .post('/api/webhooks')
@@ -345,7 +374,10 @@ test('POST / rejects webhook URL pointing to Docker internal hostname', async ()
 
 test('POST / rejects webhook URL pointing to GCP metadata endpoint', async () => {
   const { app } = buildCreateApp({
-    safeUrlResult: { safe: false, reason: 'Hostname resolves to a private/internal address: metadata.google.internal' },
+    safeUrlResult: {
+      safe: false,
+      reason: 'Hostname resolves to a private/internal address: metadata.google.internal',
+    },
   });
   const res = await request(app)
     .post('/api/webhooks')
@@ -357,7 +389,10 @@ test('POST / rejects webhook URL pointing to GCP metadata endpoint', async () =>
 
 test('POST / rejects webhook URL with DNS rebinding to private IP', async () => {
   const { app } = buildCreateApp({
-    safeUrlResult: { safe: false, reason: 'Hostname resolves to a private/internal network: evil.example.com' },
+    safeUrlResult: {
+      safe: false,
+      reason: 'Hostname resolves to a private/internal network: evil.example.com',
+    },
   });
   const res = await request(app)
     .post('/api/webhooks')
@@ -369,7 +404,10 @@ test('POST / rejects webhook URL with DNS rebinding to private IP', async () => 
 
 test('POST / rejects webhook URL pointing to 127.0.0.1 (non-localhost loopback)', async () => {
   const { app } = buildCreateApp({
-    safeUrlResult: { safe: false, reason: 'Hostname resolves to a private/internal address: 127.0.0.1' },
+    safeUrlResult: {
+      safe: false,
+      reason: 'Hostname resolves to a private/internal address: 127.0.0.1',
+    },
   });
   const res = await request(app)
     .post('/api/webhooks')
@@ -381,7 +419,10 @@ test('POST / rejects webhook URL pointing to 127.0.0.1 (non-localhost loopback)'
 
 test('POST / rejects webhook URL with 192.168.x.x private range', async () => {
   const { app } = buildCreateApp({
-    safeUrlResult: { safe: false, reason: 'Hostname resolves to a private/internal address: 192.168.1.1' },
+    safeUrlResult: {
+      safe: false,
+      reason: 'Hostname resolves to a private/internal address: 192.168.1.1',
+    },
   });
   const res = await request(app)
     .post('/api/webhooks')

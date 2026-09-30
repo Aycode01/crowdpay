@@ -13,7 +13,9 @@ function verifyRouterMounts() {
   }
 
   const files = fs.readdirSync(routesDir);
-  const routerFiles = files.filter((f) => f.endsWith('.js') && !f.endsWith('.test.js') && f !== 'v1.js');
+  const routerFiles = files.filter(
+    f => f.endsWith('.js') && !f.endsWith('.test.js') && f !== 'v1.js'
+  );
 
   const unmounted = [];
   for (const file of routerFiles) {
@@ -26,7 +28,9 @@ function verifyRouterMounts() {
   }
 
   if (unmounted.length > 0) {
-    console.error(`[check_index] Error: The following router files are not mounted in index.js or v1.js:\n${unmounted.map(f => `  - backend/src/routes/${f}`).join('\n')}`);
+    console.error(
+      `[check_index] Error: The following router files are not mounted in index.js or v1.js:\n${unmounted.map(f => `  - backend/src/routes/${f}`).join('\n')}`
+    );
     process.exit(1);
   }
 

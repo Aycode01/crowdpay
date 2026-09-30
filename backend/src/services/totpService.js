@@ -10,10 +10,7 @@ const BACKUP_CODE_COUNT = 10;
 const DEVICE_TRUST_DAYS = 30;
 
 function generateFingerprint(req) {
-  const raw = [
-    req.headers['user-agent'] || '',
-    req.headers['accept-language'] || '',
-  ].join('|');
+  const raw = [req.headers['user-agent'] || '', req.headers['accept-language'] || ''].join('|');
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
 
@@ -54,7 +51,7 @@ async function generateBackupCodes() {
   const raw = Array.from({ length: BACKUP_CODE_COUNT }, () =>
     crypto.randomBytes(4).toString('hex')
   );
-  const hashed = await Promise.all(raw.map((code) => bcrypt.hash(code, 10)));
+  const hashed = await Promise.all(raw.map(code => bcrypt.hash(code, 10)));
   return { raw, hashed };
 }
 
@@ -69,10 +66,7 @@ async function verifyBackupCode(backupCodes, code) {
 
 async function removeBackupCode(userId, codes, index) {
   codes.splice(index, 1);
-  await db.query('UPDATE users SET backup_codes = $1 WHERE id = $2', [
-    codes,
-    userId,
-  ]);
+  await db.query('UPDATE users SET backup_codes = $1 WHERE id = $2', [codes, userId]);
 }
 
 async function logAuditEvent(userId, eventType, req, metadata = {}) {
@@ -115,10 +109,10 @@ async function trustDevice(userId, fingerprint, req) {
 }
 
 async function revokeDevice(userId, deviceId) {
-  const result = await db.query(
-    'DELETE FROM trusted_devices WHERE id = $1 AND user_id = $2',
-    [deviceId, userId]
-  );
+  const result = await db.query('DELETE FROM trusted_devices WHERE id = $1 AND user_id = $2', [
+    deviceId,
+    userId,
+  ]);
   return result.rowCount > 0;
 }
 
@@ -139,7 +133,10 @@ async function getUserDevices(userId) {
 
 async function enforce2faCheck(user) {
   if (user.enforce_2fa && !user.totp_enabled) {
-    return { enforced: true, message: '2FA is required for your account. Please set up 2FA before continuing.' };
+    return {
+      enforced: true,
+      message: '2FA is required for your account. Please set up 2FA before continuing.',
+    };
   }
   return { enforced: false };
 }

@@ -20,14 +20,16 @@ describe('creatorAnalytics velocity service', () => {
   it('gets campaign velocity including velocity_alert_threshold', async () => {
     dbQueryMock
       .mockResolvedValueOnce({
-        rows: [{
-          id: 'camp-1',
-          category: 'technology',
-          target_amount: 1000,
-          raised_amount: 250,
-          deadline: '2025-12-31',
-          velocity_alert_threshold: 50
-        }]
+        rows: [
+          {
+            id: 'camp-1',
+            category: 'technology',
+            target_amount: 1000,
+            raised_amount: 250,
+            deadline: '2025-12-31',
+            velocity_alert_threshold: 50,
+          },
+        ],
       })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ category_avg_weekly: 100 }] });
@@ -39,10 +41,12 @@ describe('creatorAnalytics velocity service', () => {
 
   it('updates campaign velocity alert threshold successfully', async () => {
     dbQueryMock.mockResolvedValueOnce({
-      rows: [{
-        id: 'camp-1',
-        velocity_alert_threshold: 150
-      }]
+      rows: [
+        {
+          id: 'camp-1',
+          velocity_alert_threshold: 150,
+        },
+      ],
     });
 
     const result = await updateCampaignVelocityAlertThreshold('camp-1', 150);

@@ -1,14 +1,12 @@
-const {
-  Keypair,
-  TransactionBuilder,
-  WebAuth,
-} = require('@stellar/stellar-sdk');
+const { Keypair, TransactionBuilder, WebAuth } = require('@stellar/stellar-sdk');
 const { Networks } = require('@stellar/stellar-sdk');
 const { configuredAssets } = require('../config/stellar');
 
 function moneyGramEnvironmentConfig() {
-  const env = process.env.ANCHOR_MONEYGRAM_ENV || (process.env.STELLAR_NETWORK === 'mainnet' ? 'production' : 'sandbox');
-  const getDomain = (defaultDomain) => process.env.STELLAR_ANCHOR_DOMAIN || defaultDomain;
+  const env =
+    process.env.ANCHOR_MONEYGRAM_ENV ||
+    (process.env.STELLAR_NETWORK === 'mainnet' ? 'production' : 'sandbox');
+  const getDomain = defaultDomain => process.env.STELLAR_ANCHOR_DOMAIN || defaultDomain;
 
   if (env === 'sandbox') {
     const domain = getDomain('extstellar.moneygram.com');
@@ -95,7 +93,9 @@ function customAnchorConfig() {
     assetIssuer: process.env.ANCHOR_CUSTOM_ASSET_ISSUER,
     market: process.env.ANCHOR_CUSTOM_MARKET || 'custom',
     rails: process.env.ANCHOR_CUSTOM_RAILS
-      ? process.env.ANCHOR_CUSTOM_RAILS.split(',').map((value) => value.trim()).filter(Boolean)
+      ? process.env.ANCHOR_CUSTOM_RAILS.split(',')
+          .map(value => value.trim())
+          .filter(Boolean)
       : ['bank'],
     testnetAvailable: process.env.ANCHOR_CUSTOM_TESTNET === 'true',
     productionAvailable: true,
@@ -113,7 +113,7 @@ function getAvailableAnchors() {
 }
 
 function getAnchorById(anchorId) {
-  return getAvailableAnchors().find((anchor) => anchor.id === anchorId) || null;
+  return getAvailableAnchors().find(anchor => anchor.id === anchorId) || null;
 }
 
 function walletDomainConfig() {
@@ -125,7 +125,9 @@ function walletDomainConfig() {
 
 function decodeJwtExp(token) {
   try {
-    const payload = JSON.parse(Buffer.from(String(token).split('.')[1], 'base64url').toString('utf8'));
+    const payload = JSON.parse(
+      Buffer.from(String(token).split('.')[1], 'base64url').toString('utf8')
+    );
     return payload?.exp ? new Date(payload.exp * 1000) : null;
   } catch {
     return null;
@@ -177,7 +179,9 @@ async function fetchJson(url, options = {}) {
     }
   }
   if (!response.ok) {
-    const error = new Error(data.error || data.detail || `Anchor request failed (${response.status})`);
+    const error = new Error(
+      data.error || data.detail || `Anchor request failed (${response.status})`
+    );
     error.statusCode = response.status;
     error.payload = data;
     throw error;
@@ -185,11 +189,7 @@ async function fetchJson(url, options = {}) {
   return data;
 }
 
-async function authenticateWithAnchor({
-  anchor,
-  userPublicKey,
-  userSecret,
-}) {
+async function authenticateWithAnchor({ anchor, userPublicKey, userSecret }) {
   const walletDomain = walletDomainConfig();
   if (!walletDomain.homeDomain || !walletDomain.signingSecret) {
     const error = new Error('Anchor wallet domain signing is not configured on the backend');
@@ -243,12 +243,7 @@ async function authenticateWithAnchor({
   };
 }
 
-async function startInteractiveDeposit({
-  anchor,
-  authToken,
-  userPublicKey,
-  amount,
-}) {
+async function startInteractiveDeposit({ anchor, authToken, userPublicKey, amount }) {
   const body = new URLSearchParams({
     asset_code: anchor.assetCode,
     account: userPublicKey,

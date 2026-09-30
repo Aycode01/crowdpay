@@ -121,7 +121,9 @@ async function contractRead(method, args) {
       return scValToNative(sorobanMeta.returnValue());
     }
   }
-  throw new Error(`Contract read simulation produced no return value: ${JSON.stringify(simulation)}`);
+  throw new Error(
+    `Contract read simulation produced no return value: ${JSON.stringify(simulation)}`
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -423,7 +425,7 @@ async function getContributorProfile(publicKey) {
     [publicKey]
   );
 
-  const attestations = attestationRows.map((r) => ({
+  const attestations = attestationRows.map(r => ({
     type: r.attestation_type,
     issuer: 'platform',
     issuedAt: r.issued_at,

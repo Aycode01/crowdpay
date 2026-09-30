@@ -33,7 +33,7 @@ function buildService({ queryImpl, logger } = {}) {
 
   const nodemailerStub = {
     createTransport: () => ({
-      sendMail: async (mail) => {
+      sendMail: async mail => {
         sent.push(mail);
       },
     }),
@@ -56,7 +56,7 @@ test('sendWelcomeEmail sends html and text and is idempotent per recipient', asy
         return { rows: [{ marketing: true }] };
       }
       return undefined;
-    }
+    },
   });
 
   await service.sendWelcomeEmail({ to: 'a@test.com', name: 'Alice', walletPublicKey: 'GPK' });
@@ -66,10 +66,10 @@ test('sendWelcomeEmail sends html and text and is idempotent per recipient', asy
   assert.match(sent[0].subject, /Welcome/);
   assert.ok(sent[0].html.includes('Alice'));
   assert.ok(sent[0].text.includes('Alice'));
-  
+
   // Contains valid unsubscribe link
   assert.ok(sent[0].html.includes('/settings/notifications'));
-  
+
   delete process.env.SMTP_HOST;
 });
 
@@ -105,11 +105,11 @@ test('default values: marketing is off by default when no preferences exist', as
   // Welcome email is marketing, should be skipped
   await service.sendWelcomeEmail({ to: 'new@test.com', name: 'Bob', walletPublicKey: 'GPK' });
   assert.equal(sent.length, 0);
-  
+
   // Team invite is campaign_update, should be sent
   await service.sendTeamMemberInvitedEmail({ to: 'invited@test.com', memberId: 'm-1' });
   assert.equal(sent.length, 1);
-  
+
   delete process.env.SMTP_HOST;
 });
 
@@ -118,8 +118,12 @@ test('unsubscribe token validation works', async () => {
   const sig = url.split('sig=')[1].split('&')[0];
   const isValid = verifyUnsubscribeToken({ email: 'test@test.com', category: 'refund', sig });
   assert.equal(isValid, true);
-  
-  const isInvalid = verifyUnsubscribeToken({ email: 'test@test.com', category: 'refund', sig: 'fake' });
+
+  const isInvalid = verifyUnsubscribeToken({
+    email: 'test@test.com',
+    category: 'refund',
+    sig: 'fake',
+  });
   assert.equal(isInvalid, false);
 });
 
@@ -145,7 +149,7 @@ test('unconfigured: warns only once per process and reports not configured', asy
   try {
     const warns = [];
     const { service } = buildService({
-      logger: { info: () => {}, error: () => {}, warn: (m) => warns.push(m) },
+      logger: { info: () => {}, error: () => {}, warn: m => warns.push(m) },
     });
     assert.equal(service.isEmailConfigured(), false);
     await service.sendEmail({ to: 'a@test.com', subject: 's1' });
@@ -162,13 +166,17 @@ test('unconfigured: sendIdempotent does not write a sent_emails row', async () =
     const inserts = [];
     const { service } = buildService({
       logger: { info: () => {}, error: () => {}, warn: () => {} },
-      queryImpl: (text) => {
+      queryImpl: text => {
         if (text.includes('INSERT INTO sent_emails')) inserts.push(text);
         return undefined;
       },
     });
     await service.sendIdempotent({
-      dedupeKey: 'k1', to: 'a@test.com', subject: 's', text: 't', html: 'h',
+      dedupeKey: 'k1',
+      to: 'a@test.com',
+      subject: 's',
+      text: 't',
+      html: 'h',
     });
     assert.equal(inserts.length, 0);
   } finally {

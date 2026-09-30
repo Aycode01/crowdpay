@@ -98,7 +98,11 @@ test('insertContributionPending honours a passed-in client over the module db', 
       return { rows: [{ id: 'tx-client' }] };
     },
   };
-  const svc = loadService({ query: async () => { throw new Error('should not hit module db'); } });
+  const svc = loadService({
+    query: async () => {
+      throw new Error('should not hit module db');
+    },
+  });
 
   const result = await svc.insertContributionPending(client, {
     campaignId: 'c-1',

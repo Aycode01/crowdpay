@@ -3,7 +3,7 @@ const logger = require('../config/logger');
 
 /**
  * Create a sponsor matching pledge for a campaign.
- * 
+ *
  * @param {Object} params - Parameters
  * @param {string} params.campaignId - Campaign UUID
  * @param {string} params.sponsorUserId - Sponsor user UUID
@@ -31,14 +31,14 @@ async function createMatchingPledge({
   }
 
   const runner = client || db;
-  
+
   // Check if sponsor already has an active pledge for this campaign
   const { rows: existing } = await runner.query(
     `SELECT id FROM campaign_matches 
      WHERE campaign_id = $1 AND sponsor_user_id = $2 AND status = 'active'`,
     [campaignId, sponsorUserId]
   );
-  
+
   if (existing.length > 0) {
     throw new Error('Sponsor already has an active matching pledge for this campaign');
   }
@@ -66,7 +66,7 @@ async function createMatchingPledge({
 /**
  * Process a contribution and apply matching funds if applicable.
  * Returns the amount matched (0 if no matching available).
- * 
+ *
  * @param {Object} params - Parameters
  * @param {string} params.campaignId - Campaign UUID
  * @param {string} params.contributionId - Contribution UUID
@@ -81,7 +81,7 @@ async function processContributionMatch({
   client,
 }) {
   const runner = client || db;
-  
+
   if (!campaignId || !contributionId || !contributionAmount) {
     throw new Error('campaignId, contributionId, and contributionAmount are required');
   }
@@ -107,18 +107,18 @@ async function processContributionMatch({
   }
 
   const match = matches[0];
-  
+
   // Calculate matched amount based on ratio
   const calculatedMatch = parseFloat((amount * parseFloat(match.match_ratio)).toFixed(7));
-  
+
   // Cap at remaining pool amount
   const remainingPool = parseFloat((match.pledge_amount - match.matched_amount).toFixed(7));
   const actualMatch = Math.min(calculatedMatch, remainingPool);
-  
+
   // Determine if pool becomes exhausted
   const newMatchedAmount = parseFloat((match.matched_amount + actualMatch).toFixed(7));
   const isExhausted = newMatchedAmount >= match.pledge_amount;
-  
+
   // Update matching pool
   await runner.query(
     `UPDATE campaign_matches 
@@ -152,7 +152,7 @@ async function processContributionMatch({
 
 /**
  * Get all matching pledges and aggregated progress for a campaign.
- * 
+ *
  * @param {string} campaignId - Campaign UUID
  * @param {Object} [params] - Options
  * @param {Object} [params.client] - Optional transaction client
@@ -160,7 +160,7 @@ async function processContributionMatch({
  */
 async function getCampaignMatchProgress(campaignId, { client } = {}) {
   const runner = client || db;
-  
+
   const { rows } = await runner.query(
     `SELECT 
        cm.id,
@@ -208,16 +208,15 @@ async function getCampaignMatchProgress(campaignId, { client } = {}) {
     remainingPoolAmount: Math.max(0, parseFloat((totalPledged - totalMatched).toFixed(7))),
     activePoolCount: activeMatches.length,
     exhaustedPoolCount: exhaustedMatches.length,
-    percentageUsed: totalPledged > 0 
-      ? parseFloat(((totalMatched / totalPledged) * 100).toFixed(2))
-      : 0,
+    percentageUsed:
+      totalPledged > 0 ? parseFloat(((totalMatched / totalPledged) * 100).toFixed(2)) : 0,
   };
 }
 
 /**
  * Mark a matching pool as completed (campaign ended).
  * Sponsor can reclaim unmatched funds.
- * 
+ *
  * @param {string} matchId - Match UUID
  * @param {Object} [params] - Options
  * @param {Object} [params.client] - Optional transaction client
@@ -225,7 +224,7 @@ async function getCampaignMatchProgress(campaignId, { client } = {}) {
  */
 async function completeMatchingPledge(matchId, { client } = {}) {
   const runner = client || db;
-  
+
   const { rows } = await runner.query(
     `UPDATE campaign_matches 
      SET status = 'completed', updated_at = NOW()
@@ -253,7 +252,7 @@ async function completeMatchingPledge(matchId, { client } = {}) {
 
 /**
  * Get matching pledges for a specific sponsor (across all campaigns).
- * 
+ *
  * @param {string} sponsorUserId - User UUID
  * @param {Object} [params] - Options
  * @param {Object} [params.client] - Optional transaction client
@@ -261,7 +260,7 @@ async function completeMatchingPledge(matchId, { client } = {}) {
  */
 async function getSponsorMatchingPledges(sponsorUserId, { client } = {}) {
   const runner = client || db;
-  
+
   const { rows } = await runner.query(
     `SELECT 
        cm.*,

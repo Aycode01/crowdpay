@@ -62,7 +62,7 @@ function restoreEnv(original) {
 }
 
 function withEnv(values, fn) {
-  return async (t) => {
+  return async t => {
     const original = snapshotEnv();
     for (const [key, value] of Object.entries(values)) {
       process.env[key] = value;
@@ -82,8 +82,14 @@ test.describe('anchorService', () => {
         assert.equal(config.id, 'moneygram');
         assert.equal(config.environment, 'sandbox');
         assert.equal(config.networkPassphrase, TESTNET_PASSPHRASE);
-        assert.equal(config.webAuthEndpoint, 'https://extstellar.moneygram.com/stellaradapterservice/auth');
-        assert.equal(config.sep24Endpoint, 'https://extstellar.moneygram.com/stellaradapterservice/sep24');
+        assert.equal(
+          config.webAuthEndpoint,
+          'https://extstellar.moneygram.com/stellaradapterservice/auth'
+        );
+        assert.equal(
+          config.sep24Endpoint,
+          'https://extstellar.moneygram.com/stellaradapterservice/sep24'
+        );
         assert.equal(config.assetCode, 'USDC');
       })
     );
@@ -95,8 +101,14 @@ test.describe('anchorService', () => {
         const config = svc.getAnchorById('moneygram');
         assert.equal(config.environment, 'production');
         assert.equal(config.networkPassphrase, PUBLIC_PASSPHRASE);
-        assert.equal(config.webAuthEndpoint, 'https://stellar.moneygram.com/stellaradapterservice/auth');
-        assert.equal(config.assetIssuer, 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN');
+        assert.equal(
+          config.webAuthEndpoint,
+          'https://stellar.moneygram.com/stellaradapterservice/auth'
+        );
+        assert.equal(
+          config.assetIssuer,
+          'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN'
+        );
       })
     );
 
@@ -116,18 +128,24 @@ test.describe('anchorService', () => {
         const svc = buildService();
         const config = svc.getAnchorById('moneygram');
         assert.equal(config.environment, 'preview');
-        assert.equal(config.webAuthEndpoint, 'https://previewstellar.moneygram.com/stellaradapterservicepreview/auth');
+        assert.equal(
+          config.webAuthEndpoint,
+          'https://previewstellar.moneygram.com/stellaradapterservicepreview/auth'
+        );
         assert.equal(config.networkPassphrase, PUBLIC_PASSPHRASE);
       })
     );
 
     test(
       'STELLAR_ANCHOR_DOMAIN overrides the default domain',
-      withEnv({ ANCHOR_MONEYGRAM_ENV: 'sandbox', STELLAR_ANCHOR_DOMAIN: 'ramps.example.com' }, async () => {
-        const svc = buildService();
-        const config = svc.getAnchorById('moneygram');
-        assert.match(config.webAuthEndpoint, /ramps\.example\.com/);
-      })
+      withEnv(
+        { ANCHOR_MONEYGRAM_ENV: 'sandbox', STELLAR_ANCHOR_DOMAIN: 'ramps.example.com' },
+        async () => {
+          const svc = buildService();
+          const config = svc.getAnchorById('moneygram');
+          assert.match(config.webAuthEndpoint, /ramps\.example\.com/);
+        }
+      )
     );
   });
 
@@ -169,7 +187,7 @@ test.describe('anchorService', () => {
           const svc = buildService();
           const anchors = svc.getAvailableAnchors();
           assert.equal(anchors.length, 2);
-          const custom = anchors.find((a) => a.id === 'bank-one');
+          const custom = anchors.find(a => a.id === 'bank-one');
           assert.equal(custom.name, 'Bank One');
           assert.deepEqual(custom.rails, ['bank', 'wire']);
         }
@@ -229,7 +247,10 @@ test.describe('anchorService', () => {
     test(
       'reports unavailable when the asset issuer is missing from configured assets',
       withEnv(
-        { ANCHOR_WALLET_HOME_DOMAIN: 'wallet.example.com', ANCHOR_WALLET_SIGNING_SECRET: 'SABC123' },
+        {
+          ANCHOR_WALLET_HOME_DOMAIN: 'wallet.example.com',
+          ANCHOR_WALLET_SIGNING_SECRET: 'SABC123',
+        },
         async () => {
           const svc = buildService({ configuredAssets: { USDC: { issuer: '' } } });
           const anchor = Object.assign({}, svc.getAnchorById('moneygram'));
@@ -242,16 +263,17 @@ test.describe('anchorService', () => {
   test.describe('authenticateWithAnchor', () => {
     test(
       'fails closed with 503 when wallet domain signing is not configured',
-      withEnv(
-        { ANCHOR_WALLET_HOME_DOMAIN: '', ANCHOR_WALLET_SIGNING_SECRET: '' },
-        async () => {
-          const svc = buildService();
-          await assert.rejects(
-            svc.authenticateWithAnchor({ anchor: svc.getAnchorById('moneygram'), userPublicKey: 'GXXX', userSecret: 'SXXX' }),
-            (err) => err.statusCode === 503 && /not configured/i.test(err.message)
-          );
-        }
-      )
+      withEnv({ ANCHOR_WALLET_HOME_DOMAIN: '', ANCHOR_WALLET_SIGNING_SECRET: '' }, async () => {
+        const svc = buildService();
+        await assert.rejects(
+          svc.authenticateWithAnchor({
+            anchor: svc.getAnchorById('moneygram'),
+            userPublicKey: 'GXXX',
+            userSecret: 'SXXX',
+          }),
+          err => err.statusCode === 503 && /not configured/i.test(err.message)
+        );
+      })
     );
   });
 

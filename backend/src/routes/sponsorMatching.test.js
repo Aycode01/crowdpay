@@ -67,7 +67,7 @@ test('POST /campaigns/:id/matches creates a matching pledge', async () => {
   };
 
   const app = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaigns')) {
         return { rows: [{ id: CAMPAIGN_UUID }] };
       }
@@ -122,7 +122,7 @@ test('POST /campaigns/:id/matches validates positive pledge amount', async () =>
 
 test('GET /campaigns/:id/matches returns campaign matching progress', async () => {
   const app = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaigns')) {
         return { rows: [{ id: CAMPAIGN_UUID }] };
       }
@@ -191,7 +191,7 @@ test('GET /user/sponsor-matches returns sponsor pledges', async () => {
 
 test('PATCH /campaigns/:id/matches/:matchId/complete completes a matching pledge', async () => {
   const app = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaign_matches cm')) {
         return {
           rows: [
@@ -229,7 +229,7 @@ test('PATCH /campaigns/:id/matches/:matchId/complete completes a matching pledge
 
 test('PATCH /campaigns/:id/matches/:matchId/complete returns 403 when user not authorized', async () => {
   const app = buildApp({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaign_matches cm')) {
         return {
           rows: [

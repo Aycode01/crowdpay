@@ -24,20 +24,20 @@ function buildService({ sorobanImpl, stellarImpl, stellarTxImpl } = {}) {
   const submittedCalls = [];
 
   const sorobanStub = {
-    depositToEscrow: async (args) => {
+    depositToEscrow: async args => {
       depositCalls.push(args);
       return { txHash: 'contract-tx-hash', returnValue: null };
     },
-    isContractDepositEligible: (campaign) => Boolean(campaign?.escrow_contract_id),
+    isContractDepositEligible: campaign => Boolean(campaign?.escrow_contract_id),
     ...sorobanImpl,
   };
 
   const stellarStub = {
-    prepareSignedContributionPayment: async (args) => {
+    prepareSignedContributionPayment: async args => {
       prepareCalls.push(args);
       return { unsignedXdr: 'u-xdr', signedXdr: 's-xdr', feeAmount: args.feeSplit.feeAmount };
     },
-    prepareSignedContributionPathPayment: async (args) => {
+    prepareSignedContributionPathPayment: async args => {
       prepareCalls.push(args);
       return { unsignedXdr: 'u-xdr', signedXdr: 's-xdr', feeAmount: args.feeSplit.feeAmount };
     },
@@ -128,7 +128,7 @@ test('submitCustodialContribution rejects a cross-asset contribution to a contra
         sendAsset: 'XLM',
         client: {},
       }),
-    (err) => {
+    err => {
       assert.equal(err.statusCode, 422);
       assert.match(err.message, /cross-asset/i);
       return true;
@@ -200,8 +200,14 @@ test('contract-mode deposit of one stroop and of the maximum amount are exact', 
 test('zero, negative, over-precise and over-maximum amounts are rejected before any submission', async () => {
   for (const amount of ['0', '-5', '8.290000001', '922337203685.4775808', 'abc']) {
     const { service, depositCalls, insertCalls, prepareCalls } = buildService();
-    await assert.rejects(contribute(service, CONTRACT_CAMPAIGN, amount), (err) => err.statusCode === 400);
-    await assert.rejects(contribute(service, CLASSIC_CAMPAIGN, amount), (err) => err.statusCode === 400);
+    await assert.rejects(
+      contribute(service, CONTRACT_CAMPAIGN, amount),
+      err => err.statusCode === 400
+    );
+    await assert.rejects(
+      contribute(service, CLASSIC_CAMPAIGN, amount),
+      err => err.statusCode === 400
+    );
     assert.equal(depositCalls.length, 0, `no deposit for ${amount}`);
     assert.equal(prepareCalls.length, 0, `no payment for ${amount}`);
     assert.equal(insertCalls.length, 0, `nothing persisted for ${amount}`);
@@ -245,7 +251,9 @@ test('a PATH_PAYMENT_OVER_SENDMAX failure is re-quoted once with an exact sendMa
   let submits = 0;
   const { service, prepareCalls, submittedCalls, insertCalls } = buildService({
     stellarImpl: {
-      getPathPaymentQuote: async () => [{ source_amount: '8.29', destination_amount: '8.29', path: [] }],
+      getPathPaymentQuote: async () => [
+        { source_amount: '8.29', destination_amount: '8.29', path: [] },
+      ],
       submitPreparedTransaction: async () => {
         submits += 1;
         if (submits === 1) throw new Error('op_over_source_max PATH_PAYMENT_OVER_SENDMAX');

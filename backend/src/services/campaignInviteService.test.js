@@ -12,7 +12,7 @@ function buildService({ queryImpl, sendEmailImpl = async () => {} } = {}) {
     '../config/logger': { error: () => {}, info: () => {}, warn: () => {}, debug: () => {} },
     './emailService': { sendEmail: sendEmailImpl },
     '../lib/campaignPermissions': {
-      isValidRole: (role) => ['owner', 'manager', 'editor', 'viewer'].includes(role),
+      isValidRole: role => ['owner', 'manager', 'editor', 'viewer'].includes(role),
     },
   });
 }
@@ -23,16 +23,26 @@ test.describe('campaignInviteService', () => {
   test('createCampaignInvite rejects an invalid role with 422', async () => {
     const svc = buildService();
     await assert.rejects(
-      svc.createCampaignInvite({ campaignId: 'c-1', email: 'a@b.com', role: 'god', invitedByUserId: 'u-1' }),
-      (err) => err.statusCode === 422
+      svc.createCampaignInvite({
+        campaignId: 'c-1',
+        email: 'a@b.com',
+        role: 'god',
+        invitedByUserId: 'u-1',
+      }),
+      err => err.statusCode === 422
     );
   });
 
   test('createCampaignInvite rejects a missing email with 422', async () => {
     const svc = buildService();
     await assert.rejects(
-      svc.createCampaignInvite({ campaignId: 'c-1', email: '  ', role: 'owner', invitedByUserId: 'u-1' }),
-      (err) => err.statusCode === 422
+      svc.createCampaignInvite({
+        campaignId: 'c-1',
+        email: '  ',
+        role: 'owner',
+        invitedByUserId: 'u-1',
+      }),
+      err => err.statusCode === 422
     );
   });
 
@@ -41,8 +51,13 @@ test.describe('campaignInviteService', () => {
       queryImpl: async () => ({ rows: [{ id: 'm-1', accepted_at: new Date().toISOString() }] }),
     });
     await assert.rejects(
-      svc.createCampaignInvite({ campaignId: 'c-1', email: 'a@b.com', role: 'viewer', invitedByUserId: 'u-1' }),
-      (err) => err.statusCode === 409 && /already a member/i.test(err.message)
+      svc.createCampaignInvite({
+        campaignId: 'c-1',
+        email: 'a@b.com',
+        role: 'viewer',
+        invitedByUserId: 'u-1',
+      }),
+      err => err.statusCode === 409 && /already a member/i.test(err.message)
     );
   });
 
@@ -51,8 +66,13 @@ test.describe('campaignInviteService', () => {
       queryImpl: async () => ({ rows: [{ id: 'm-1', accepted_at: null }] }),
     });
     await assert.rejects(
-      svc.createCampaignInvite({ campaignId: 'c-1', email: 'a@b.com', role: 'viewer', invitedByUserId: 'u-1' }),
-      (err) => err.statusCode === 409 && /already sent/i.test(err.message)
+      svc.createCampaignInvite({
+        campaignId: 'c-1',
+        email: 'a@b.com',
+        role: 'viewer',
+        invitedByUserId: 'u-1',
+      }),
+      err => err.statusCode === 409 && /already sent/i.test(err.message)
     );
   });
 
@@ -72,19 +92,21 @@ test.describe('campaignInviteService', () => {
         if (text.includes('SELECT id FROM users WHERE')) return { rows: [{ id: 'invitee-1' }] };
         if (text.includes('FROM campaign_members')) return { rows: [] };
         return {
-          rows: [{
-            id: 'm-1',
-            campaign_id: 'c-1',
-            user_id: 'invitee-1',
-            email: 'friend@example.com',
-            role: 'manager',
-            accepted_at: null,
-            invite_expires_at: new Date(Date.now() + 86400000).toISOString(),
-            created_at: new Date().toISOString(),
-          }],
+          rows: [
+            {
+              id: 'm-1',
+              campaign_id: 'c-1',
+              user_id: 'invitee-1',
+              email: 'friend@example.com',
+              role: 'manager',
+              accepted_at: null,
+              invite_expires_at: new Date(Date.now() + 86400000).toISOString(),
+              created_at: new Date().toISOString(),
+            },
+          ],
         };
       },
-      sendEmailImpl: async (email) => {
+      sendEmailImpl: async email => {
         sentEmail = email;
       },
     });
@@ -98,19 +120,33 @@ test.describe('campaignInviteService', () => {
     });
 
     assert.equal(result.member.id, 'm-1');
-    assert.match(result.inviteUrl, new RegExp(`^${TMP_FRONTEND_URL}/campaigns/c-1/invite/[0-9a-f]{64}$`));
+    assert.match(
+      result.inviteUrl,
+      new RegExp(`^${TMP_FRONTEND_URL}/campaigns/c-1/invite/[0-9a-f]{64}$`)
+    );
     assert.equal(sentEmail.to, 'friend@example.com');
     assert.match(sentEmail.text, /as manager/);
     assert.match(sentEmail.text, /expires in 7 days/);
-    assert.ok(dbCalls.some((t) => /INSERT INTO campaign_members/.test(t)));
+    assert.ok(dbCalls.some(t => /INSERT INTO campaign_members/.test(t)));
   });
 
   test('createCampaignInvite still succeeds when email delivery fails', async () => {
     const svc = buildService({
-      queryImpl: async (text) => {
+      queryImpl: async text => {
         if (text.includes('FROM campaign_members')) return { rows: [] };
         if (text.includes('SELECT id FROM users')) return { rows: [] };
-        return { rows: [{ id: 'm-2', campaign_id: 'c-1', user_id: 'invitee-1', email: 'x@y.com', role: 'editor', accepted_at: null }] };
+        return {
+          rows: [
+            {
+              id: 'm-2',
+              campaign_id: 'c-1',
+              user_id: 'invitee-1',
+              email: 'x@y.com',
+              role: 'editor',
+              accepted_at: null,
+            },
+          ],
+        };
       },
       sendEmailImpl: async () => {
         throw new Error('SMTP down');
@@ -133,20 +169,28 @@ test.describe('campaignInviteService', () => {
     let sentEmail = null;
     const svc = buildService({
       queryImpl: async () => ({
-        rows: [{
-          id: 'm-1',
-          campaign_id: 'c-1',
-          email: 'a@b.com',
-          role: 'owner',
-          accepted_at: null,
-          invite_expires_at: new Date(Date.now() + 86400000).toISOString(),
-          created_at: new Date().toISOString(),
-        }],
+        rows: [
+          {
+            id: 'm-1',
+            campaign_id: 'c-1',
+            email: 'a@b.com',
+            role: 'owner',
+            accepted_at: null,
+            invite_expires_at: new Date(Date.now() + 86400000).toISOString(),
+            created_at: new Date().toISOString(),
+          },
+        ],
       }),
-      sendEmailImpl: async (email) => { sentEmail = email; },
+      sendEmailImpl: async email => {
+        sentEmail = email;
+      },
     });
 
-    const result = await svc.resendCampaignInvite({ memberId: 'm-1', campaignId: 'c-1', campaignTitle: 'T' });
+    const result = await svc.resendCampaignInvite({
+      memberId: 'm-1',
+      campaignId: 'c-1',
+      campaignTitle: 'T',
+    });
     assert.equal(result.member.id, 'm-1');
     assert.match(result.inviteUrl, /\/campaigns\/c-1\/invite\/[0-9a-f]{64}$/);
     assert.equal(sentEmail.to, 'a@b.com');
@@ -156,14 +200,14 @@ test.describe('campaignInviteService', () => {
     const svc = buildService({ queryImpl: async () => ({ rows: [] }) });
     await assert.rejects(
       svc.resendCampaignInvite({ memberId: 'm-x', campaignId: 'c-1' }),
-      (err) => err.statusCode === 404
+      err => err.statusCode === 404
     );
   });
 
   test('cancelCampaignInvite deletes the pending member', async () => {
     let deleted = false;
     const svc = buildService({
-      queryImpl: async (text) => {
+      queryImpl: async text => {
         if (text.includes('DELETE FROM campaign_members')) {
           deleted = true;
           return { rows: [{ id: 'm-1' }] };
@@ -180,7 +224,7 @@ test.describe('campaignInviteService', () => {
     const svc = buildService({ queryImpl: async () => ({ rows: [] }) });
     await assert.rejects(
       svc.cancelCampaignInvite({ memberId: 'm-x', campaignId: 'c-1' }),
-      (err) => err.statusCode === 404
+      err => err.statusCode === 404
     );
   });
 
@@ -193,15 +237,17 @@ test.describe('campaignInviteService', () => {
     const future = new Date(Date.now() + 5 * 86400000).toISOString();
     const svc = buildService({
       queryImpl: async () => ({
-        rows: [{
-          id: 'm-1',
-          campaign_id: 'c-1',
-          email: 'a@b.com',
-          role: 'viewer',
-          accepted_at: null,
-          invite_expires_at: future,
-          campaign_title: 'Great campaign',
-        }],
+        rows: [
+          {
+            id: 'm-1',
+            campaign_id: 'c-1',
+            email: 'a@b.com',
+            role: 'viewer',
+            accepted_at: null,
+            invite_expires_at: future,
+            campaign_title: 'Great campaign',
+          },
+        ],
       }),
     });
     const preview = await svc.getInvitePreview('token');
@@ -213,15 +259,17 @@ test.describe('campaignInviteService', () => {
     const past = new Date(Date.now() - 1000).toISOString();
     const svc = buildService({
       queryImpl: async () => ({
-        rows: [{
-          id: 'm-1',
-          campaign_id: 'c-1',
-          email: 'a@b.com',
-          role: 'viewer',
-          accepted_at: null,
-          invite_expires_at: past,
-          campaign_title: 'Old campaign',
-        }],
+        rows: [
+          {
+            id: 'm-1',
+            campaign_id: 'c-1',
+            email: 'a@b.com',
+            role: 'viewer',
+            accepted_at: null,
+            invite_expires_at: past,
+            campaign_title: 'Old campaign',
+          },
+        ],
       }),
     });
     const preview = await svc.getInvitePreview('token');
@@ -232,43 +280,74 @@ test.describe('campaignInviteService', () => {
     const svc = buildService({ queryImpl: async () => ({ rows: [] }) });
     await assert.rejects(
       svc.acceptCampaignInvite({ inviteToken: 'bad', userId: 'u-1', userEmail: 'a@b.com' }),
-      (err) => err.statusCode === 404
+      err => err.statusCode === 404
     );
   });
 
   test('acceptCampaignInvite rejects an already accepted invite with 409', async () => {
     const svc = buildService({
       queryImpl: async () => ({
-        rows: [{ id: 'm-1', campaign_id: 'c-1', accepted_at: new Date().toISOString(), invite_expires_at: null, email: 'a@b.com', role: 'viewer' }],
+        rows: [
+          {
+            id: 'm-1',
+            campaign_id: 'c-1',
+            accepted_at: new Date().toISOString(),
+            invite_expires_at: null,
+            email: 'a@b.com',
+            role: 'viewer',
+          },
+        ],
       }),
     });
     await assert.rejects(
       svc.acceptCampaignInvite({ inviteToken: 'tok', userId: 'u-1', userEmail: 'a@b.com' }),
-      (err) => err.statusCode === 409
+      err => err.statusCode === 409
     );
   });
 
   test('acceptCampaignInvite rejects an expired invite with 410', async () => {
     const svc = buildService({
       queryImpl: async () => ({
-        rows: [{ id: 'm-1', campaign_id: 'c-1', accepted_at: null, invite_expires_at: new Date(Date.now() - 1000).toISOString(), email: 'a@b.com', role: 'viewer' }],
+        rows: [
+          {
+            id: 'm-1',
+            campaign_id: 'c-1',
+            accepted_at: null,
+            invite_expires_at: new Date(Date.now() - 1000).toISOString(),
+            email: 'a@b.com',
+            role: 'viewer',
+          },
+        ],
       }),
     });
     await assert.rejects(
       svc.acceptCampaignInvite({ inviteToken: 'tok', userId: 'u-1', userEmail: 'a@b.com' }),
-      (err) => err.statusCode === 410
+      err => err.statusCode === 410
     );
   });
 
   test('acceptCampaignInvite rejects an email mismatch with 403', async () => {
     const svc = buildService({
       queryImpl: async () => ({
-        rows: [{ id: 'm-1', campaign_id: 'c-1', accepted_at: null, invite_expires_at: null, email: 'friend@example.com', role: 'viewer' }],
+        rows: [
+          {
+            id: 'm-1',
+            campaign_id: 'c-1',
+            accepted_at: null,
+            invite_expires_at: null,
+            email: 'friend@example.com',
+            role: 'viewer',
+          },
+        ],
       }),
     });
     await assert.rejects(
-      svc.acceptCampaignInvite({ inviteToken: 'tok', userId: 'u-1', userEmail: 'other@example.com' }),
-      (err) => err.statusCode === 403
+      svc.acceptCampaignInvite({
+        inviteToken: 'tok',
+        userId: 'u-1',
+        userEmail: 'other@example.com',
+      }),
+      err => err.statusCode === 403
     );
   });
 
@@ -278,13 +357,33 @@ test.describe('campaignInviteService', () => {
       queryImpl: async (text, params) => {
         if (text.includes('SELECT id, campaign_id, accepted_at')) {
           return {
-            rows: [{ id: 'm-1', campaign_id: 'c-1', accepted_at: null, invite_expires_at: null, email: 'friend@example.com', role: 'owner' }],
+            rows: [
+              {
+                id: 'm-1',
+                campaign_id: 'c-1',
+                accepted_at: null,
+                invite_expires_at: null,
+                email: 'friend@example.com',
+                role: 'owner',
+              },
+            ],
           };
         }
         if (text.includes('UPDATE campaign_members')) {
           updateRan = true;
           assert.deepEqual(params, ['u-1', 'm-1']);
-          return { rows: [{ id: 'm-1', campaign_id: 'c-1', user_id: 'u-1', email: 'friend@example.com', role: 'owner', accepted_at: new Date().toISOString() }] };
+          return {
+            rows: [
+              {
+                id: 'm-1',
+                campaign_id: 'c-1',
+                user_id: 'u-1',
+                email: 'friend@example.com',
+                role: 'owner',
+                accepted_at: new Date().toISOString(),
+              },
+            ],
+          };
         }
         return { rows: [] };
       },
@@ -307,9 +406,10 @@ test.describe('campaignInviteService', () => {
   test('countAcceptedOwners returns at least 1 for the implicit creator owner', async () => {
     const calls = [];
     const svc = buildService({
-      queryImpl: async (text) => {
+      queryImpl: async text => {
         calls.push(text);
-        if (text.includes('SELECT creator_id FROM campaigns')) return { rows: [{ creator_id: 'u-1' }] };
+        if (text.includes('SELECT creator_id FROM campaigns'))
+          return { rows: [{ creator_id: 'u-1' }] };
         if (text.includes('COUNT(*)::int AS count')) return { rows: [{ count: 0 }] };
         return { rows: [] };
       },
@@ -330,7 +430,7 @@ test.describe('campaignInviteService', () => {
 
   test('resolveUserCampaignRole returns owner for the campaign creator', async () => {
     const svc = buildService({
-      queryImpl: async (text) => {
+      queryImpl: async text => {
         if (text.includes('SELECT creator_id')) return { rows: [{ creator_id: 'u-1' }] };
         return { rows: [] };
       },
@@ -340,7 +440,7 @@ test.describe('campaignInviteService', () => {
 
   test('resolveUserCampaignRole returns the member role once accepted', async () => {
     const svc = buildService({
-      queryImpl: async (text) => {
+      queryImpl: async text => {
         if (text.includes('SELECT creator_id')) return { rows: [{ creator_id: 'u-2' }] };
         if (text.includes('FROM campaign_members')) {
           return { rows: [{ role: 'editor', accepted_at: new Date().toISOString() }] };
@@ -353,9 +453,10 @@ test.describe('campaignInviteService', () => {
 
   test('resolveUserCampaignRole returns null for a pending (unaccepted) member', async () => {
     const svc = buildService({
-      queryImpl: async (text) => {
+      queryImpl: async text => {
         if (text.includes('SELECT creator_id')) return { rows: [{ creator_id: 'u-2' }] };
-        if (text.includes('FROM campaign_members')) return { rows: [{ role: 'viewer', accepted_at: null }] };
+        if (text.includes('FROM campaign_members'))
+          return { rows: [{ role: 'viewer', accepted_at: null }] };
         return { rows: [] };
       },
     });
@@ -364,6 +465,9 @@ test.describe('campaignInviteService', () => {
 
   test('buildInviteUrl defaults to localhost when FRONTEND_URL is unset', () => {
     const svc = buildService();
-    assert.equal(svc.buildInviteUrl('c-1', 'tok'), 'http://localhost:5173/campaigns/c-1/invite/tok');
+    assert.equal(
+      svc.buildInviteUrl('c-1', 'tok'),
+      'http://localhost:5173/campaigns/c-1/invite/tok'
+    );
   });
 });

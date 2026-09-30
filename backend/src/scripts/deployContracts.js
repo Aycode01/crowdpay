@@ -47,22 +47,24 @@ async function deploy() {
     const wasmPath = path.join(TARGET_DIR, contract.wasm);
     if (!fs.existsSync(wasmPath)) {
       console.error(`WASM not found: ${wasmPath}`);
-      console.error('Run: cd contracts/soroban && cargo build --target wasm32-unknown-unknown --release');
+      console.error(
+        'Run: cd contracts/soroban && cargo build --target wasm32-unknown-unknown --release'
+      );
       process.exit(1);
     }
 
     console.log(`\nDeploying ${contract.name}...`);
     const result = run(
       `stellar contract deploy ` +
-      `--wasm ${wasmPath} ` +
-      `--source ${PLATFORM_SECRET} ` +
-      `--network ${NETWORK}`
+        `--wasm ${wasmPath} ` +
+        `--source ${PLATFORM_SECRET} ` +
+        `--network ${NETWORK}`
     );
     console.log(`${contract.name} contract ID: ${result}`);
   }
 }
 
-deploy().catch((err) => {
+deploy().catch(err => {
   console.error('Deployment failed:', err.message);
   process.exit(1);
 });

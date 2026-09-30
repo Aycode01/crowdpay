@@ -51,7 +51,7 @@ test('verifyAttestation fails closed when contract read throws (#814)', async ()
 test('verifyAttestation returns unverified when DB has no on-chain tx hash (#814)', async () => {
   const service = proxyquire('./contributorIdentityService', {
     '../config/database': {
-      query: async (sql) => {
+      query: async sql => {
         assert.ok(sql.includes('on_chain_tx_hash IS NOT NULL'));
         return { rows: [] };
       },

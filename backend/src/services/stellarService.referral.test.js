@@ -10,7 +10,7 @@ function mockedStellarService() {
   return proxyquire('./stellarService', {
     '../config/stellar': {
       server: {
-        loadAccount: async (key) => ({
+        loadAccount: async key => ({
           accountId: () => key,
           sequenceNumber: () => '100',
           incrementSequenceNumber: () => {},
@@ -152,4 +152,3 @@ test('withdrawal transaction includes creator revenue share payment to creator p
   assert.notEqual(tx.operations[1].destination, platformPublicKey);
   assert.equal(parseFloat(tx.operations[1].amount), 5);
 });
-

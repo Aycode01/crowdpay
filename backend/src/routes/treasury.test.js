@@ -54,7 +54,7 @@ function contractError(code, statusCode = 422) {
 }
 
 function ownerQuery(overrides = {}) {
-  return async (text) => {
+  return async text => {
     if (text.includes('SELECT creator_id FROM campaigns')) {
       return { rows: [{ creator_id: CREATOR_ID }] };
     }

@@ -30,8 +30,8 @@ async function loadCampaignsRows(ids) {
      WHERE id = ANY($1::uuid[])`,
     [ids]
   );
-  const byId = new Map(rows.map((row) => [row.id, row]));
-  return ids.map((id) => byId.get(id)).filter(Boolean);
+  const byId = new Map(rows.map(row => [row.id, row]));
+  return ids.map(id => byId.get(id)).filter(Boolean);
 }
 
 /**
@@ -40,10 +40,9 @@ async function loadCampaignsRows(ids) {
  * deterministic reason so the route can return a precise error envelope.
  */
 async function assertCanBeTeamParent(campaignId) {
-  const { rows } = await db.query(
-    `SELECT id, creator_id FROM campaigns WHERE id = $1`,
-    [campaignId]
-  );
+  const { rows } = await db.query(`SELECT id, creator_id FROM campaigns WHERE id = $1`, [
+    campaignId,
+  ]);
   if (!rows.length) {
     return { ok: false, status: 404, error: 'Campaign not found' };
   }
@@ -103,14 +102,10 @@ async function listTeamMembers(parentCampaignId) {
  */
 async function getTeamPage(parentCampaignId) {
   const members = await listTeamMembers(parentCampaignId);
-  const memberRows = await loadCampaignsRows(
-    members.map((member) => member.member_campaign_id)
-  );
-  const memberByCampaignId = new Map(
-    members.map((member) => [member.member_campaign_id, member])
-  );
+  const memberRows = await loadCampaignsRows(members.map(member => member.member_campaign_id));
+  const memberByCampaignId = new Map(members.map(member => [member.member_campaign_id, member]));
 
-  const items = memberRows.map((row) => ({
+  const items = memberRows.map(row => ({
     id: row.id,
     title: row.title,
     description: row.description,
@@ -124,10 +119,7 @@ async function getTeamPage(parentCampaignId) {
     display_order: memberByCampaignId.get(row.id)?.display_order ?? 0,
     progress_percent:
       Number(row.target_amount) > 0
-        ? Math.min(
-            100,
-            (Number(row.raised_amount) / Number(row.target_amount)) * 100
-          )
+        ? Math.min(100, (Number(row.raised_amount) / Number(row.target_amount)) * 100)
         : 0,
   }));
 
@@ -184,13 +176,7 @@ async function addTeamMember(parentCampaignId, memberCampaignId, input = {}) {
            role = EXCLUDED.role,
            display_order = EXCLUDED.display_order
      RETURNING *`,
-    [
-      parentCampaignId,
-      memberCampaignId,
-      role,
-      displayOrder,
-      input.invited_by || null,
-    ]
+    [parentCampaignId, memberCampaignId, role, displayOrder, input.invited_by || null]
   );
 
   return { ok: true, member: rows[0] };
@@ -203,10 +189,7 @@ async function addTeamMember(parentCampaignId, memberCampaignId, input = {}) {
  * addTeamMember via upsert) (#952).
  */
 async function assertEligibleMember(memberCampaignId) {
-  const { rows } = await db.query(
-    'SELECT id FROM campaigns WHERE id = $1',
-    [memberCampaignId]
-  );
+  const { rows } = await db.query('SELECT id FROM campaigns WHERE id = $1', [memberCampaignId]);
   if (!rows.length) {
     return { ok: false, status: 404, error: 'Member campaign not found' };
   }

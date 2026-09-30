@@ -1,8 +1,10 @@
 process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgres://test:test@localhost:5432/test';
-process.env.USDC_ISSUER = process.env.USDC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
+process.env.USDC_ISSUER =
+  process.env.USDC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'testsecret123456789012345678901234567890';
-process.env.PLATFORM_SECRET_KEY = process.env.PLATFORM_SECRET_KEY || 'SDVGKOWW4WCVJ7GZ47S77GZGL2PZ67HQVCS475S2F3DFV2GOH63QW34Z';
+process.env.PLATFORM_SECRET_KEY =
+  process.env.PLATFORM_SECRET_KEY || 'SDVGKOWW4WCVJ7GZ47S77GZGL2PZ67HQVCS475S2F3DFV2GOH63QW34Z';
 process.env.PLATFORM_APPROVER_USER_ID = process.env.PLATFORM_APPROVER_USER_ID || 'platform-admin-1';
 
 const test = require('node:test');
@@ -15,7 +17,10 @@ const CAMPAIGN_ID = '11111111-1111-1111-1111-111111111111';
 const CREATOR_ID = 'creator-1';
 const DESTINATION_KEY = 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 
-function buildApp({ queryImpl = async () => ({ rows: [] }), user = { userId: CREATOR_ID, role: 'creator' } } = {}) {
+function buildApp({
+  queryImpl = async () => ({ rows: [] }),
+  user = { userId: CREATOR_ID, role: 'creator' },
+} = {}) {
   const calls = [];
   const notificationsCalled = [];
 
@@ -85,7 +90,9 @@ test('POST /api/campaigns/:id/payout-schedules creates a recurring payout schedu
   const { app } = buildApp({
     queryImpl: async (text, params) => {
       if (text.includes('SELECT id, creator_id, asset_type, status FROM campaigns')) {
-        return { rows: [{ id: CAMPAIGN_ID, creator_id: CREATOR_ID, asset_type: 'USDC', status: 'active' }] };
+        return {
+          rows: [{ id: CAMPAIGN_ID, creator_id: CREATOR_ID, asset_type: 'USDC', status: 'active' }],
+        };
       }
       if (text.includes('INSERT INTO recurring_payout_schedules')) {
         createdSchedule = {
@@ -108,15 +115,13 @@ test('POST /api/campaigns/:id/payout-schedules creates a recurring payout schedu
     },
   });
 
-  const res = await request(app)
-    .post(`/api/campaigns/${CAMPAIGN_ID}/payout-schedules`)
-    .send({
-      amount: '500.00',
-      asset_type: 'USDC',
-      destination_key: DESTINATION_KEY,
-      cadence: 'monthly',
-      timezone: 'America/New_York',
-    });
+  const res = await request(app).post(`/api/campaigns/${CAMPAIGN_ID}/payout-schedules`).send({
+    amount: '500.00',
+    asset_type: 'USDC',
+    destination_key: DESTINATION_KEY,
+    cadence: 'monthly',
+    timezone: 'America/New_York',
+  });
 
   assert.equal(res.status, 201);
   assert.equal(res.body.id, 'sched-1');
@@ -128,20 +133,24 @@ test('POST /api/campaigns/:id/payout-schedules/:scheduleId/pause and resume', as
   const { app } = buildApp({
     queryImpl: async (text, params) => {
       if (text.includes('SELECT id, creator_id, asset_type, status FROM campaigns')) {
-        return { rows: [{ id: CAMPAIGN_ID, creator_id: CREATOR_ID, asset_type: 'USDC', status: 'active' }] };
+        return {
+          rows: [{ id: CAMPAIGN_ID, creator_id: CREATOR_ID, asset_type: 'USDC', status: 'active' }],
+        };
       }
       if (text.includes("SET status = 'paused'")) {
         return { rows: [{ id: 'sched-1', status: 'paused' }] };
       }
       if (text.includes("status = 'paused'")) {
         return {
-          rows: [{
-            id: 'sched-1',
-            status: 'paused',
-            next_run_at: new Date(Date.now() - 50000).toISOString(),
-            cadence: 'weekly',
-            timezone: 'UTC',
-          }],
+          rows: [
+            {
+              id: 'sched-1',
+              status: 'paused',
+              next_run_at: new Date(Date.now() - 50000).toISOString(),
+              cadence: 'weekly',
+              timezone: 'UTC',
+            },
+          ],
         };
       }
       if (text.includes("SET status = 'active'")) {
@@ -151,11 +160,15 @@ test('POST /api/campaigns/:id/payout-schedules/:scheduleId/pause and resume', as
     },
   });
 
-  const pauseRes = await request(app).post(`/api/campaigns/${CAMPAIGN_ID}/payout-schedules/sched-1/pause`);
+  const pauseRes = await request(app).post(
+    `/api/campaigns/${CAMPAIGN_ID}/payout-schedules/sched-1/pause`
+  );
   assert.equal(pauseRes.status, 200);
   assert.equal(pauseRes.body.status, 'paused');
 
-  const resumeRes = await request(app).post(`/api/campaigns/${CAMPAIGN_ID}/payout-schedules/sched-1/resume`);
+  const resumeRes = await request(app).post(
+    `/api/campaigns/${CAMPAIGN_ID}/payout-schedules/sched-1/resume`
+  );
   assert.equal(resumeRes.status, 200);
   assert.equal(resumeRes.body.status, 'active');
 });
@@ -198,15 +211,17 @@ test('processDuePayoutSchedules raises withdrawal through two-approver flow and 
       }
       if (text.includes('INSERT INTO withdrawal_requests')) {
         return {
-          rows: [{
-            id: 'wr-123',
-            campaign_id: CAMPAIGN_ID,
-            requested_by: CREATOR_ID,
-            amount: '100.0000000',
-            creator_signed: false,
-            platform_signed: false,
-            status: 'pending',
-          }],
+          rows: [
+            {
+              id: 'wr-123',
+              campaign_id: CAMPAIGN_ID,
+              requested_by: CREATOR_ID,
+              amount: '100.0000000',
+              creator_signed: false,
+              platform_signed: false,
+              status: 'pending',
+            },
+          ],
         };
       }
       if (text.includes('INSERT INTO withdrawal_approval_events')) {
@@ -270,5 +285,5 @@ test('processDuePayoutSchedules handles insufficient funds gracefully without ra
   const processed = await service.processDuePayoutSchedules();
   assert.equal(processed.length, 0);
   assert.equal(runInsertedStatus, 'insufficient_funds');
-  assert.ok(notificationsCalled.some((n) => n.data.type === 'payout_shortfall'));
+  assert.ok(notificationsCalled.some(n => n.data.type === 'payout_shortfall'));
 });

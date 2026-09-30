@@ -31,7 +31,10 @@ test('one stroop and exactly seven decimals convert exactly', () => {
 
 test('more than seven decimals is rejected, never rounded or truncated', () => {
   for (const value of ['1.00000001', '0.00000005', '8.290000001', '1e-8']) {
-    assert.throws(() => toStroops(value), (err) => err instanceof AmountError && err.code === 'AMOUNT_TOO_PRECISE');
+    assert.throws(
+      () => toStroops(value),
+      err => err instanceof AmountError && err.code === 'AMOUNT_TOO_PRECISE'
+    );
   }
   // Extra digits that are all zeros are exact and allowed.
   assert.equal(toStroops('1.50000000000'), 15_000_000n);
@@ -48,12 +51,31 @@ test('zero and negative values are rejected unless explicitly allowed', () => {
 
 test('maximum supported amount is the Stellar int64 stroop limit', () => {
   assert.equal(toStroops('922337203685.4775807'), MAX_STROOPS);
-  assert.throws(() => toStroops('922337203685.4775808'), (err) => err.code === 'AMOUNT_TOO_LARGE');
-  assert.throws(() => toStroops('1e20'), (err) => err.code === 'AMOUNT_TOO_LARGE');
+  assert.throws(
+    () => toStroops('922337203685.4775808'),
+    err => err.code === 'AMOUNT_TOO_LARGE'
+  );
+  assert.throws(
+    () => toStroops('1e20'),
+    err => err.code === 'AMOUNT_TOO_LARGE'
+  );
 });
 
 test('malformed input is rejected', () => {
-  for (const value of ['', ' ', '.', 'abc', '1.2.3', '1,000', '0x10', NaN, Infinity, null, undefined, {}]) {
+  for (const value of [
+    '',
+    ' ',
+    '.',
+    'abc',
+    '1.2.3',
+    '1,000',
+    '0x10',
+    NaN,
+    Infinity,
+    null,
+    undefined,
+    {},
+  ]) {
     assert.throws(() => toStroops(value), AmountError, `expected ${String(value)} to be rejected`);
   }
 });
@@ -79,12 +101,18 @@ test('isValidAmount reports the same rule without throwing', () => {
 });
 
 test('splitFee rounds the fee half-up and the parts always sum to the amount', () => {
-  assert.deepEqual(splitFee(toStroops('8.29'), 250), { feeStroops: 2_072_500n, campaignStroops: 80_827_500n });
+  assert.deepEqual(splitFee(toStroops('8.29'), 250), {
+    feeStroops: 2_072_500n,
+    campaignStroops: 80_827_500n,
+  });
   // 1 stroop at 2.5%: 0.025 stroop rounds to 0.
   assert.deepEqual(splitFee(1n, 250), { feeStroops: 0n, campaignStroops: 1n });
   // 20 stroops at 2.5% = 0.5 stroop, rounds half-up to 1.
   assert.deepEqual(splitFee(20n, 250), { feeStroops: 1n, campaignStroops: 19n });
-  assert.deepEqual(splitFee(toStroops('19.99'), 0), { feeStroops: 0n, campaignStroops: 199_900_000n });
+  assert.deepEqual(splitFee(toStroops('19.99'), 0), {
+    feeStroops: 0n,
+    campaignStroops: 199_900_000n,
+  });
   for (const amount of [1n, 7n, 82_900_000n, 199_900_000n, MAX_STROOPS]) {
     for (const bps of [0, 1, 250, 333, 9999, 10000]) {
       const { feeStroops, campaignStroops } = splitFee(amount, bps);

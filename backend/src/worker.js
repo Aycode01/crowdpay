@@ -5,8 +5,14 @@ const featureFlags = require('./services/featureFlags');
 // Imported workers that have their own start/stop functions
 const { startLedgerMonitor } = require('./services/ledgerMonitor');
 const { startWebhookRetryPoller } = require('./services/webhookDispatcher');
-const { startRecurringContributionsCron, stopRecurringContributionsCron } = require('./services/recurringContributionsService');
-const { startSubscriptionClaimWorker, stopSubscriptionClaimWorker } = require('./services/recurring');
+const {
+  startRecurringContributionsCron,
+  stopRecurringContributionsCron,
+} = require('./services/recurringContributionsService');
+const {
+  startSubscriptionClaimWorker,
+  stopSubscriptionClaimWorker,
+} = require('./services/recurring');
 const { startHealthCollector, stopHealthCollector } = require('./services/ops/healthCollector');
 
 // Imported services that need scheduled wrappers
@@ -46,11 +52,11 @@ function startInterval(name, fn, intervalMs, featureFlagKey = null) {
     logger.info(`worker: skipped ${name} (feature flag ${featureFlagKey} disabled)`);
     return;
   }
-  
+
   logger.info(`worker: starting ${name} (interval ${intervalMs}ms)`);
-  
+
   // Run immediately then schedule
-  Promise.resolve(fn()).catch((err) => {
+  Promise.resolve(fn()).catch(err => {
     logger.error(`worker: ${name} failed on initial run`, { error: err.message });
   });
 
@@ -62,7 +68,7 @@ function startInterval(name, fn, intervalMs, featureFlagKey = null) {
       logger.error(`worker: ${name} failed`, { error: err.message });
     }
   }, intervalMs);
-  
+
   intervals.push(timer);
 }
 
@@ -100,34 +106,74 @@ async function startBackgroundWorkers() {
 
   // Wrapped workers (checking specific feature flags)
   // Campaign status: Hourly
-  startInterval('campaign-status-cron', refreshActiveCampaignStatuses, 60 * 60 * 1000, 'campaign-status-cron');
-  
+  startInterval(
+    'campaign-status-cron',
+    refreshActiveCampaignStatuses,
+    60 * 60 * 1000,
+    'campaign-status-cron'
+  );
+
   // Reconciliation: 15 minutes
-  startInterval('reconciliation-cron', reconcileCampaignBalances, 15 * 60 * 1000, 'reconciliation-cron');
-  
+  startInterval(
+    'reconciliation-cron',
+    reconcileCampaignBalances,
+    15 * 60 * 1000,
+    'reconciliation-cron'
+  );
+
   // Scheduled publishing: 5 minutes
-  startInterval('scheduled-publish-cron', runScheduledPublishing, 5 * 60 * 1000, 'scheduled-publish-cron');
-  
+  startInterval(
+    'scheduled-publish-cron',
+    runScheduledPublishing,
+    5 * 60 * 1000,
+    'scheduled-publish-cron'
+  );
+
   // Contract deployment retry: 15 minutes
-  startInterval('contract-deployment-retry-cron', retryFailedContractDeployments, 15 * 60 * 1000, 'contract-deployment-retry-cron');
-  
+  startInterval(
+    'contract-deployment-retry-cron',
+    retryFailedContractDeployments,
+    15 * 60 * 1000,
+    'contract-deployment-retry-cron'
+  );
+
   // Weekly digests: 1 hour (evaluates if digest is needed internally)
-  startInterval('weekly-digest-cron', sendWeeklyContributorDigests, 60 * 60 * 1000, 'weekly-digest-cron');
+  startInterval(
+    'weekly-digest-cron',
+    sendWeeklyContributorDigests,
+    60 * 60 * 1000,
+    'weekly-digest-cron'
+  );
 
   // Deadline reminders: 1 hour
-  startInterval('deadline-reminder-cron', sendDeadlineReminders, 60 * 60 * 1000, 'deadline-reminder-cron');
+  startInterval(
+    'deadline-reminder-cron',
+    sendDeadlineReminders,
+    60 * 60 * 1000,
+    'deadline-reminder-cron'
+  );
 
   // Scheduled campaign updates: 1 minute
-  startInterval('scheduled-campaign-updates-cron', publishDueCampaignUpdates, 60 * 1000, 'scheduled-campaign-updates-cron');
+  startInterval(
+    'scheduled-campaign-updates-cron',
+    publishDueCampaignUpdates,
+    60 * 1000,
+    'scheduled-campaign-updates-cron'
+  );
 
   // Recurring payout schedules: 5 minutes
-  startInterval('recurring-payout-schedules-cron', processDuePayoutSchedules, 5 * 60 * 1000, 'recurring-payout-schedules-cron');
+  startInterval(
+    'recurring-payout-schedules-cron',
+    processDuePayoutSchedules,
+    5 * 60 * 1000,
+    'recurring-payout-schedules-cron'
+  );
 }
 
 async function stopBackgroundWorkers() {
   logger.info('worker: stopping background lifecycle');
   isShuttingDown = true;
-  
+
   // Clear managed intervals
   for (const timer of intervals) {
     clearInterval(timer);
@@ -145,12 +191,12 @@ async function stopBackgroundWorkers() {
   }
 }
 
-function isWorkerRunning() { 
-  return !isShuttingDown && intervals.length > 0; 
+function isWorkerRunning() {
+  return !isShuttingDown && intervals.length > 0;
 }
 
 module.exports = {
   startBackgroundWorkers,
   stopBackgroundWorkers,
-  isWorkerRunning
+  isWorkerRunning,
 };

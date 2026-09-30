@@ -15,7 +15,12 @@ async function insertContributionPending(client, row) {
       [row.idempotencyKey]
     );
     if (existing.rows.length) {
-      return { id: existing.rows[0].id, reused: true, status: existing.rows[0].status, txHash: existing.rows[0].tx_hash };
+      return {
+        id: existing.rows[0].id,
+        reused: true,
+        status: existing.rows[0].status,
+        txHash: existing.rows[0].tx_hash,
+      };
     }
   }
   const { rows } = await runner.query(
@@ -145,7 +150,7 @@ async function insertContributionAdjustment(client, { campaignId, amount, assetT
        (campaign_id, sender_public_key, amount, asset, payment_type, tx_hash, created_at)
      VALUES ($1, 'system', $2, $3, 'reconciliation_adjustment', NULL, $4)
      RETURNING id`,
-    [campaignId, amount, assetType, adjustedAt || new Date()],
+    [campaignId, amount, assetType, adjustedAt || new Date()]
   );
   return rows[0].id;
 }

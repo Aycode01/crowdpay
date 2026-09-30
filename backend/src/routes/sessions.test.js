@@ -23,7 +23,7 @@ function buildApp({ sessionService = {}, authed = true } = {}) {
         : denyAuth(),
     },
     '../services/sessionService': {
-      listUserSessions: async (userId) => {
+      listUserSessions: async userId => {
         calls.listUserId = userId;
         return [{ id: 's1', device: 'Chrome' }];
       },
@@ -38,7 +38,7 @@ function buildApp({ sessionService = {}, authed = true } = {}) {
       acknowledgeLoginAlert: async (alertId, userId) => {
         calls.ackArgs = [alertId, userId];
       },
-      getUserLoginAttempts: async (userId) => {
+      getUserLoginAttempts: async userId => {
         calls.attemptsUserId = userId;
         return { attempts: [], total: 0 };
       },

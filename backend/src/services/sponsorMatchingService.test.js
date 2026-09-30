@@ -54,7 +54,7 @@ test('createMatchingPledge creates a pledge', async () => {
     created_at: new Date(),
   };
 
-  const { createMatchingPledge } = buildService(async (text) => {
+  const { createMatchingPledge } = buildService(async text => {
     calls.push(text);
     if (text.includes('SELECT id FROM campaign_matches')) {
       return { rows: [] };
@@ -74,7 +74,7 @@ test('createMatchingPledge creates a pledge', async () => {
 });
 
 test('processContributionMatch calculates correct match amount', async () => {
-  const { processContributionMatch } = buildService(async (text) => {
+  const { processContributionMatch } = buildService(async text => {
     if (text.includes('FROM campaign_matches')) {
       return {
         rows: [{ id: 'match-uuid-1', match_ratio: 1.0, pledge_amount: 1000, matched_amount: 0 }],
@@ -93,7 +93,7 @@ test('processContributionMatch calculates correct match amount', async () => {
 });
 
 test('processContributionMatch applies 2:1 ratio', async () => {
-  const { processContributionMatch } = buildService(async (text) => {
+  const { processContributionMatch } = buildService(async text => {
     if (text.includes('FROM campaign_matches')) {
       return {
         rows: [{ id: 'match-uuid-1', match_ratio: 2.0, pledge_amount: 2000, matched_amount: 0 }],
@@ -132,11 +132,11 @@ test('processContributionMatch caps at pledge amount and marks exhausted', async
   });
 
   assert.equal(matchedAmount, 500);
-  assert.ok(updateCalls.some((p) => p.includes('exhausted')));
+  assert.ok(updateCalls.some(p => p.includes('exhausted')));
 });
 
 test('processContributionMatch returns zero when pool exhausted', async () => {
-  const { processContributionMatch } = buildService(async (text) => {
+  const { processContributionMatch } = buildService(async text => {
     if (text.includes('FROM campaign_matches')) {
       return {
         rows: [{ id: 'match-uuid-1', match_ratio: 1.0, pledge_amount: 100, matched_amount: 100 }],
@@ -235,7 +235,10 @@ test('completeMatchingPledge marks completed', async () => {
 test('completeMatchingPledge throws when not found', async () => {
   const { completeMatchingPledge } = buildService(async () => ({ rows: [] }));
 
-  await assert.rejects(completeMatchingPledge('invalid-uuid'), /Match not found or already completed/);
+  await assert.rejects(
+    completeMatchingPledge('invalid-uuid'),
+    /Match not found or already completed/
+  );
 });
 
 test('getSponsorMatchingPledges returns sponsor pledges', async () => {

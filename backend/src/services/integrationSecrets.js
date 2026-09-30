@@ -167,7 +167,9 @@ function getAwsCredentials() {
   const sessionToken = process.env.AWS_SESSION_TOKEN;
 
   if (!accessKeyId || !secretAccessKey) {
-    throw new Error('AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required for INTEGRATION_SECRET_PROVIDER=aws-kms');
+    throw new Error(
+      'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required for INTEGRATION_SECRET_PROVIDER=aws-kms'
+    );
   }
 
   return { accessKeyId, secretAccessKey, sessionToken };
@@ -193,7 +195,10 @@ function toAmzDate(now = new Date()) {
 }
 
 function getAwsKmsHost() {
-  return process.env.INTEGRATION_SECRET_KMS_ENDPOINT_HOST || `kms.${process.env.AWS_REGION}.amazonaws.com`;
+  return (
+    process.env.INTEGRATION_SECRET_KMS_ENDPOINT_HOST ||
+    `kms.${process.env.AWS_REGION}.amazonaws.com`
+  );
 }
 
 function getAwsKmsPath() {
@@ -204,7 +209,9 @@ function buildAwsHeaders(target, body) {
   const region = process.env.AWS_REGION;
   const keyId = process.env.INTEGRATION_SECRET_KMS_KEY_ID;
   if (!region || !keyId) {
-    throw new Error('AWS_REGION and INTEGRATION_SECRET_KMS_KEY_ID are required for INTEGRATION_SECRET_PROVIDER=aws-kms');
+    throw new Error(
+      'AWS_REGION and INTEGRATION_SECRET_KMS_KEY_ID are required for INTEGRATION_SECRET_PROVIDER=aws-kms'
+    );
   }
 
   const host = getAwsKmsHost();
@@ -225,18 +232,13 @@ function buildAwsHeaders(target, body) {
 
   const sortedHeaderNames = Object.keys(headers).sort();
   const canonicalHeaders = sortedHeaderNames
-    .map((name) => `${name}:${String(headers[name]).trim()}\n`)
+    .map(name => `${name}:${String(headers[name]).trim()}\n`)
     .join('');
   const signedHeaders = sortedHeaderNames.join(';');
   const payloadHash = sha256Hex(body);
-  const canonicalRequest = [
-    'POST',
-    path,
-    '',
-    canonicalHeaders,
-    signedHeaders,
-    payloadHash,
-  ].join('\n');
+  const canonicalRequest = ['POST', path, '', canonicalHeaders, signedHeaders, payloadHash].join(
+    '\n'
+  );
 
   const credentialScope = `${dateStamp}/${region}/kms/aws4_request`;
   const stringToSign = [
@@ -272,9 +274,9 @@ function kmsRequest(target, payload) {
           'content-length': Buffer.byteLength(body),
         },
       },
-      (res) => {
+      res => {
         const chunks = [];
-        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('data', chunk => chunks.push(chunk));
         res.on('end', () => {
           const responseBody = Buffer.concat(chunks).toString('utf8');
           let parsed;
@@ -288,7 +290,8 @@ function kmsRequest(target, payload) {
             return resolve(parsed);
           }
 
-          const errorMessage = parsed.message || parsed.Message || parsed.__type || `status ${res.statusCode}`;
+          const errorMessage =
+            parsed.message || parsed.Message || parsed.__type || `status ${res.statusCode}`;
           return reject(new Error(`KMS request failed: ${errorMessage}`));
         });
       }
@@ -369,7 +372,9 @@ function validateIntegrationSecretConfig() {
 
   if (provider === AWS_KMS_PROVIDER) {
     if (!process.env.AWS_REGION || !process.env.INTEGRATION_SECRET_KMS_KEY_ID) {
-      throw new Error('AWS_REGION and INTEGRATION_SECRET_KMS_KEY_ID are required for INTEGRATION_SECRET_PROVIDER=aws-kms');
+      throw new Error(
+        'AWS_REGION and INTEGRATION_SECRET_KMS_KEY_ID are required for INTEGRATION_SECRET_PROVIDER=aws-kms'
+      );
     }
     getAwsCredentials();
     return;
@@ -426,11 +431,7 @@ async function decryptIntegrationSecretToBuffer(secret, contextInput = {}) {
     throw new Error('Integration credential context mismatch: type');
   }
 
-  if (
-    expectedContext.id &&
-    envelopeContext.id &&
-    envelopeContext.id !== expectedContext.id
-  ) {
+  if (expectedContext.id && envelopeContext.id && envelopeContext.id !== expectedContext.id) {
     throw new Error('Integration credential context mismatch: id');
   }
 

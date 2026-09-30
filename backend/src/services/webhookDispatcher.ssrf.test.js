@@ -5,12 +5,12 @@ const proxyquire = require('proxyquire').noCallThru();
 
 async function withServer(handler, fn) {
   const server = http.createServer(handler);
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const { port } = server.address();
   try {
     return await fn(`http://127.0.0.1:${port}`, port);
   } finally {
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise(resolve => server.close(resolve));
   }
 }
 
@@ -24,7 +24,14 @@ function buildDispatcher({ deliveryRow, campaignDeliveryRow }) {
       if (!row) return { rows: [] };
       const { event, ...rest } = row;
       return {
-        rows: [{ ...rest, event_type: row.event_type || event, attempt_count: row.attempt_count + 1, lease_token: params[1] }],
+        rows: [
+          {
+            ...rest,
+            event_type: row.event_type || event,
+            attempt_count: row.attempt_count + 1,
+            lease_token: params[1],
+          },
+        ],
       };
     }
     if (/UPDATE\s+(webhook_deliveries|campaign_webhook_deliveries)\s+SET/.test(text)) {
@@ -79,11 +86,13 @@ test('processDelivery delivers to a real endpoint end-to-end through the real SS
       res.writeHead(200);
       res.end('ok');
     },
-    async (baseUrl) => {
-      const { dispatcher, updates } = buildDispatcher({ deliveryRow: baseDeliveryRow(`${baseUrl}/hook`) });
+    async baseUrl => {
+      const { dispatcher, updates } = buildDispatcher({
+        deliveryRow: baseDeliveryRow(`${baseUrl}/hook`),
+      });
       await dispatcher.processDelivery('delivery-1');
 
-      const delivered = updates.find((u) => /status = 'delivered'/.test(u.text));
+      const delivered = updates.find(u => /status = 'delivered'/.test(u.text));
       assert.ok(delivered, 'delivery should be marked delivered');
       assert.equal(delivered.params[2], 200);
     }
@@ -101,11 +110,13 @@ test('processDelivery follows a redirect to a public target and still delivers',
       res.writeHead(200);
       res.end('final');
     },
-    async (baseUrl) => {
-      const { dispatcher, updates } = buildDispatcher({ deliveryRow: baseDeliveryRow(`${baseUrl}/start`) });
+    async baseUrl => {
+      const { dispatcher, updates } = buildDispatcher({
+        deliveryRow: baseDeliveryRow(`${baseUrl}/start`),
+      });
       await dispatcher.processDelivery('delivery-1');
 
-      assert.ok(updates.find((u) => /status = 'delivered'/.test(u.text)));
+      assert.ok(updates.find(u => /status = 'delivered'/.test(u.text)));
     }
   );
 });
@@ -117,7 +128,7 @@ test('processDelivery fails closed (never connects) for a delivery URL that is u
 
   await dispatcher.processDelivery('delivery-1');
 
-  const failed = updates.find((u) => /status = 'failed'/.test(u.text));
+  const failed = updates.find(u => /status = 'failed'/.test(u.text));
   assert.ok(failed);
   assert.match(failed.params[2], /SSRF guard:.*private\/internal/);
 });
@@ -128,12 +139,17 @@ test('processDelivery fails closed when the endpoint redirects to a private/inte
       res.writeHead(302, { Location: 'https://169.254.169.254/latest/meta-data' });
       res.end();
     },
-    async (baseUrl) => {
-      const { dispatcher, updates } = buildDispatcher({ deliveryRow: baseDeliveryRow(`${baseUrl}/start`) });
+    async baseUrl => {
+      const { dispatcher, updates } = buildDispatcher({
+        deliveryRow: baseDeliveryRow(`${baseUrl}/start`),
+      });
       await dispatcher.processDelivery('delivery-1');
 
-      const failed = updates.find((u) => /status = 'failed'/.test(u.text));
-      assert.ok(failed, 'delivery should be marked failed, not delivered, when a redirect targets a private address');
+      const failed = updates.find(u => /status = 'failed'/.test(u.text));
+      assert.ok(
+        failed,
+        'delivery should be marked failed, not delivered, when a redirect targets a private address'
+      );
       assert.match(failed.params[2], /SSRF guard:.*private\/internal/);
     }
   );
@@ -150,13 +166,13 @@ test('processCampaignWebhookDelivery delivers to a real endpoint end-to-end', as
       res.writeHead(200);
       res.end('ok');
     },
-    async (baseUrl) => {
+    async baseUrl => {
       const { dispatcher, updates } = buildDispatcher({
         campaignDeliveryRow: baseCampaignDeliveryRow(`${baseUrl}/hook`),
       });
       await dispatcher.processCampaignWebhookDelivery('campaign-delivery-1');
 
-      assert.ok(updates.find((u) => /status = 'delivered'/.test(u.text)));
+      assert.ok(updates.find(u => /status = 'delivered'/.test(u.text)));
     }
   );
 });
@@ -167,13 +183,13 @@ test('processCampaignWebhookDelivery fails closed when the endpoint redirects to
       res.writeHead(302, { Location: 'https://169.254.169.254/latest/meta-data' });
       res.end();
     },
-    async (baseUrl) => {
+    async baseUrl => {
       const { dispatcher, updates } = buildDispatcher({
         campaignDeliveryRow: baseCampaignDeliveryRow(`${baseUrl}/start`),
       });
       await dispatcher.processCampaignWebhookDelivery('campaign-delivery-1');
 
-      const failed = updates.find((u) => /status = 'failed'/.test(u.text));
+      const failed = updates.find(u => /status = 'failed'/.test(u.text));
       assert.ok(failed);
       assert.match(failed.params[2], /SSRF guard:.*private\/internal/);
     }
@@ -187,7 +203,7 @@ test('processCampaignWebhookDelivery fails closed (never connects) for a deliver
 
   await dispatcher.processCampaignWebhookDelivery('campaign-delivery-1');
 
-  const failed = updates.find((u) => /status = 'failed'/.test(u.text));
+  const failed = updates.find(u => /status = 'failed'/.test(u.text));
   assert.ok(failed);
   assert.match(failed.params[2], /SSRF guard:.*private\/internal/);
 });

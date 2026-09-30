@@ -20,10 +20,7 @@ const PREVIEW_KEY_PREFIX = 'cp:contribution-preview:';
 
 /** Apply the configured slippage buffer to a quoted source amount. */
 function computeMaxSendAmount(sourceAmount) {
-  return (
-    parseFloat(sourceAmount) *
-    (1 + SLIPPAGE_BPS / 10000)
-  ).toFixed(7);
+  return (parseFloat(sourceAmount) * (1 + SLIPPAGE_BPS / 10000)).toFixed(7);
 }
 
 /**
@@ -96,7 +93,13 @@ async function createPathPaymentPreview({ campaign, sendAsset, amount }) {
  * The token is single-use (deleted on successful redemption). Paths are ranked
  * and annotated, so any returned path already carries its own max_send_amount.
  */
-async function consumeContributionPreview({ previewToken, campaignId, sendAsset, amount, selectedPathIndex }) {
+async function consumeContributionPreview({
+  previewToken,
+  campaignId,
+  sendAsset,
+  amount,
+  selectedPathIndex,
+}) {
   const key = `${PREVIEW_KEY_PREFIX}${previewToken}`;
   const raw = await redis.get(key);
   if (!raw) {
@@ -131,7 +134,7 @@ async function consumeContributionPreview({ previewToken, campaignId, sendAsset,
 
   const selected =
     (Array.isArray(stored.ranked_paths) &&
-      stored.ranked_paths.find((p) => p.index === selectedPathIndex)) ||
+      stored.ranked_paths.find(p => p.index === selectedPathIndex)) ||
     null;
   if (!selected) {
     const error = new Error('Selected path index is not part of this contribution preview');
@@ -140,7 +143,12 @@ async function consumeContributionPreview({ previewToken, campaignId, sendAsset,
     throw error;
   }
 
-  return { ...selected, effective_rate: String(parseFloat(selected.source_amount) / parseFloat(selected.destination_amount)) };
+  return {
+    ...selected,
+    effective_rate: String(
+      parseFloat(selected.source_amount) / parseFloat(selected.destination_amount)
+    ),
+  };
 }
 
 module.exports = {

@@ -150,10 +150,7 @@ async function join({ pool_id, user_id, share_amount, display_name }) {
  */
 async function leave(poolId, userId) {
   // Cannot leave if you are the leader — must cancel pool instead
-  const pool = await db.query(
-    `SELECT leader_id FROM contribution_pools WHERE id = $1`,
-    [poolId]
-  );
+  const pool = await db.query(`SELECT leader_id FROM contribution_pools WHERE id = $1`, [poolId]);
   if (pool.rows.length === 0) throw new Error('Pool not found');
   if (pool.rows[0].leader_id === userId) {
     throw new Error('Pool leader cannot leave. Cancel the pool instead.');
@@ -170,10 +167,9 @@ async function leave(poolId, userId) {
  * Update pool settings (leader only).
  */
 async function update(poolId, userId, fields) {
-  const pool = await db.query(
-    `SELECT leader_id, status FROM contribution_pools WHERE id = $1`,
-    [poolId]
-  );
+  const pool = await db.query(`SELECT leader_id, status FROM contribution_pools WHERE id = $1`, [
+    poolId,
+  ]);
   if (pool.rows.length === 0) return null;
   if (pool.rows[0].leader_id !== userId) return null;
   if (pool.rows[0].status !== 'open') throw new Error('Can only edit open pools');

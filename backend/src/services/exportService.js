@@ -29,25 +29,55 @@ function createStorageClient() {
 async function generateUserExport(userId, exportId) {
   try {
     const [
-      profileRes, sessionsRes, contributionsRes,
-      preferencesRes, referralsRes, disputesRes, subscriptionsRes, credentialsRes
+      profileRes,
+      sessionsRes,
+      contributionsRes,
+      preferencesRes,
+      referralsRes,
+      disputesRes,
+      subscriptionsRes,
+      credentialsRes,
     ] = await Promise.all([
-      db.query(`SELECT id, email, name, role, created_at, wallet_public_key FROM users WHERE id = $1`, [userId]),
-      db.query(`SELECT id, created_at, ip_address, user_agent, location_region FROM user_sessions WHERE user_id = $1`, [userId]),
-      db.query(`SELECT id, campaign_id, amount, asset, status, created_at FROM contributions WHERE sender_public_key = (SELECT wallet_public_key FROM users WHERE id = $1)`, [userId]),
+      db.query(
+        `SELECT id, email, name, role, created_at, wallet_public_key FROM users WHERE id = $1`,
+        [userId]
+      ),
+      db.query(
+        `SELECT id, created_at, ip_address, user_agent, location_region FROM user_sessions WHERE user_id = $1`,
+        [userId]
+      ),
+      db.query(
+        `SELECT id, campaign_id, amount, asset, status, created_at FROM contributions WHERE sender_public_key = (SELECT wallet_public_key FROM users WHERE id = $1)`,
+        [userId]
+      ),
       db.query(`SELECT * FROM notification_preferences WHERE user_id = $1`, [userId]),
-      db.query(`SELECT id, campaign_id, referral_code, created_at FROM campaign_referrals WHERE referrer_id = $1`, [userId]),
-      db.query(`SELECT id, campaign_id, reason, status, created_at FROM disputes WHERE raised_by = $1`, [userId]),
-      db.query(`SELECT id, campaign_id, amount, interval, active, created_at FROM recurring_contributions WHERE user_id = $1`, [userId]),
-      db.query(`SELECT id, label, scopes, expires_at, created_at FROM api_keys WHERE user_id = $1`, [userId])
+      db.query(
+        `SELECT id, campaign_id, referral_code, created_at FROM campaign_referrals WHERE referrer_id = $1`,
+        [userId]
+      ),
+      db.query(
+        `SELECT id, campaign_id, reason, status, created_at FROM disputes WHERE raised_by = $1`,
+        [userId]
+      ),
+      db.query(
+        `SELECT id, campaign_id, amount, interval, active, created_at FROM recurring_contributions WHERE user_id = $1`,
+        [userId]
+      ),
+      db.query(
+        `SELECT id, label, scopes, expires_at, created_at FROM api_keys WHERE user_id = $1`,
+        [userId]
+      ),
     ]);
 
     let notificationsRes = { rows: [] };
     try {
-        notificationsRes = await db.query(`SELECT id, type, title, body, is_read, created_at FROM notifications WHERE user_id = $1`, [userId]);
-    } catch(err) {
-        // Table might not exist or schema might be different
-        logger.warn('Failed to fetch notifications for export', { error: err.message });
+      notificationsRes = await db.query(
+        `SELECT id, type, title, body, is_read, created_at FROM notifications WHERE user_id = $1`,
+        [userId]
+      );
+    } catch (err) {
+      // Table might not exist or schema might be different
+      logger.warn('Failed to fetch notifications for export', { error: err.message });
     }
 
     const exportData = {
@@ -60,7 +90,7 @@ async function generateUserExport(userId, exportId) {
       disputes: disputesRes.rows,
       subscriptions: subscriptionsRes.rows,
       credentials: credentialsRes.rows,
-      exported_at: new Date().toISOString()
+      exported_at: new Date().toISOString(),
     };
 
     const buffer = Buffer.from(JSON.stringify(exportData, null, 2), 'utf-8');

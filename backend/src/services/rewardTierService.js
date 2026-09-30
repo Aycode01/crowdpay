@@ -56,17 +56,21 @@ function validateTiersInput(tiers, campaignAssetType) {
       estimatedDelivery = tier.estimated_delivery;
     }
 
-    const nftEnabled = tier.nft_enabled === true || tier.nft_enabled === 'true' || tier.nft_enabled === 1;
-    const nftMetadataUrl = typeof tier.nft_metadata_url === 'string' && tier.nft_metadata_url.trim()
-      ? stripHtml(tier.nft_metadata_url.trim()) || null
-      : null;
-    const nftArtworkUrl = typeof tier.nft_artwork_url === 'string' && tier.nft_artwork_url.trim()
-      ? stripHtml(tier.nft_artwork_url.trim()) || null
-      : null;
+    const nftEnabled =
+      tier.nft_enabled === true || tier.nft_enabled === 'true' || tier.nft_enabled === 1;
+    const nftMetadataUrl =
+      typeof tier.nft_metadata_url === 'string' && tier.nft_metadata_url.trim()
+        ? stripHtml(tier.nft_metadata_url.trim()) || null
+        : null;
+    const nftArtworkUrl =
+      typeof tier.nft_artwork_url === 'string' && tier.nft_artwork_url.trim()
+        ? stripHtml(tier.nft_artwork_url.trim()) || null
+        : null;
 
     return {
       title,
-      description: typeof tier.description === 'string' ? stripHtml(tier.description) || null : null,
+      description:
+        typeof tier.description === 'string' ? stripHtml(tier.description) || null : null,
       min_amount: minAmount,
       asset_type: assetType,
       tier_limit: tierLimit,
@@ -98,7 +102,7 @@ async function insertTiers(client, campaignId, normalizedTiers) {
         tier.asset_type,
         tier.tier_limit,
         tier.estimated_delivery,
-      ],
+      ]
     );
     const insertedTier = rows[0];
     if (tier.nft_enabled) {
@@ -106,10 +110,14 @@ async function insertTiers(client, campaignId, normalizedTiers) {
         `INSERT INTO nft_rewards
            (reward_tier_id, campaign_id, status, metadata_url, artwork_url)
          VALUES ($1, $2, 'configured', $3, $4)`,
-        [insertedTier.id, campaignId, tier.nft_metadata_url, tier.nft_artwork_url],
+        [insertedTier.id, campaignId, tier.nft_metadata_url, tier.nft_artwork_url]
       );
     }
-    createdTiers.push({ id: insertedTier.id, title: insertedTier.title, nft_enabled: tier.nft_enabled });
+    createdTiers.push({
+      id: insertedTier.id,
+      title: insertedTier.title,
+      nft_enabled: tier.nft_enabled,
+    });
   }
   return createdTiers;
 }
@@ -150,7 +158,7 @@ async function listTiersWithAvailability(campaignId) {
        FROM reward_tiers rt
       WHERE rt.campaign_id = $1
       ORDER BY rt.min_amount ASC`,
-    [campaignId],
+    [campaignId]
   );
   return rows;
 }
@@ -176,7 +184,7 @@ async function reserveTierSlot(client, { tierId, campaignId }) {
         AND campaign_id = $2
         AND (tier_limit IS NULL OR claimed_count < tier_limit)
       RETURNING id, title`,
-    [tierId, campaignId],
+    [tierId, campaignId]
   );
   return rows[0] || null;
 }
@@ -239,7 +247,7 @@ async function assignTierToContribution(client, { campaignId, amount, contributi
               ) AS nft_artwork_url
          FROM reward_tiers r
          JOIN ins ON ins.reward_tier_id = r.id`,
-      [contributionId, tierId],
+      [contributionId, tierId]
     );
     return rows[0] || null;
   }
@@ -289,7 +297,7 @@ async function assignTierToContribution(client, { campaignId, amount, contributi
                   ORDER BY nr.created_at ASC
                   LIMIT 1
                 ) AS nft_artwork_url`,
-    [campaignId, amount, contributionId],
+    [campaignId, amount, contributionId]
   );
   return rows[0] || null;
 }

@@ -20,17 +20,17 @@ const logger = require('../config/logger');
 // ── IPv4 private / reserved ranges ──────────────────────────────────────────
 
 const IPV4_BLOCKED_RANGES = [
-  { prefix: [0], bits: 8 },          // 0.0.0.0/8        — this network
-  { prefix: [10], bits: 8 },         // 10.0.0.0/8       — private
-  { prefix: [127], bits: 8 },        // 127.0.0.0/8      — loopback
-  { prefix: [169, 254], bits: 16 },  // 169.254.0.0/16   — link-local (incl. cloud metadata)
-  { prefix: [172, 16], bits: 12 },   // 172.16.0.0/12    — private
-  { prefix: [192, 168], bits: 16 },  // 192.168.0.0/16   — private
-  { prefix: [100, 64], bits: 10 },   // 100.64.0.0/10    — carrier-grade NAT (RFC 6598)
-  { prefix: [198, 18], bits: 16 },   // 198.18.0.0/16    — benchmark testing (RFC 2544)
-  { prefix: [198, 19], bits: 16 },   // 198.19.0.0/16    — benchmark testing (RFC 2544)
-  { prefix: [224], bits: 4 },        // 224.0.0.0/4      — multicast + reserved
-  { prefix: [240], bits: 4 },        // 240.0.0.0/4      — reserved (former Class E)
+  { prefix: [0], bits: 8 }, // 0.0.0.0/8        — this network
+  { prefix: [10], bits: 8 }, // 10.0.0.0/8       — private
+  { prefix: [127], bits: 8 }, // 127.0.0.0/8      — loopback
+  { prefix: [169, 254], bits: 16 }, // 169.254.0.0/16   — link-local (incl. cloud metadata)
+  { prefix: [172, 16], bits: 12 }, // 172.16.0.0/12    — private
+  { prefix: [192, 168], bits: 16 }, // 192.168.0.0/16   — private
+  { prefix: [100, 64], bits: 10 }, // 100.64.0.0/10    — carrier-grade NAT (RFC 6598)
+  { prefix: [198, 18], bits: 16 }, // 198.18.0.0/16    — benchmark testing (RFC 2544)
+  { prefix: [198, 19], bits: 16 }, // 198.19.0.0/16    — benchmark testing (RFC 2544)
+  { prefix: [224], bits: 4 }, // 224.0.0.0/4      — multicast + reserved
+  { prefix: [240], bits: 4 }, // 240.0.0.0/4      — reserved (former Class E)
 ];
 
 /**
@@ -51,7 +51,7 @@ function ipToUint32(octets) {
  */
 function isPrivateIpv4(ip) {
   const octets = ip.split('.').map(Number);
-  if (octets.length !== 4 || octets.some((o) => !Number.isInteger(o) || o < 0 || o > 255)) {
+  if (octets.length !== 4 || octets.some(o => !Number.isInteger(o) || o < 0 || o > 255)) {
     return true; // malformed — block
   }
 
@@ -69,7 +69,7 @@ function isPrivateIpv4(ip) {
     // Create subnet mask: e.g. /12 → 0xFFFFF000
     const mask = range.bits === 0 ? 0 : (~0 << (32 - range.bits)) >>> 0;
 
-    if (((ipUint & mask) >>> 0) === networkUint) {
+    if ((ipUint & mask) >>> 0 === networkUint) {
       return true;
     }
   }
@@ -79,12 +79,12 @@ function isPrivateIpv4(ip) {
 // ── IPv6 private / reserved ranges ──────────────────────────────────────────
 
 const IPV6_BLOCKED_PATTERNS = [
-  /^::$/,                  // ::/128   — unspecified
-  /^::1$/i,                // ::1      — loopback
-  /^f[cd]/i,               // fc00::/7 — unique local (ULA)
-  /^fe[89ab]/i,            // fe80::/10— link-local
-  /^ff/i,                  // ff00::/8 — multicast
-  /^::ffff:0?0?0?0?:/i,   // IPv4-mapped IPv6 (handled via IPv4 check)
+  /^::$/, // ::/128   — unspecified
+  /^::1$/i, // ::1      — loopback
+  /^f[cd]/i, // fc00::/7 — unique local (ULA)
+  /^fe[89ab]/i, // fe80::/10— link-local
+  /^ff/i, // ff00::/8 — multicast
+  /^::ffff:0?0?0?0?:/i, // IPv4-mapped IPv6 (handled via IPv4 check)
 ];
 
 /**
@@ -111,10 +111,10 @@ function isPrivateIpv6(ip) {
 // ── Hostname blacklist (well-known cloud metadata endpoints) ────────────────
 
 const BLOCKED_HOSTNAMES = new Set([
-  '169.254.169.254',               // AWS EC2 / cloud metadata
-  'metadata.google.internal',      // GCP metadata
-  'metadata',                       // GCP metadata (short name)
-  '169.254.169.253',               // AWS metadata v2 token endpoint
+  '169.254.169.254', // AWS EC2 / cloud metadata
+  'metadata.google.internal', // GCP metadata
+  'metadata', // GCP metadata (short name)
+  '169.254.169.253', // AWS metadata v2 token endpoint
 ]);
 
 /**
@@ -192,7 +192,7 @@ async function resolvesToPrivateIp(hostname) {
 
   try {
     const records = await resolveAllAddresses(hostname);
-    return records.some((record) => isPrivateHost(record.address));
+    return records.some(record => isPrivateHost(record.address));
   } catch {
     // Resolution failure: safest to block
     logger.warn('[ssrfGuard] DNS resolution failed for hostname', { hostname });
@@ -226,9 +226,10 @@ async function resolvesToPrivateIp(hostname) {
  * @returns {Promise<{safe: boolean, reason: string, hostname?: string, pinnedAddress?: string, family?: number}>}
  */
 async function resolveSafeConnectTarget(urlString, options = {}) {
-  const allowLocalhostHttp = options.allowLocalhostHttp !== undefined
-    ? options.allowLocalhostHttp
-    : process.env.NODE_ENV !== 'production';
+  const allowLocalhostHttp =
+    options.allowLocalhostHttp !== undefined
+      ? options.allowLocalhostHttp
+      : process.env.NODE_ENV !== 'production';
 
   let u;
   try {
@@ -257,11 +258,21 @@ async function resolveSafeConnectTarget(urlString, options = {}) {
   // (localhost / 127.0.0.1 / ::1). These skip both the private-host and DNS
   // checks because we already know they resolve to loopback addresses and have
   // explicitly opted in via allowLocalhostHttp.
-  const isAllowedLocalhostHttp = u.protocol === 'http:' && allowLocalhostHttp &&
-    (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1');
+  const isAllowedLocalhostHttp =
+    u.protocol === 'http:' &&
+    allowLocalhostHttp &&
+    (hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '[::1]' ||
+      hostname === '::1');
 
   if (isAllowedLocalhostHttp) {
-    return { safe: true, reason: '', hostname, pinnedAddress: hostname === 'localhost' ? '127.0.0.1' : hostname };
+    return {
+      safe: true,
+      reason: '',
+      hostname,
+      pinnedAddress: hostname === 'localhost' ? '127.0.0.1' : hostname,
+    };
   }
 
   // Check if hostname itself is private/blocked (handles raw IPs).
@@ -271,7 +282,13 @@ async function resolveSafeConnectTarget(urlString, options = {}) {
 
   // Raw IP hostnames have no further resolution — they're already the pin target.
   if (net.isIP(hostname) !== 0) {
-    return { safe: true, reason: '', hostname, pinnedAddress: hostname, family: net.isIP(hostname) };
+    return {
+      safe: true,
+      reason: '',
+      hostname,
+      pinnedAddress: hostname,
+      family: net.isIP(hostname),
+    };
   }
 
   // Resolve once, validate every answer, and pin the connection to one of
@@ -284,7 +301,7 @@ async function resolveSafeConnectTarget(urlString, options = {}) {
     logger.warn('[ssrfGuard] DNS resolution failed for hostname', { hostname });
     return { safe: false, reason: `DNS resolution failed for hostname: ${hostname}` };
   }
-  const privateRecord = records.find((record) => isPrivateHost(record.address));
+  const privateRecord = records.find(record => isPrivateHost(record.address));
   if (privateRecord) {
     return {
       safe: false,
@@ -292,7 +309,13 @@ async function resolveSafeConnectTarget(urlString, options = {}) {
     };
   }
 
-  return { safe: true, reason: '', hostname, pinnedAddress: records[0].address, family: records[0].family };
+  return {
+    safe: true,
+    reason: '',
+    hostname,
+    pinnedAddress: records[0].address,
+    family: records[0].family,
+  };
 }
 
 /**

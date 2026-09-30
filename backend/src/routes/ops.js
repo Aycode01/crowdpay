@@ -137,7 +137,10 @@ router.get('/incidents', async (req, res, next) => {
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    const countRes = await db.query(`SELECT COUNT(*) AS total FROM incidents ${whereClause}`, params);
+    const countRes = await db.query(
+      `SELECT COUNT(*) AS total FROM incidents ${whereClause}`,
+      params
+    );
     const total = parseInt(countRes.rows[0].total, 10);
 
     params.push(parseInt(limit, 10));
@@ -246,7 +249,7 @@ router.post('/campaigns/wallet-audit/:campaignId/approve-funding', async (req, r
   try {
     const { campaignId } = req.params;
     const audit = await auditCampaignWallets();
-    const target = audit.wallets.find((w) => String(w.campaign_id) === String(campaignId));
+    const target = audit.wallets.find(w => String(w.campaign_id) === String(campaignId));
 
     if (!target) {
       return res.status(404).json({
@@ -275,7 +278,10 @@ router.post('/campaigns/wallet-audit/:campaignId/approve-funding', async (req, r
     } catch (err) {
       if (err.code === '23505') {
         return res.status(409).json({
-          error: { code: 'ALREADY_IN_FLIGHT', message: 'A funding approval for this campaign is already in progress' },
+          error: {
+            code: 'ALREADY_IN_FLIGHT',
+            message: 'A funding approval for this campaign is already in progress',
+          },
         });
       }
       throw err;

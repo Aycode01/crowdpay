@@ -80,9 +80,9 @@ async function diagnoseContribution({ contribution = {}, metadata = {}, txHash =
 
   const ops = Array.isArray(tx.operations) ? tx.operations : [];
   const pathOp = ops.find(
-    (op) => op.type === 'path_payment_strict_receive' || op.type === 'path_payment_strict_send'
+    op => op.type === 'path_payment_strict_receive' || op.type === 'path_payment_strict_send'
   );
-  const paymentOp = ops.find((op) => op.type === 'payment');
+  const paymentOp = ops.find(op => op.type === 'payment');
   const targetOp = pathOp || paymentOp;
 
   report.on_ledger = true;

@@ -69,15 +69,17 @@ test('POST /:campaignId/translations creates a new translation with locale, titl
     }
     if (text.includes('INSERT INTO campaign_translations')) {
       return {
-        rows: [{
-          id: 'trans-1',
-          campaign_id: CAMPAIGN_ID,
-          language: 'fr',
-          locale: 'fr',
-          title: 'Campagne en français',
-          description: 'Description en français',
-          milestone_titles: ['Étape 1', 'Étape 2'],
-        }],
+        rows: [
+          {
+            id: 'trans-1',
+            campaign_id: CAMPAIGN_ID,
+            language: 'fr',
+            locale: 'fr',
+            title: 'Campagne en français',
+            description: 'Description en français',
+            milestone_titles: ['Étape 1', 'Étape 2'],
+          },
+        ],
       };
     }
     return { rows: [] };
@@ -100,7 +102,7 @@ test('POST /:campaignId/translations creates a new translation with locale, titl
 
 test('POST /:campaignId/translations forbids unauthorized user', async () => {
   const app = buildTranslationsApp(
-    async (text) => {
+    async text => {
       if (text.includes('SELECT creator_id FROM campaigns')) {
         return { rows: [{ creator_id: CREATOR_ID, status: 'active' }] };
       }
@@ -109,19 +111,17 @@ test('POST /:campaignId/translations forbids unauthorized user', async () => {
     { userId: OTHER_USER_ID, role: 'contributor' }
   );
 
-  const res = await request(app)
-    .post(`/api/campaigns/${CAMPAIGN_ID}/translations`)
-    .send({
-      locale: 'fr',
-      title: 'Titre',
-    });
+  const res = await request(app).post(`/api/campaigns/${CAMPAIGN_ID}/translations`).send({
+    locale: 'fr',
+    title: 'Titre',
+  });
 
   assert.equal(res.status, 403);
   assert.equal(res.body.success, false);
 });
 
 test('GET /:campaignId/translations lists all translations for a campaign', async () => {
-  const app = buildTranslationsApp(async (text) => {
+  const app = buildTranslationsApp(async text => {
     if (text.includes('FROM campaign_translations') && text.includes('WHERE campaign_id = $1')) {
       return {
         rows: [
@@ -163,25 +163,29 @@ test('GET /:id?locale=fr returns translated fields when available', async () => 
   const app = buildCampaignsApp(async (text, params) => {
     if (text.includes('FROM campaigns c') && text.includes('JOIN users u')) {
       return {
-        rows: [{
-          id: CAMPAIGN_ID,
-          creator_id: CREATOR_ID,
-          title: 'Original English Title',
-          description: 'Original English Description',
-          status: 'active',
-          target_amount: 1000,
-        }],
+        rows: [
+          {
+            id: CAMPAIGN_ID,
+            creator_id: CREATOR_ID,
+            title: 'Original English Title',
+            description: 'Original English Description',
+            status: 'active',
+            target_amount: 1000,
+          },
+        ],
       };
     }
     if (text.includes('FROM campaign_translations')) {
       if (params && params[1] === 'fr') {
         return {
-          rows: [{
-            title: 'Titre Français',
-            description: 'Description en Français',
-            milestone_titles: ['Étape 1'],
-            locale: 'fr',
-          }],
+          rows: [
+            {
+              title: 'Titre Français',
+              description: 'Description en Français',
+              milestone_titles: ['Étape 1'],
+              locale: 'fr',
+            },
+          ],
         };
       }
       return { rows: [] };
@@ -228,11 +232,24 @@ test('POST /:campaignId/translations rejects malformed milestone title JSON', as
 test('GET /:id?locale=fr-CA resolves to the base French translation', async () => {
   const app = buildCampaignsApp(async (text, params) => {
     if (text.includes('FROM campaigns c') && text.includes('JOIN users u')) {
-      return { rows: [{ id: CAMPAIGN_ID, creator_id: CREATOR_ID, title: 'Original', description: 'Default', status: 'active', target_amount: 1000 }] };
+      return {
+        rows: [
+          {
+            id: CAMPAIGN_ID,
+            creator_id: CREATOR_ID,
+            title: 'Original',
+            description: 'Default',
+            status: 'active',
+            target_amount: 1000,
+          },
+        ],
+      };
     }
     if (text.includes('FROM campaign_translations')) {
       assert.equal(params[1], 'fr');
-      return { rows: [{ title: 'Titre français', description: 'Description française', locale: 'fr' }] };
+      return {
+        rows: [{ title: 'Titre français', description: 'Description française', locale: 'fr' }],
+      };
     }
     return { rows: [] };
   });
@@ -254,14 +271,16 @@ test('GET /:id?locale=es falls back to original language when translation is una
   const app = buildCampaignsApp(async (text, _params) => {
     if (text.includes('FROM campaigns c') && text.includes('JOIN users u')) {
       return {
-        rows: [{
-          id: CAMPAIGN_ID,
-          creator_id: CREATOR_ID,
-          title: 'Original English Title',
-          description: 'Original English Description',
-          status: 'active',
-          target_amount: 1000,
-        }],
+        rows: [
+          {
+            id: CAMPAIGN_ID,
+            creator_id: CREATOR_ID,
+            title: 'Original English Title',
+            description: 'Original English Description',
+            status: 'active',
+            target_amount: 1000,
+          },
+        ],
       };
     }
     if (text.includes('FROM campaign_translations')) {
@@ -290,9 +309,11 @@ test('GET /:id/milestones?locale=fr translates milestone titles when translation
     if (text.includes('FROM campaign_translations')) {
       if (params && params[1] === 'fr') {
         return {
-          rows: [{
-            milestone_titles: ['Première étape', 'Deuxième étape'],
-          }],
+          rows: [
+            {
+              milestone_titles: ['Première étape', 'Deuxième étape'],
+            },
+          ],
         };
       }
       return { rows: [] };
@@ -307,7 +328,7 @@ test('GET /:id/milestones?locale=fr translates milestone titles when translation
 });
 
 test('GET /:id/milestones?locale=de falls back to original milestone titles when translation missing', async () => {
-  const app = buildCampaignsApp(async (text) => {
+  const app = buildCampaignsApp(async text => {
     if (text.includes('FROM milestones m')) {
       return {
         rows: [

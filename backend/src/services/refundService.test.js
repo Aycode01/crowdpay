@@ -43,20 +43,33 @@ describe('refundService', () => {
 
   it('getEligibleContributions handles pagination bounds correctly', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ id: 'c-1' }] });
-    const results = await refundService.getEligibleContributions('camp-1', { limit: 10, offset: 0 });
+    const results = await refundService.getEligibleContributions('camp-1', {
+      limit: 10,
+      offset: 0,
+    });
     expect(results).toHaveLength(1);
-    expect(db.query).toHaveBeenCalledWith(
-      expect.any(String),
-      ['camp-1', 10, 0]
-    );
+    expect(db.query).toHaveBeenCalledWith(expect.any(String), ['camp-1', 10, 0]);
   });
 
   it('processRefund succeeds with valid transaction hash', async () => {
     const mockClient = {
-      query: vi.fn()
+      query: vi
+        .fn()
         .mockResolvedValueOnce({}) // BEGIN
-        .mockResolvedValueOnce({ rows: [{ id: 'contrib-1', campaign_id: 'camp-1', sender_public_key: 'GABC', amount: '100', refunded_amount: '0' }] })
-        .mockResolvedValueOnce({ rows: [{ id: 'ref-1', status: 'completed', tx_hash: 'txhash123' }] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'contrib-1',
+              campaign_id: 'camp-1',
+              sender_public_key: 'GABC',
+              amount: '100',
+              refunded_amount: '0',
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [{ id: 'ref-1', status: 'completed', tx_hash: 'txhash123' }],
+        })
         .mockResolvedValueOnce({})
         .mockResolvedValueOnce({})
         .mockResolvedValueOnce({}), // COMMIT
@@ -76,9 +89,20 @@ describe('refundService', () => {
 
   it('processRefund throws when sender function is missing', async () => {
     const mockClient = {
-      query: vi.fn()
+      query: vi
+        .fn()
         .mockResolvedValueOnce({}) // BEGIN
-        .mockResolvedValueOnce({ rows: [{ id: 'contrib-1', campaign_id: 'camp-1', sender_public_key: 'GABC', amount: '100', refunded_amount: '0' }] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'contrib-1',
+              campaign_id: 'camp-1',
+              sender_public_key: 'GABC',
+              amount: '100',
+              refunded_amount: '0',
+            },
+          ],
+        })
         .mockResolvedValueOnce({}), // ROLLBACK
       release: vi.fn(),
     };
@@ -86,16 +110,27 @@ describe('refundService', () => {
 
     const mockStellarService = {};
 
-    await expect(refundService.processRefund('contrib-1', '50', mockStellarService)).rejects.toThrow(
-      /missing transaction hash/i
-    );
+    await expect(
+      refundService.processRefund('contrib-1', '50', mockStellarService)
+    ).rejects.toThrow(/missing transaction hash/i);
   });
 
   it('processRefund throws when sender throws an error', async () => {
     const mockClient = {
-      query: vi.fn()
+      query: vi
+        .fn()
         .mockResolvedValueOnce({}) // BEGIN
-        .mockResolvedValueOnce({ rows: [{ id: 'contrib-1', campaign_id: 'camp-1', sender_public_key: 'GABC', amount: '100', refunded_amount: '0' }] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'contrib-1',
+              campaign_id: 'camp-1',
+              sender_public_key: 'GABC',
+              amount: '100',
+              refunded_amount: '0',
+            },
+          ],
+        })
         .mockResolvedValueOnce({}), // ROLLBACK
       release: vi.fn(),
     };
@@ -105,8 +140,8 @@ describe('refundService', () => {
       sendCampaignRefund: vi.fn().mockRejectedValue(new Error('Network error')),
     };
 
-    await expect(refundService.processRefund('contrib-1', '50', mockStellarService)).rejects.toThrow(
-      'Network error'
-    );
+    await expect(
+      refundService.processRefund('contrib-1', '50', mockStellarService)
+    ).rejects.toThrow('Network error');
   });
 });

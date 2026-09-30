@@ -23,7 +23,9 @@ async function main() {
   validateWalletSecretConfig();
 
   if (!dryRun && !confirm) {
-    throw new Error('This is a destructive production operation. Use --confirm to proceed or --dry-run to simulate.');
+    throw new Error(
+      'This is a destructive production operation. Use --confirm to proceed or --dry-run to simulate.'
+    );
   }
 
   const result = await rotateLegacyUserWalletSecrets({ runner: db, dryRun });
@@ -41,7 +43,7 @@ async function main() {
 }
 
 main()
-  .catch((err) => {
+  .catch(err => {
     process.stderr.write(`[rotate-wallet-secrets] ${err.message}\n`);
     process.exitCode = 1;
   })

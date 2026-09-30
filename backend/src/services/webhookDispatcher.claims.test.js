@@ -16,16 +16,16 @@ function createFakeDb({ now }) {
   const hooks = new Map();
   const statements = [];
 
-  const claimable = (d) =>
+  const claimable = d =>
     d.status === 'pending' ||
     (d.status === 'retrying' && (d.next_retry_at === null || d.next_retry_at <= now())) ||
     (d.status === 'delivering' && (d.lease_expires_at ?? d.updated_at + LEASE_MS) <= now());
 
-  const usable = (h) => (h.kind === 'user' ? !h.revoked_at : h.active === true);
+  const usable = h => (h.kind === 'user' ? !h.revoked_at : h.active === true);
 
   async function query(text, params = []) {
     // Yield so that concurrent callers interleave between statements.
-    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise(resolve => setImmediate(resolve));
     statements.push(text);
 
     if (/SET status = 'delivering', attempt_count = d\.attempt_count \+ 1/.test(text)) {
@@ -42,16 +42,18 @@ function createFakeDb({ now }) {
         updated_at: now(),
       });
       return {
-        rows: [{
-          id: d.id,
-          attempt_count: d.attempt_count,
-          payload: d.payload,
-          event_type: d.event_type,
-          lease_token: token,
-          url: h.url,
-          secret: 'whsec_test',
-          backoff_strategy: h.backoff_strategy || null,
-        }],
+        rows: [
+          {
+            id: d.id,
+            attempt_count: d.attempt_count,
+            payload: d.payload,
+            event_type: d.event_type,
+            lease_token: token,
+            url: h.url,
+            secret: 'whsec_test',
+            backoff_strategy: h.backoff_strategy || null,
+          },
+        ],
       };
     }
 
@@ -62,7 +64,11 @@ function createFakeDb({ now }) {
       if (!d || !claimable(d) || (usable(h) && d.attempt_count < max)) return { rows: [] };
       Object.assign(d, {
         status: 'failed',
-        last_error: usable(h) ? 'max delivery attempts exceeded' : h.kind === 'user' ? 'webhook revoked' : 'webhook disabled',
+        last_error: usable(h)
+          ? 'max delivery attempts exceeded'
+          : h.kind === 'user'
+            ? 'webhook revoked'
+            : 'webhook disabled',
         lease_token: null,
         lease_expires_at: null,
       });
@@ -85,12 +91,15 @@ function createFakeDb({ now }) {
       const table = /FROM (\w+) d/.exec(text)[1];
       const kind = table === 'webhook_deliveries' ? 'user' : 'campaign';
       const rows = [...deliveries.values()]
-        .filter((d) => hooks.get(d.webhook_id).kind === kind)
-        .filter((d) =>
-          (d.status === 'retrying' && d.next_retry_at !== null && d.next_retry_at <= now()) ||
-          (d.status === 'delivering' && (d.lease_expires_at ?? d.updated_at + LEASE_MS) <= now()) ||
-          (d.status === 'pending' && d.updated_at <= now() - LEASE_MS))
-        .map((d) => ({ id: d.id }));
+        .filter(d => hooks.get(d.webhook_id).kind === kind)
+        .filter(
+          d =>
+            (d.status === 'retrying' && d.next_retry_at !== null && d.next_retry_at <= now()) ||
+            (d.status === 'delivering' &&
+              (d.lease_expires_at ?? d.updated_at + LEASE_MS) <= now()) ||
+            (d.status === 'pending' && d.updated_at <= now() - LEASE_MS)
+        )
+        .map(d => ({ id: d.id }));
       return { rows };
     }
 
@@ -100,7 +109,12 @@ function createFakeDb({ now }) {
   function addDelivery(id, { kind = 'user', ...overrides } = {}) {
     const webhookId = `hook-${kind}`;
     if (!hooks.has(webhookId)) {
-      hooks.set(webhookId, { kind, url: 'https://receiver.example/hook', revoked_at: null, active: true });
+      hooks.set(webhookId, {
+        kind,
+        url: 'https://receiver.example/hook',
+        revoked_at: null,
+        active: true,
+      });
     }
     deliveries.set(id, {
       id,
@@ -136,7 +150,7 @@ function setup({ fetchImpl } = {}) {
 
   const dispatcher = proxyquire('./webhookDispatcher', {
     '../config/database': { query: fakeDb.query },
-    '../config/logger': { error: () => {}, warn: (msg) => warnings.push(msg), info: () => {} },
+    '../config/logger': { error: () => {}, warn: msg => warnings.push(msg), info: () => {} },
     './emailService': { sendEmail: async () => {} },
     '../utils/safeFetch': { safeFetch },
   });
@@ -146,7 +160,9 @@ function setup({ fetchImpl } = {}) {
     db: fakeDb,
     sent,
     warnings,
-    advance: (ms) => { clock += ms; },
+    advance: ms => {
+      clock += ms;
+    },
   };
 }
 
@@ -171,14 +187,18 @@ test('two concurrent pollers claim each due retry once', async () => {
 
   await Promise.all([dispatcher.processDueRetries(), dispatcher.processDueRetries()]);
 
-  assert.deepEqual(sent.map((s) => s.deliveryId).sort(), ['d1', 'd2']);
+  assert.deepEqual(sent.map(s => s.deliveryId).sort(), ['d1', 'd2']);
   assert.equal(db.deliveries.get('d1').attempt_count, 2);
   assert.equal(db.deliveries.get('d2').attempt_count, 3);
 });
 
 test('a retry timer overlapping the poller produces a single attempt', async () => {
   const { dispatcher, db, sent } = setup();
-  db.addDelivery('d1', { status: 'retrying', attempt_count: 1, next_retry_at: Date.parse('2026-09-25T11:59:00Z') });
+  db.addDelivery('d1', {
+    status: 'retrying',
+    attempt_count: 1,
+    next_retry_at: Date.parse('2026-09-25T11:59:00Z'),
+  });
 
   // The timer path and the poller path both reach processDelivery.
   await Promise.all([dispatcher.processDelivery('d1'), dispatcher.processDueRetries()]);
@@ -189,7 +209,11 @@ test('a retry timer overlapping the poller produces a single attempt', async () 
 
 test('a retry that is not yet due is not sent early by a timer', async () => {
   const { dispatcher, db, sent } = setup();
-  db.addDelivery('d1', { status: 'retrying', attempt_count: 1, next_retry_at: Date.parse('2026-09-25T13:00:00Z') });
+  db.addDelivery('d1', {
+    status: 'retrying',
+    attempt_count: 1,
+    next_retry_at: Date.parse('2026-09-25T13:00:00Z'),
+  });
 
   await dispatcher.processDelivery('d1');
 
@@ -200,7 +224,12 @@ test('a retry that is not yet due is not sent early by a timer', async () => {
 
 test('an in-flight delivery with a live lease is not reclaimed', async () => {
   const { dispatcher, db, sent } = setup();
-  db.addDelivery('d1', { status: 'delivering', attempt_count: 1, lease_token: 'worker-a', lease_expires_at: Date.parse('2026-09-25T12:00:30Z') });
+  db.addDelivery('d1', {
+    status: 'delivering',
+    attempt_count: 1,
+    lease_token: 'worker-a',
+    lease_expires_at: Date.parse('2026-09-25T12:00:30Z'),
+  });
 
   await dispatcher.processDueRetries();
   await dispatcher.processDelivery('d1');
@@ -212,23 +241,37 @@ test('an in-flight delivery with a live lease is not reclaimed', async () => {
 test('after a process restart an expired lease is recovered by the poller', async () => {
   const { dispatcher, db, sent, advance } = setup();
   // Worker crashed mid-attempt: row left 'delivering' with its lease.
-  db.addDelivery('d1', { status: 'delivering', attempt_count: 1, lease_token: 'dead-worker', lease_expires_at: Date.parse('2026-09-25T12:00:30Z') });
+  db.addDelivery('d1', {
+    status: 'delivering',
+    attempt_count: 1,
+    lease_token: 'dead-worker',
+    lease_expires_at: Date.parse('2026-09-25T12:00:30Z'),
+  });
   // Process died before the immediate dispatch of a freshly queued row ran.
   db.addDelivery('d2', { status: 'pending', attempt_count: 0 });
   advance(LEASE_MS + 1);
 
   await dispatcher.processDueRetries();
 
-  assert.deepEqual(sent.map((s) => s.deliveryId).sort(), ['d1', 'd2']);
+  assert.deepEqual(sent.map(s => s.deliveryId).sort(), ['d1', 'd2']);
   const d1 = db.deliveries.get('d1');
   assert.equal(d1.status, 'delivered');
-  assert.equal(d1.attempt_count, 2, 'the crashed attempt and the recovery attempt are both counted');
+  assert.equal(
+    d1.attempt_count,
+    2,
+    'the crashed attempt and the recovery attempt are both counted'
+  );
   assert.equal(db.deliveries.get('d2').attempt_count, 1);
 });
 
 test('a crashed final attempt is closed out as failed instead of staying stuck', async () => {
   const { dispatcher, db, sent, advance } = setup();
-  db.addDelivery('d1', { status: 'delivering', attempt_count: 5, lease_token: 'dead-worker', lease_expires_at: Date.parse('2026-09-25T12:00:00Z') });
+  db.addDelivery('d1', {
+    status: 'delivering',
+    attempt_count: 5,
+    lease_token: 'dead-worker',
+    lease_expires_at: Date.parse('2026-09-25T12:00:00Z'),
+  });
   advance(1);
 
   await dispatcher.processDueRetries();
@@ -240,7 +283,9 @@ test('a crashed final attempt is closed out as failed instead of staying stuck',
 
 test('a timed-out attempt schedules a retry and releases the lease', async () => {
   const { dispatcher, db } = setup({
-    fetchImpl: async () => { throw new Error('The operation was aborted due to timeout'); },
+    fetchImpl: async () => {
+      throw new Error('The operation was aborted due to timeout');
+    },
   });
   db.addDelivery('d1');
 
@@ -260,7 +305,9 @@ test('an attempt whose lease was reclaimed cannot overwrite the newer attempt', 
     fetchImpl: (_url, _opts, n) => {
       if (n === 1) {
         // First attempt hangs past its lease, then fails.
-        return new Promise((resolve) => { releaseSlow = () => resolve({ ok: false, status: 500, text: async () => 'boom' }); });
+        return new Promise(resolve => {
+          releaseSlow = () => resolve({ ok: false, status: 500, text: async () => 'boom' });
+        });
       }
       return { ok: true, status: 200, text: async () => 'ok' };
     },
@@ -268,7 +315,7 @@ test('an attempt whose lease was reclaimed cannot overwrite the newer attempt', 
   db.addDelivery('d1');
 
   const slow = dispatcher.processDelivery('d1');
-  while (!releaseSlow) await new Promise((r) => setImmediate(r));
+  while (!releaseSlow) await new Promise(r => setImmediate(r));
   advance(LEASE_MS + 1);
   await dispatcher.processDueRetries();
   assert.equal(db.deliveries.get('d1').status, 'delivered');
@@ -280,14 +327,15 @@ test('an attempt whose lease was reclaimed cannot overwrite the newer attempt', 
   assert.equal(sent.length, 2);
   assert.equal(d.status, 'delivered', 'stale outcome must not regress a delivered row');
   assert.equal(d.attempt_count, 2);
-  assert.ok(warnings.some((w) => /lease no longer held/.test(w)));
+  assert.ok(warnings.some(w => /lease no longer held/.test(w)));
 });
 
 test('a failed attempt followed by a successful retry ends delivered with two attempts', async () => {
   const { dispatcher, db, sent, advance } = setup({
-    fetchImpl: (_url, _opts, n) => (n === 1
-      ? { ok: false, status: 503, text: async () => 'unavailable' }
-      : { ok: true, status: 200, text: async () => 'ok' }),
+    fetchImpl: (_url, _opts, n) =>
+      n === 1
+        ? { ok: false, status: 503, text: async () => 'unavailable' }
+        : { ok: true, status: 200, text: async () => 'ok' },
   });
   db.addDelivery('d1');
 
@@ -301,7 +349,10 @@ test('a failed attempt followed by a successful retry ends delivered with two at
   assert.equal(sent.length, 2);
   assert.equal(d.status, 'delivered');
   assert.equal(d.attempt_count, 2);
-  assert.ok(sent.every((s) => s.deliveryId === 'd1'), 'delivery ID is the stable receiver dedup key');
+  assert.ok(
+    sent.every(s => s.deliveryId === 'd1'),
+    'delivery ID is the stable receiver dedup key'
+  );
 });
 
 test('campaign webhook deliveries are claimed the same way', async () => {

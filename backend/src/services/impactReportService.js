@@ -149,10 +149,9 @@ async function publishImpactReport(reportId, creatorId) {
   );
 
   // Fetch campaign title and all unique contributor user_ids
-  const { rows: campaignRows } = await db.query(
-    `SELECT title FROM campaigns WHERE id = $1`,
-    [report.campaign_id]
-  );
+  const { rows: campaignRows } = await db.query(`SELECT title FROM campaigns WHERE id = $1`, [
+    report.campaign_id,
+  ]);
 
   const campaignTitle = campaignRows[0]?.title || 'Campaign';
 
@@ -184,7 +183,11 @@ async function publishImpactReport(reportId, creatorId) {
           link: `/campaigns/${report.campaign_id}#impact-report`,
         });
       } catch (err) {
-        logger.error('Failed to send impact report notification', { userId, reportId, err: err.message });
+        logger.error('Failed to send impact report notification', {
+          userId,
+          reportId,
+          err: err.message,
+        });
       }
     }
   }
@@ -216,10 +219,9 @@ async function getImpactReport(campaignId) {
   const report = rows[0];
 
   // Increment views count (non-blocking)
-  db.query(
-    `UPDATE campaign_impact_reports SET views_count = views_count + 1 WHERE id = $1`,
-    [report.id]
-  ).catch(err => logger.error('Failed to increment view count', { err: err.message }));
+  db.query(`UPDATE campaign_impact_reports SET views_count = views_count + 1 WHERE id = $1`, [
+    report.id,
+  ]).catch(err => logger.error('Failed to increment view count', { err: err.message }));
 
   return {
     id: report.id,
@@ -370,7 +372,8 @@ async function hasPublishedReport(campaignId) {
 }
 
 function signImpactStats(stats, campaignId) {
-  const privateKey = process.env.CROWDPAY_IMPACT_SIGNING_PRIVATE_KEY ||
+  const privateKey =
+    process.env.CROWDPAY_IMPACT_SIGNING_PRIVATE_KEY ||
     process.env.CROWDPAY_SIGNING_PRIVATE_KEY ||
     process.env.PLATFORM_SIGNING_PRIVATE_KEY;
   if (!privateKey) {
@@ -467,9 +470,7 @@ async function getCampaignImpact(campaignId, options = {}) {
   };
 
   const signed = signImpactStats(stats, campaignId);
-  const response = signed
-    ? { ...stats, signature: signed }
-    : { ...stats, signature: null };
+  const response = signed ? { ...stats, signature: signed } : { ...stats, signature: null };
 
   impactCache.set(campaignId, { stats: response, version, fetchedAt: Date.now() });
   return response;

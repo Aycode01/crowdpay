@@ -97,7 +97,10 @@ function toStroops(amount, { allowZero = false, allowNegative = false } = {}) {
     throw new AmountError('amount must be greater than zero');
   }
   if (stroops > MAX_STROOPS || stroops < -MAX_STROOPS) {
-    throw new AmountError('amount exceeds the maximum supported Stellar amount', 'AMOUNT_TOO_LARGE');
+    throw new AmountError(
+      'amount exceeds the maximum supported Stellar amount',
+      'AMOUNT_TOO_LARGE'
+    );
   }
   return stroops;
 }

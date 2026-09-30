@@ -155,7 +155,11 @@ async function prepareSubscription({
   const contributor = userRows[0];
   if (!contributor) throw httpError('User not found', 404);
   if (contributor.wallet_type !== 'freighter') {
-    throw httpError('Prepare endpoint is only available for Freighter wallets', 400, 'UNSUPPORTED_WALLET_TYPE');
+    throw httpError(
+      'Prepare endpoint is only available for Freighter wallets',
+      400,
+      'UNSUPPORTED_WALLET_TYPE'
+    );
   }
 
   const startedAt = new Date();
@@ -174,7 +178,7 @@ async function prepareSubscription({
   const { unsignedXdr, balanceEntries } = await buildUnsignedSubscriptionTransaction({
     sourcePublicKey: contributor.wallet_public_key,
     asset,
-    entries: schedule.map((entry) => ({
+    entries: schedule.map(entry => ({
       amount: entry.amount,
       reclaimAfterUnix: entry.reclaimAfterUnix,
     })),
@@ -189,7 +193,7 @@ async function prepareSubscription({
     amountPerPeriod: input.amount,
     periodMonths,
     totalPeriods: input.totalPeriods,
-    schedule: schedule.map((s) => ({
+    schedule: schedule.map(s => ({
       scheduledDate: s.scheduledDate.toISOString(),
       amount: s.amount,
     })),
@@ -201,8 +205,22 @@ async function prepareSubscription({
  * Submit a signed subscription transaction from a Freighter wallet.
  * Persists balance IDs only after the signed transaction is confirmed on Horizon.
  */
-async function submitSubscription({ campaignId, userId, unsignedXdr, signedXdr, asset, amountPerPeriod, periodMonths, totalPeriods }) {
-  const input = validateSubscriptionInput({ amountPerPeriod: amountPerPeriod, asset, periodMonths, totalPeriods });
+async function submitSubscription({
+  campaignId,
+  userId,
+  unsignedXdr,
+  signedXdr,
+  asset,
+  amountPerPeriod,
+  periodMonths,
+  totalPeriods,
+}) {
+  const input = validateSubscriptionInput({
+    amountPerPeriod: amountPerPeriod,
+    asset,
+    periodMonths,
+    totalPeriods,
+  });
 
   const { rows: campaignRows } = await db.query(
     `SELECT id, wallet_public_key, asset_type, deadline FROM campaigns
@@ -227,14 +245,22 @@ async function submitSubscription({ campaignId, userId, unsignedXdr, signedXdr, 
   const contributor = userRows[0];
   if (!contributor) throw httpError('User not found', 404);
   if (contributor.wallet_type !== 'freighter') {
-    throw httpError('Submit endpoint is only available for Freighter wallets', 400, 'UNSUPPORTED_WALLET_TYPE');
+    throw httpError(
+      'Submit endpoint is only available for Freighter wallets',
+      400,
+      'UNSUPPORTED_WALLET_TYPE'
+    );
   }
 
   const tx = TransactionBuilder.fromXDR(unsignedXdr, networkPassphrase);
   const signedTx = TransactionBuilder.fromXDR(signedXdr, networkPassphrase);
 
   if (signedTx.hash().toString('hex') !== tx.hash().toString('hex')) {
-    throw httpError('Signed transaction does not match the prepared transaction', 400, 'XDR_MISMATCH');
+    throw httpError(
+      'Signed transaction does not match the prepared transaction',
+      400,
+      'XDR_MISMATCH'
+    );
   }
 
   const startedAt = new Date();
@@ -254,7 +280,7 @@ async function submitSubscription({ campaignId, userId, unsignedXdr, signedXdr, 
     signedXdr,
     sourcePublicKey: contributor.wallet_public_key,
     asset,
-    entries: schedule.map((entry) => ({
+    entries: schedule.map(entry => ({
       amount: entry.amount,
       reclaimAfterUnix: entry.reclaimAfterUnix,
     })),
@@ -317,7 +343,8 @@ async function submitSubscription({ campaignId, userId, unsignedXdr, signedXdr, 
 /** Last instant (exclusive) an installment may be scheduled for: the end of the deadline day. */
 function fundingWindowEnd(deadline) {
   if (!deadline) return null;
-  const day = deadline instanceof Date ? deadline.toISOString().slice(0, 10) : String(deadline).slice(0, 10);
+  const day =
+    deadline instanceof Date ? deadline.toISOString().slice(0, 10) : String(deadline).slice(0, 10);
   return new Date(Date.parse(`${day}T00:00:00Z`) + DAY_MS);
 }
 
@@ -426,7 +453,7 @@ async function createSubscription({
   const { balanceIds } = await withDecryptedWalletSecret(
     contributor.wallet_secret_encrypted,
     { userId, walletPublicKey: contributor.wallet_public_key },
-    async (walletSecret) => {
+    async walletSecret => {
       await ensureCustodialAccountFundedAndTrusted({
         publicKey: contributor.wallet_public_key,
         secret: walletSecret,
@@ -434,7 +461,7 @@ async function createSubscription({
       return createSubscriptionClaimableBalances({
         sourceSecret: walletSecret,
         asset,
-        entries: schedule.map((entry) => ({
+        entries: schedule.map(entry => ({
           amount: entry.amount,
           reclaimAfterUnix: entry.reclaimAfterUnix,
         })),
@@ -537,16 +564,15 @@ async function cancelSubscription({ campaignId, subscriptionId, userId }) {
       [subscriptionId]
     );
 
-    await client.query(
-      `UPDATE subscriptions SET status = 'cancelled' WHERE id = $1`,
-      [subscriptionId]
-    );
+    await client.query(`UPDATE subscriptions SET status = 'cancelled' WHERE id = $1`, [
+      subscriptionId,
+    ]);
 
     await client.query('COMMIT');
 
     // The earliest date the contributor's reclaim predicate opens on a cancelled balance.
     const earliestCancelled = cancelled
-      .map((row) => new Date(row.scheduled_date).getTime())
+      .map(row => new Date(row.scheduled_date).getTime())
       .sort((a, b) => a - b)[0];
     const estimatedRefundDate = earliestCancelled
       ? new Date(earliestCancelled + CONTRIBUTOR_RECLAIM_AFTER_DAYS * DAY_MS).toISOString()
@@ -561,7 +587,7 @@ async function cancelSubscription({ campaignId, subscriptionId, userId }) {
     return {
       cancelled: cancelled.length,
       nonCancellable: nonCancellable.length,
-      non_cancellable_balances: nonCancellable.map((row) => ({
+      non_cancellable_balances: nonCancellable.map(row => ({
         id: row.id,
         stellar_balance_id: row.stellar_balance_id,
         scheduled_date: row.scheduled_date,
@@ -626,10 +652,10 @@ async function settleSubscriptionStatus(client, subscriptionId) {
   let status = 'cancelled';
   if (counts.claimed === counts.total) status = 'completed';
   else if (counts.closed > 0 && counts.claimed + counts.closed === counts.total) status = 'closed';
-  await client.query(
-    `UPDATE subscriptions SET status = $2 WHERE id = $1 AND status <> $2`,
-    [subscriptionId, status]
-  );
+  await client.query(`UPDATE subscriptions SET status = $2 WHERE id = $1 AND status <> $2`, [
+    subscriptionId,
+    status,
+  ]);
   return status;
 }
 
@@ -678,13 +704,7 @@ async function recordClaimedBalance({ balance, txHash }) {
        VALUES ($1, $2, $3, $4, 'subscription_claim', $5)
        ON CONFLICT (tx_hash) DO NOTHING
        RETURNING id`,
-      [
-        balance.campaign_id,
-        balance.contributor_public_key,
-        balance.amount,
-        balance.asset,
-        txHash,
-      ]
+      [balance.campaign_id, balance.contributor_public_key, balance.amount, balance.asset, txHash]
     );
 
     if (contributionRows.length) {
@@ -723,7 +743,7 @@ async function notifySubscriptionClosures(closedRows) {
 
   for (const rows of bySubscription.values()) {
     const first = rows[0];
-    const reclaimDates = rows.map((r) => new Date(r.reclaimable_at).getTime()).sort((a, b) => a - b);
+    const reclaimDates = rows.map(r => new Date(r.reclaimable_at).getTime()).sort((a, b) => a - b);
     const from = new Date(reclaimDates[0]).toISOString().slice(0, 10);
     const until = new Date(reclaimDates[reclaimDates.length - 1]).toISOString().slice(0, 10);
     const total = rows.reduce((sum, r) => sum + Number(r.amount), 0);
@@ -779,9 +799,9 @@ async function closeIneligibleInstallments({ balanceId = null } = {}) {
   );
   if (!rows.length) return [];
 
-  const subscriptionIds = [...new Set(rows.map((r) => r.subscription_id))];
+  const subscriptionIds = [...new Set(rows.map(r => r.subscription_id))];
   for (const subscriptionId of subscriptionIds) {
-    const reason = rows.find((r) => r.subscription_id === subscriptionId).closure_reason;
+    const reason = rows.find(r => r.subscription_id === subscriptionId).closure_reason;
     const client = await db.connect();
     try {
       await client.query('BEGIN');
@@ -824,7 +844,7 @@ async function processDueSubscriptionBalances() {
   try {
     await client.query('BEGIN');
     const res = await client.query(
-    `SELECT sb.id, sb.subscription_id, sb.stellar_balance_id, sb.amount, sb.scheduled_date,
+      `SELECT sb.id, sb.subscription_id, sb.stellar_balance_id, sb.amount, sb.scheduled_date,
             s.asset, s.campaign_id, c.wallet_public_key AS campaign_public_key,
             u.wallet_public_key AS contributor_public_key
      FROM subscription_balances sb
@@ -837,10 +857,10 @@ async function processDueSubscriptionBalances() {
      ORDER BY sb.scheduled_date
        LIMIT 200
        FOR UPDATE OF sb SKIP LOCKED`
-  );
+    );
     due = res.rows;
     if (due.length > 0) {
-      const dueIds = due.map((r) => r.id);
+      const dueIds = due.map(r => r.id);
       await client.query(
         `UPDATE subscription_balances SET status = 'processing' WHERE id = ANY($1::uuid[])`,
         [dueIds]
@@ -925,11 +945,11 @@ async function installmentStillClaimable(balanceId) {
 }
 
 function startSubscriptionClaimWorker() {
-  processDueSubscriptionBalances().catch((err) =>
+  processDueSubscriptionBalances().catch(err =>
     logger.error('subscription-claim-worker: initial run failed', { error: err.message })
   );
   _workerTimer = setInterval(() => {
-    processDueSubscriptionBalances().catch((err) =>
+    processDueSubscriptionBalances().catch(err =>
       logger.error('subscription-claim-worker: run failed', { error: err.message })
     );
   }, WORKER_INTERVAL_MS);

@@ -22,7 +22,7 @@ const { emitWebhookEventForCampaign, WEBHOOK_EVENTS } = require('../services/web
 /**
  * POST /api/campaigns/:id/matches
  * Create a new sponsor matching pledge for a campaign.
- * 
+ *
  * @openapi
  * /api/campaigns/{id}/matches:
  *   post:
@@ -94,7 +94,7 @@ router.post(
         sponsor_user_id: pledge.sponsor_user_id,
         match_ratio: pledge.match_ratio,
         pledge_amount: pledge.pledge_amount,
-      }).catch((err) => logger.error('Webhook emit failed', { err }));
+      }).catch(err => logger.error('Webhook emit failed', { err }));
 
       res.status(201).json(pledge);
     } catch (err) {
@@ -107,7 +107,7 @@ router.post(
 /**
  * GET /api/campaigns/:id/matches
  * Get sponsor matching progress for a campaign.
- * 
+ *
  * @openapi
  * /api/campaigns/{id}/matches:
  *   get:
@@ -156,12 +156,10 @@ router.get(
   })
 );
 
-
-
 /**
  * GET /api/user/sponsor-matches
  * Get sponsor's matching pledges across all campaigns.
- * 
+ *
  * @openapi
  * /api/user/sponsor-matches:
  *   get:
@@ -182,7 +180,10 @@ router.get(
       const pledges = await getSponsorMatchingPledges(req.user.userId);
       res.json({ pledges });
     } catch (err) {
-      logger.error('Failed to get sponsor pledges', { error: err.message, userId: req.user.userId });
+      logger.error('Failed to get sponsor pledges', {
+        error: err.message,
+        userId: req.user.userId,
+      });
       res.status(500).json({ error: 'Failed to retrieve pledges' });
     }
   })
@@ -191,7 +192,7 @@ router.get(
 /**
  * PATCH /api/campaigns/:id/matches/:matchId/complete
  * Mark a matching pledge as completed (campaign ended).
- * 
+ *
  * @openapi
  * /api/campaigns/{id}/matches/{matchId}/complete:
  *   patch:
@@ -256,8 +257,9 @@ router.patch(
       emitWebhookEventForCampaign(campaignId, WEBHOOK_EVENTS.SPONSOR_MATCH_COMPLETED, {
         match_id: completed.id,
         sponsor_user_id: completed.sponsor_user_id,
-        unclaimed_amount: parseFloat(completed.pledge_amount) - parseFloat(completed.matched_amount),
-      }).catch((err) => logger.error('Webhook emit failed', { err }));
+        unclaimed_amount:
+          parseFloat(completed.pledge_amount) - parseFloat(completed.matched_amount),
+      }).catch(err => logger.error('Webhook emit failed', { err }));
 
       res.json(completed);
     } catch (err) {

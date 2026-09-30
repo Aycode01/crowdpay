@@ -55,11 +55,11 @@ describe('Background Worker Bootstrap', () => {
   it('starts workers when enabled', async () => {
     process.env.WORKER_ENABLED = 'true';
     process.env.NODE_ENV = 'production';
-    
+
     await startBackgroundWorkers();
-    
+
     assert.equal(isWorkerRunning(), true);
-    
+
     await stopBackgroundWorkers();
     assert.equal(isWorkerRunning(), false);
   });

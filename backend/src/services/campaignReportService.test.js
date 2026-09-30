@@ -37,12 +37,23 @@ const baseRows = {
   statusEvents: [],
 };
 
-function buildQueryImpl({ campaign, totals, asset, milestones, topContributors, daily, statusEvents }) {
+function buildQueryImpl({
+  campaign,
+  totals,
+  asset,
+  milestones,
+  topContributors,
+  daily,
+  statusEvents,
+}) {
   const c = campaign === undefined ? baseRows.campaign : campaign;
   const t = totals === undefined ? baseRows.totals : totals;
-  return async (text) => {
+  return async text => {
     if (text.includes('FROM campaigns WHERE id = $1')) return { rows: c ? [c] : [] };
-    if (text.includes('FROM contributions\n       WHERE campaign_id = $1') && !text.includes('GROUP BY')) {
+    if (
+      text.includes('FROM contributions\n       WHERE campaign_id = $1') &&
+      !text.includes('GROUP BY')
+    ) {
       if (text.includes('platform_fee_amount')) return { rows: [t] };
     }
     if (text.includes('GROUP BY asset')) return { rows: asset || [] };
@@ -158,10 +169,7 @@ test('verifySignedToken rejects an expired token', () => {
     JSON.stringify({ cid: 'campaign-1', exp: Date.now() - 1000 })
   ).toString('base64url');
   const crypto = require('crypto');
-  const sig = crypto
-    .createHmac('sha256', process.env.JWT_SECRET)
-    .update(payload)
-    .digest('hex');
+  const sig = crypto.createHmac('sha256', process.env.JWT_SECRET).update(payload).digest('hex');
 
   assert.equal(service.verifySignedToken(`${payload}.${sig}`, 'campaign-1'), false);
 });
@@ -185,10 +193,7 @@ test('verifySignedToken rejects a token for a different campaign', () => {
     JSON.stringify({ cid: 'campaign-other', exp: Date.now() + 100000 })
   ).toString('base64url');
   const crypto = require('crypto');
-  const sig = crypto
-    .createHmac('sha256', process.env.JWT_SECRET)
-    .update(payload)
-    .digest('hex');
+  const sig = crypto.createHmac('sha256', process.env.JWT_SECRET).update(payload).digest('hex');
 
   assert.equal(service.verifySignedToken(`${payload}.${sig}`, 'campaign-1'), false);
 });

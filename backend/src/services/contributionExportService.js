@@ -12,7 +12,9 @@ const EXPORT_COLUMNS = [
 const DEFAULT_BATCH_SIZE = 500;
 
 function normalizeAsset(asset) {
-  return String(asset || '').trim().toUpperCase();
+  return String(asset || '')
+    .trim()
+    .toUpperCase();
 }
 
 function amountForAsset(row, acceptedAssets) {
@@ -111,10 +113,7 @@ async function streamCampaignContributionExport({
   batchSize = DEFAULT_BATCH_SIZE,
 }) {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader(
-    'Content-Disposition',
-    `attachment; filename="${exportFilename(campaignId)}"`
-  );
+  res.setHeader('Content-Disposition', `attachment; filename="${exportFilename(campaignId)}"`);
   res.setHeader('Cache-Control', 'no-store');
 
   await writeCsv(res, csvRow(EXPORT_COLUMNS));

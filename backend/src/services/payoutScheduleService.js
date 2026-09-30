@@ -42,7 +42,9 @@ async function createPayoutSchedule({
   timezone = 'UTC',
 }) {
   if (!VALID_CADENCES.includes(cadence)) {
-    const err = new Error(`Invalid cadence: ${cadence}. Must be one of: ${VALID_CADENCES.join(', ')}`);
+    const err = new Error(
+      `Invalid cadence: ${cadence}. Must be one of: ${VALID_CADENCES.join(', ')}`
+    );
     err.statusCode = 422;
     throw err;
   }
@@ -267,7 +269,9 @@ async function processDuePayoutSchedules() {
       }
 
       if (payoutAmount <= 0) {
-        logger.warn('Payout schedule has 0 or negative calculated amount', { scheduleId: schedule.id });
+        logger.warn('Payout schedule has 0 or negative calculated amount', {
+          scheduleId: schedule.id,
+        });
         continue;
       }
 
@@ -327,9 +331,11 @@ async function processDuePayoutSchedules() {
       );
       const collectedFees = Number(feeRows?.[0]?.total_fees) || 0;
 
-      const { commissions } = await calculateCommissions(schedule.campaign_id).catch(() => ({ commissions: [] }));
+      const { commissions } = await calculateCommissions(schedule.campaign_id).catch(() => ({
+        commissions: [],
+      }));
       const payableCommissions = (commissions || []).filter(
-        (c) => c.destination_public_key && parseFloat(c.commission_owed) > 0
+        c => c.destination_public_key && parseFloat(c.commission_owed) > 0
       );
       const commissionTotal = payableCommissions.reduce(
         (sum, c) => sum + parseFloat(c.commission_owed),
@@ -346,7 +352,7 @@ async function processDuePayoutSchedules() {
           asset: schedule.asset_type,
           collectedFees,
           creatorPublicKey: schedule.creator_wallet_public_key,
-          commissions: payableCommissions.map((c) => ({
+          commissions: payableCommissions.map(c => ({
             destinationPublicKey: c.destination_public_key,
             amount: c.commission_owed,
           })),
@@ -376,7 +382,9 @@ async function processDuePayoutSchedules() {
             formattedAmount,
             schedule.destination_key,
             xdr,
-            JSON.stringify([{ type: 'recurring_schedule', schedule_id: schedule.id, cadence: schedule.cadence }]),
+            JSON.stringify([
+              { type: 'recurring_schedule', schedule_id: schedule.id, cadence: schedule.cadence },
+            ]),
           ]
         );
         withdrawalRequest = wrRows[0];
@@ -423,7 +431,11 @@ async function processDuePayoutSchedules() {
 
         // 5. Update schedule state & advance next_run_at
         const nextOccurrence = (schedule.occurrences_count || 0) + 1;
-        const nextRunAt = calculateNextRunTime(schedule.next_run_at, schedule.cadence, schedule.timezone);
+        const nextRunAt = calculateNextRunTime(
+          schedule.next_run_at,
+          schedule.cadence,
+          schedule.timezone
+        );
         let nextStatus = 'active';
 
         if (schedule.max_occurrences && nextOccurrence >= schedule.max_occurrences) {
@@ -473,18 +485,24 @@ async function processDuePayoutSchedules() {
         }
       }
 
-      results.push({ scheduleId: schedule.id, withdrawalRequestId: withdrawalRequest.id, amount: formattedAmount });
+      results.push({
+        scheduleId: schedule.id,
+        withdrawalRequestId: withdrawalRequest.id,
+        amount: formattedAmount,
+      });
     } catch (err) {
       logger.error('Failed to process recurring payout schedule', {
         scheduleId: schedule.id,
         error: err.message,
       });
-      await db.query(
-        `UPDATE recurring_payout_schedules
+      await db
+        .query(
+          `UPDATE recurring_payout_schedules
          SET last_error = $1, updated_at = NOW()
          WHERE id = $2`,
-        [err.message, schedule.id]
-      ).catch(() => {});
+          [err.message, schedule.id]
+        )
+        .catch(() => {});
     }
   }
 

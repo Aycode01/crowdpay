@@ -4,11 +4,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { isUuid } = require('../utils/validation');
 const db = require('../config/database');
 const logger = require('../config/logger');
-const {
-  getTeamPage,
-  addTeamMember,
-  removeTeamMember,
-} = require('../services/teamCampaignService');
+const { getTeamPage, addTeamMember, removeTeamMember } = require('../services/teamCampaignService');
 
 // Team fundraising pages under a parent campaign (#952). Mounted at
 // /api/campaigns — parent-scope team routes live here so the surface sits
@@ -30,14 +26,12 @@ function invalidUuid(res, field) {
  * Ownership = campaign creator, or platform admin.
  */
 async function loadCampaignWithAccess(campaignId, user) {
-  const { rows } = await db.query(
-    'SELECT id, creator_id, title FROM campaigns WHERE id = $1',
-    [campaignId]
-  );
+  const { rows } = await db.query('SELECT id, creator_id, title FROM campaigns WHERE id = $1', [
+    campaignId,
+  ]);
   const campaign = rows[0];
   if (!campaign) return { campaign: null };
-  const isOwner =
-    user.role === 'admin' || campaign.creator_id === user.userId;
+  const isOwner = user.role === 'admin' || campaign.creator_id === user.userId;
   return { campaign, isOwner };
 }
 
@@ -52,9 +46,7 @@ router.get(
   '/:id/team',
   asyncHandler(async (req, res) => {
     if (!isUuid(req.params.id)) return invalidUuid(res, 'id');
-    const { rows } = await db.query('SELECT id FROM campaigns WHERE id = $1', [
-      req.params.id,
-    ]);
+    const { rows } = await db.query('SELECT id FROM campaigns WHERE id = $1', [req.params.id]);
     if (!rows.length) {
       return res.status(404).json({ error: 'Campaign not found' });
     }
@@ -87,10 +79,7 @@ router.post(
         details: [{ field: 'role', message: 'role must be owner or member' }],
       });
     }
-    if (
-      req.body?.display_order !== undefined &&
-      !Number.isInteger(req.body.display_order)
-    ) {
+    if (req.body?.display_order !== undefined && !Number.isInteger(req.body.display_order)) {
       return res.status(422).json({
         error: 'Validation failed',
         details: [
@@ -102,17 +91,12 @@ router.post(
       });
     }
 
-    const { campaign, isOwner } = await loadCampaignWithAccess(
-      req.params.id,
-      req.user
-    );
+    const { campaign, isOwner } = await loadCampaignWithAccess(req.params.id, req.user);
     if (!campaign) {
       return res.status(404).json({ error: 'Campaign not found' });
     }
     if (!isOwner) {
-      return res
-        .status(403)
-        .json({ error: 'Only the campaign owner can manage its team' });
+      return res.status(403).json({ error: 'Only the campaign owner can manage its team' });
     }
 
     const result = await addTeamMember(req.params.id, req.body.member_campaign_id, {
@@ -145,17 +129,12 @@ router.delete(
     if (!isUuid(req.params.id)) return invalidUuid(res, 'id');
     if (!isUuid(req.params.memberId)) return invalidUuid(res, 'memberId');
 
-    const { campaign, isOwner } = await loadCampaignWithAccess(
-      req.params.id,
-      req.user
-    );
+    const { campaign, isOwner } = await loadCampaignWithAccess(req.params.id, req.user);
     if (!campaign) {
       return res.status(404).json({ error: 'Campaign not found' });
     }
     if (!isOwner) {
-      return res
-        .status(403)
-        .json({ error: 'Only the campaign owner can manage its team' });
+      return res.status(403).json({ error: 'Only the campaign owner can manage its team' });
     }
 
     const removed = await removeTeamMember(req.params.id, req.params.memberId);

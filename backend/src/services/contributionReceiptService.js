@@ -39,7 +39,7 @@ async function getOrCreateReceiptPdf(contributionId, forceRegenerate = false) {
     memo: row.memo,
     networkFee: row.network_fee || '0',
     platformFee: row.platform_fee || '0',
-    totalCharged: row.total_charged || row.amount
+    totalCharged: row.total_charged || row.amount,
   };
 
   const pdfBuffer = await new Promise((resolve, reject) => {

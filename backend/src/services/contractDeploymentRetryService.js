@@ -18,10 +18,9 @@ async function retryFailedContractDeployments() {
   let lockAcquired = false;
 
   try {
-    const { rows: lockRows } = await client.query(
-      'SELECT pg_try_advisory_lock($1) AS acquired',
-      [RETRY_LOCK_KEY]
-    );
+    const { rows: lockRows } = await client.query('SELECT pg_try_advisory_lock($1) AS acquired', [
+      RETRY_LOCK_KEY,
+    ]);
     lockAcquired = lockRows[0]?.acquired === true;
     if (!lockAcquired) {
       logger.info('Contract deployment retry skipped — another instance holds the advisory lock');
@@ -121,7 +120,7 @@ async function retryFailedContractDeployments() {
           previousError: campaign.contract_deployment_error,
         });
 
-        Sentry.withScope((scope) => {
+        Sentry.withScope(scope => {
           scope.setLevel('warning');
           scope.setTag('cron_redeploy', 'contract_deployment');
           scope.setContext('deployment', {

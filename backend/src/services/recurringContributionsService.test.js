@@ -47,9 +47,7 @@ function buildService({ schedule = dueSchedule(), chargeImpl, queryImpl } = {}) 
     '../config/database': db,
     '../config/logger': silentLogger,
     './contributionService': {
-      submitCustodialContribution:
-        chargeImpl ||
-        (async () => ({ txHash: 'tx-success' })),
+      submitCustodialContribution: chargeImpl || (async () => ({ txHash: 'tx-success' })),
     },
     './emailService': {
       sendRecurringContributionNoticeEmail: async ({ kind }) => {
@@ -64,7 +62,7 @@ function buildService({ schedule = dueSchedule(), chargeImpl, queryImpl } = {}) 
 test('processRecurringContributions charges due schedules and advances them', async () => {
   let chargedWith = null;
   const { service, calls, emails } = buildService({
-    chargeImpl: async (args) => {
+    chargeImpl: async args => {
       chargedWith = args;
       return { txHash: 'tx-success' };
     },
@@ -83,7 +81,7 @@ test('processRecurringContributions charges due schedules and advances them', as
   assert.deepEqual(emails.sort(), ['charged', 'upcoming']);
 
   // Schedule advanced and failure state cleared.
-  const advance = calls.find((c) => c.text.includes('failure_count = 0'));
+  const advance = calls.find(c => c.text.includes('failure_count = 0'));
   assert.ok(advance, 'expected success UPDATE');
   assert.equal(advance.text.includes("'1 month'"), true);
   assert.equal(advance.params[0], SCHEDULE_ID);
@@ -99,7 +97,7 @@ test('processRecurringContributions records failure and applies exponential back
 
   await service.processRecurringContributions();
 
-  const backoff = calls.find((c) => c.text.includes('failure_count = $2'));
+  const backoff = calls.find(c => c.text.includes('failure_count = $2'));
   assert.ok(backoff, 'expected failure UPDATE');
   assert.equal(backoff.params[1], 3); // failure_count incremented
   assert.match(backoff.params[2], /horizon unavailable/);
@@ -119,7 +117,7 @@ test('backoffMinutes scales exponentially and is capped at 24 hours', () => {
 
 test('processRecurringContributions exits early with nothing due', async () => {
   const { service, calls } = buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM recurring_contributions rc')) return { rows: [] };
       return { rows: [] };
     },
@@ -127,6 +125,6 @@ test('processRecurringContributions exits early with nothing due', async () => {
 
   await service.processRecurringContributions();
   // No charge / no update runs when there are no due schedules.
-  assert.ok(!calls.some((c) => c.text.includes('submitCustodialContribution')));
-  assert.ok(!calls.some((c) => c.text.includes('UPDATE recurring_contributions')));
+  assert.ok(!calls.some(c => c.text.includes('submitCustodialContribution')));
+  assert.ok(!calls.some(c => c.text.includes('UPDATE recurring_contributions')));
 });

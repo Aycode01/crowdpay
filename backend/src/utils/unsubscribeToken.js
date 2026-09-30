@@ -1,4 +1,4 @@
-const crypto = require("crypto");
+const crypto = require('crypto');
 
 function secret() {
   const s = process.env.UNSUBSCRIBE_SECRET || process.env.JWT_SECRET;
@@ -11,16 +11,13 @@ function secret() {
 function sign(email, category, campaignId) {
   const base = `${email.toLowerCase()}:${category}`;
   const payload = campaignId ? `${base}:${campaignId}` : base;
-  return crypto
-    .createHmac("sha256", secret())
-    .update(payload)
-    .digest("hex");
+  return crypto.createHmac('sha256', secret()).update(payload).digest('hex');
 }
 
 function buildUnsubscribeUrl({ email, category, campaignId }) {
-  const base = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+  const base = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
   const params = new URLSearchParams({ email, category, sig: sign(email, category, campaignId) });
-  if (campaignId) params.set("campaign_id", String(campaignId));
+  if (campaignId) params.set('campaign_id', String(campaignId));
   return `${base}/settings/notifications?${params.toString()}`;
 }
 

@@ -99,9 +99,10 @@ async function simulateAndPrepare(tx) {
     const meta = xdr.TransactionMeta.fromXDR(simulation.result.meta, 'base64');
     const sorobanMeta = meta.v3().sorobanMeta();
     if (sorobanMeta && sorobanMeta.returnValue()) {
-      const isError = typeof sorobanMeta.returnValue().type === 'function'
-        ? sorobanMeta.returnValue().type() === xdr.ScValType.scvError
-        : sorobanMeta.returnValue().switch?.()?.name === 'scvError';
+      const isError =
+        typeof sorobanMeta.returnValue().type === 'function'
+          ? sorobanMeta.returnValue().type() === xdr.ScValType.scvError
+          : sorobanMeta.returnValue().switch?.()?.name === 'scvError';
       if (isError) {
         throw new Error(`Simulation failed: ${JSON.stringify(simulation.result)}`);
       }
@@ -220,7 +221,9 @@ function validateSubmittedContractCallXdr({ signedXdr, unsignedXdr, expectedSour
     throw new ContractCallValidationError('signed_xdr is required');
   }
   if (!unsignedXdr) {
-    throw new ContractCallValidationError('Server-generated unsigned_xdr is required to verify this action');
+    throw new ContractCallValidationError(
+      'Server-generated unsigned_xdr is required to verify this action'
+    );
   }
 
   let signedTx;
@@ -241,15 +244,23 @@ function validateSubmittedContractCallXdr({ signedXdr, unsignedXdr, expectedSour
   // operations, memo, time bounds) but not the signatures, so a match here
   // proves the contract/method/args are exactly what the server prepared.
   if (signedTx.hash().toString('hex') !== unsignedTx.hash().toString('hex')) {
-    throw new ContractCallValidationError('Signed transaction does not match the server-generated transaction');
+    throw new ContractCallValidationError(
+      'Signed transaction does not match the server-generated transaction'
+    );
   }
 
   if (signedTx.source !== expectedSourcePublicKey) {
     throw new ContractCallValidationError('Transaction source does not match the expected wallet');
   }
 
-  if (!signedTx.operations || signedTx.operations.length !== 1 || signedTx.operations[0].type !== 'invokeHostFunction') {
-    throw new ContractCallValidationError('Transaction must contain exactly one contract invocation');
+  if (
+    !signedTx.operations ||
+    signedTx.operations.length !== 1 ||
+    signedTx.operations[0].type !== 'invokeHostFunction'
+  ) {
+    throw new ContractCallValidationError(
+      'Transaction must contain exactly one contract invocation'
+    );
   }
 
   if (!signedTx.signatures || signedTx.signatures.length === 0) {
@@ -262,7 +273,7 @@ function validateSubmittedContractCallXdr({ signedXdr, unsignedXdr, expectedSour
   } catch {
     throw new ContractCallValidationError('Invalid expected source public key');
   }
-  const signatureValid = signedTx.signatures.some((decorated) => {
+  const signatureValid = signedTx.signatures.some(decorated => {
     try {
       return signer.verify(signedTx.hash(), decorated.signature());
     } catch {
@@ -270,7 +281,9 @@ function validateSubmittedContractCallXdr({ signedXdr, unsignedXdr, expectedSour
     }
   });
   if (!signatureValid) {
-    throw new ContractCallValidationError('Signed transaction does not include a valid signature from the expected wallet');
+    throw new ContractCallValidationError(
+      'Signed transaction does not include a valid signature from the expected wallet'
+    );
   }
 
   return true;
@@ -295,9 +308,10 @@ async function invokeContractReadOnly({ contractId, method, args }) {
     const meta = xdr.TransactionMeta.fromXDR(simulation.result.meta, 'base64');
     const sorobanMeta = meta.v3().sorobanMeta();
     if (sorobanMeta && sorobanMeta.returnValue()) {
-      const isError = typeof sorobanMeta.returnValue().type === 'function'
-        ? sorobanMeta.returnValue().type() === xdr.ScValType.scvError
-        : sorobanMeta.returnValue().switch?.()?.name === 'scvError';
+      const isError =
+        typeof sorobanMeta.returnValue().type === 'function'
+          ? sorobanMeta.returnValue().type() === xdr.ScValType.scvError
+          : sorobanMeta.returnValue().switch?.()?.name === 'scvError';
       if (isError) {
         throw new Error(`Simulation returned error: ${JSON.stringify(simulation.result)}`);
       }
@@ -342,7 +356,7 @@ async function initializeMilestones({
   milestones,
   signerSecret,
 }) {
-  const milestoneScVals = milestones.map((m) => {
+  const milestoneScVals = milestones.map(m => {
     const titleHash = Buffer.alloc(32);
     Buffer.from(crypto.createHash('sha256').update(m.title).digest()).copy(titleHash);
     return nativeToScVal({
@@ -403,8 +417,8 @@ async function buildUnsignedEscrowDeposit({ contractId, fromAddress, amount }) {
       contract.call(
         'deposit',
         nativeToScVal(Address.fromString(fromAddress), { type: 'address' }),
-        nativeToScVal(amount, { type: 'i128' }),
-      ),
+        nativeToScVal(amount, { type: 'i128' })
+      )
     )
     .setTimeout(TX_TIMEOUT_CONTRIBUTION_S)
     .build();
@@ -420,8 +434,7 @@ async function buildUnsignedEscrowDeposit({ contractId, fromAddress, amount }) {
  */
 function isContractDepositEligible(campaign) {
   return (
-    process.env.SOROBAN_ENABLED === 'true' &&
-    looksLikeContractAddress(campaign?.escrow_contract_id)
+    process.env.SOROBAN_ENABLED === 'true' && looksLikeContractAddress(campaign?.escrow_contract_id)
   );
 }
 
@@ -438,9 +451,7 @@ async function requestRefund({ contractId, contributorAddress, signerSecret }) {
   return invokeContract({
     contractId,
     method: 'refund',
-    args: [
-      nativeToScVal(Address.fromString(contributorAddress), { type: 'address' }),
-    ],
+    args: [nativeToScVal(Address.fromString(contributorAddress), { type: 'address' })],
     signerSecret,
   });
 }
@@ -449,9 +460,7 @@ async function approveEscrowWithdrawal({ contractId, releaseAmount, signerSecret
   return invokeContract({
     contractId,
     method: 'approve_withdrawal',
-    args: [
-      nativeToScVal(releaseAmount, { type: 'i128' }),
-    ],
+    args: [nativeToScVal(releaseAmount, { type: 'i128' })],
     signerSecret,
   });
 }
@@ -498,7 +507,8 @@ function encodeMilestone(m) {
 
   return nativeToScVal({
     title_hash: titleHash,
-    release_bps: m.release_percentage_units ||
+    release_bps:
+      m.release_percentage_units ||
       Math.round(parseFloat(m.release_percentage || m.release_percentage_units || 0) * 100),
     status: 0,
     evidence_hash: null,
@@ -514,12 +524,13 @@ async function createContractFromWasmHash({ wasmHash, signerSecret, address }) {
   const source = await server.loadAccount(signer.publicKey());
 
   const wasmBuf = Buffer.isBuffer(wasmHash) ? wasmHash : Buffer.from(wasmHash, 'hex');
-  const op = typeof Operation.createContract === 'function'
-    ? Operation.createContract(wasmHash)
-    : Operation.createCustomContract({
-        address: Address.fromString(address || signer.publicKey()),
-        wasmHash: wasmBuf,
-      });
+  const op =
+    typeof Operation.createContract === 'function'
+      ? Operation.createContract(wasmHash)
+      : Operation.createCustomContract({
+          address: Address.fromString(address || signer.publicKey()),
+          wasmHash: wasmBuf,
+        });
 
   const tx = new TransactionBuilder(source, {
     fee: BASE_FEE,
@@ -545,15 +556,16 @@ async function uploadContractWasm(wasmBuffer, signerSecret) {
   const signer = Keypair.fromSecret(signerSecret);
   const source = await server.loadAccount(signer.publicKey());
 
-  const op = typeof Operation.uploadContractWasm === 'function'
-    ? (() => {
-        try {
-          return Operation.uploadContractWasm({ wasm: wasmBuffer });
-        } catch {
-          return Operation.uploadContractWasm(wasmBuffer);
-        }
-      })()
-    : Operation.uploadContractWasm({ wasm: wasmBuffer });
+  const op =
+    typeof Operation.uploadContractWasm === 'function'
+      ? (() => {
+          try {
+            return Operation.uploadContractWasm({ wasm: wasmBuffer });
+          } catch {
+            return Operation.uploadContractWasm(wasmBuffer);
+          }
+        })()
+      : Operation.uploadContractWasm({ wasm: wasmBuffer });
 
   const tx = new TransactionBuilder(source, {
     fee: BASE_FEE,
@@ -740,9 +752,7 @@ async function approveMilestone({ contractId, milestoneIndex, signerSecret }) {
   return invokeContract({
     contractId,
     method: 'approve_milestone',
-    args: [
-      nativeToScVal(milestoneIndex, { type: 'u32' }),
-    ],
+    args: [nativeToScVal(milestoneIndex, { type: 'u32' })],
     signerSecret,
   });
 }
@@ -751,9 +761,7 @@ async function rejectMilestone({ contractId, milestoneIndex, signerSecret }) {
   return invokeContract({
     contractId,
     method: 'reject_milestone',
-    args: [
-      nativeToScVal(milestoneIndex, { type: 'u32' }),
-    ],
+    args: [nativeToScVal(milestoneIndex, { type: 'u32' })],
     signerSecret,
   });
 }
@@ -762,9 +770,7 @@ async function getMilestone(contractId, milestoneIndex) {
   return invokeContractReadOnly({
     contractId,
     method: 'get_milestone',
-    args: [
-      nativeToScVal(milestoneIndex, { type: 'u32' }),
-    ],
+    args: [nativeToScVal(milestoneIndex, { type: 'u32' })],
   });
 }
 
@@ -914,11 +920,13 @@ async function runMigration({ migrationContractId, v1ContractId, v2ContractId, s
     fee: BASE_FEE,
     networkPassphrase,
   })
-    .addOperation(contract.call(
-      'migrate',
-      scvAddressFromString(v1ContractId),
-      scvAddressFromString(v2ContractId),
-    ))
+    .addOperation(
+      contract.call(
+        'migrate',
+        scvAddressFromString(v1ContractId),
+        scvAddressFromString(v2ContractId)
+      )
+    )
     .setTimeout(TX_TIMEOUT_CONTRIBUTION_S)
     .build();
 
@@ -934,17 +942,24 @@ async function runMigration({ migrationContractId, v1ContractId, v2ContractId, s
   if (result.resultMetaXdr) {
     const meta = xdr.TransactionMeta.fromXDR(result.resultMetaXdr, 'base64');
     const sorobanMeta = meta.v3().sorobanMeta();
-    const events = sorobanMeta && typeof sorobanMeta.events === 'function' ? sorobanMeta.events() : [];
+    const events =
+      sorobanMeta && typeof sorobanMeta.events === 'function' ? sorobanMeta.events() : [];
     for (const event of events) {
       try {
-        const topics = event.body().v0().topics().map((t) => scValToNative(t));
+        const topics = event
+          .body()
+          .v0()
+          .topics()
+          .map(t => scValToNative(t));
         if (topics[0] === 'MigrationCompleted') {
           const data = scValToNative(event.body().v0().data());
           milestoneCount = Array.isArray(data) ? Number(data[2]) : null;
           break;
         }
       } catch (err) {
-        logger.warn('Could not decode a contract event while parsing MigrationCompleted', { error: err.message });
+        logger.warn('Could not decode a contract event while parsing MigrationCompleted', {
+          error: err.message,
+        });
       }
     }
   }
@@ -956,11 +971,16 @@ async function runMigration({ migrationContractId, v1ContractId, v2ContractId, s
  * Release escrow funds to the creator (dispute resolved in creator's favor).
  * Approves and executes the withdrawal in a single call.
  * Returns the transaction hash on success.
- * 
+ *
  * NOTE: This is for REAL Soroban escrow contracts only. It is NOT a substitute
  * for stellarService.releaseEscrowFreeze which handles the multisig freeze.
  */
-async function releaseEscrowToCreator({ escrowContractId, creatorAddress, releaseAmount, signerSecret }) {
+async function releaseEscrowToCreator({
+  escrowContractId,
+  creatorAddress,
+  releaseAmount,
+  signerSecret,
+}) {
   if (!escrowContractId) {
     throw new Error('Campaign does not have an escrow contract deployed');
   }

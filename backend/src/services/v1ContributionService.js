@@ -43,8 +43,7 @@ function parseContributionFromOperations(operations, campaign) {
           asset_type: op.source_asset_type,
           asset_code: op.source_asset_code,
         }),
-        conversion_rate:
-          sourceAmount && destAmount ? destAmount / sourceAmount : null,
+        conversion_rate: sourceAmount && destAmount ? destAmount / sourceAmount : null,
         path: null,
       };
     }
@@ -100,7 +99,9 @@ async function recordContributionFromTxHash({ campaignId, txHash }) {
   const parsed = parseContributionFromOperations(operations, campaign);
 
   if (parsed.asset !== campaign.asset_type) {
-    const err = new Error(`Transaction must pay in the campaign's base asset (${campaign.asset_type})`);
+    const err = new Error(
+      `Transaction must pay in the campaign's base asset (${campaign.asset_type})`
+    );
     err.statusCode = 422;
     throw err;
   }

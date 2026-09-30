@@ -12,7 +12,7 @@ function buildService(scripted = []) {
   const calls = [];
   const queue = [...scripted];
   const makeClient = () => ({
-    query: async (sql) => {
+    query: async sql => {
       calls.push({ sql: String(sql).replace(/\s+/g, ' ').trim() });
       const next = queue.shift();
       return next || { rows: [], rowCount: 0 };
@@ -20,7 +20,7 @@ function buildService(scripted = []) {
     release: () => {},
   });
   const db = {
-    query: async (sql) => {
+    query: async sql => {
       calls.push({ sql: String(sql).replace(/\s+/g, ' ').trim() });
       const next = queue.shift();
       return next || { rows: [], rowCount: 0 };
@@ -88,7 +88,13 @@ test('recordCompletions enforces required items and reports the missing labels',
       {
         rows: [
           { id: ITEM_ID, label: 'Demo video', detail: null, required: true, display_order: 0 },
-          { id: '33333333-3333-3333-3333-333333333333', label: 'Receipt', detail: null, required: false, display_order: 1 },
+          {
+            id: '33333333-3333-3333-3333-333333333333',
+            label: 'Receipt',
+            detail: null,
+            required: false,
+            display_order: 1,
+          },
         ],
       },
     ]);
@@ -111,11 +117,7 @@ test('recordCompletions enforces required items and reports the missing labels',
       { rows: [], rowCount: 1 },
     ]);
 
-    const satisfied = await service.recordCompletions(
-      MILESTONE_ID,
-      [ITEM_ID],
-      'user-1'
-    );
+    const satisfied = await service.recordCompletions(MILESTONE_ID, [ITEM_ID], 'user-1');
     assert.equal(satisfied.ok, true);
     assert.equal(satisfied.recorded, 1);
   }
@@ -123,7 +125,11 @@ test('recordCompletions enforces required items and reports the missing labels',
 
 test('recordCompletions snapshots the label at completion time', async () => {
   const { service, calls } = buildService([
-    { rows: [{ id: ITEM_ID, label: 'Original label', detail: 'd', required: true, display_order: 0 }] },
+    {
+      rows: [
+        { id: ITEM_ID, label: 'Original label', detail: 'd', required: true, display_order: 0 },
+      ],
+    },
     // completion insert inside the transaction
     { rows: [], rowCount: 1 },
   ]);
@@ -131,7 +137,9 @@ test('recordCompletions snapshots the label at completion time', async () => {
   const result = await service.recordCompletions(MILESTONE_ID, [ITEM_ID], 'user-1');
 
   assert.equal(result.ok, true);
-  const insert = calls.find((call) => call.sql.includes('INSERT INTO milestone_evidence_checklist_completions'));
+  const insert = calls.find(call =>
+    call.sql.includes('INSERT INTO milestone_evidence_checklist_completions')
+  );
   assert.ok(insert, 'completion insert ran');
 });
 
@@ -140,12 +148,24 @@ test('getChecklistWithStatus merges template and completion rows', async () => {
     {
       rows: [
         { id: ITEM_ID, label: 'A', detail: null, required: true, display_order: 0 },
-        { id: '33333333-3333-3333-3333-333333333333', label: 'B', detail: null, required: false, display_order: 1 },
+        {
+          id: '33333333-3333-3333-3333-333333333333',
+          label: 'B',
+          detail: null,
+          required: false,
+          display_order: 1,
+        },
       ],
     },
     {
       rows: [
-        { item_id: ITEM_ID, completed_by: 'user-1', label_snapshot: 'A', detail_snapshot: null, completed_at: '2026-09-29T00:00:00Z' },
+        {
+          item_id: ITEM_ID,
+          completed_by: 'user-1',
+          label_snapshot: 'A',
+          detail_snapshot: null,
+          completed_at: '2026-09-29T00:00:00Z',
+        },
       ],
     },
   ]);

@@ -22,7 +22,7 @@ test('notifyFollowers skips users already notified through another path', async 
       calls.push({ text, params });
       return { rows: [{ user_id: 'follower-1' }, { user_id: 'follower-2' }] };
     },
-    onBulkNotification: (userIds) => notified.push(...userIds),
+    onBulkNotification: userIds => notified.push(...userIds),
   });
 
   const count = await service.notifyFollowers(
@@ -51,7 +51,7 @@ test('notifyFollowers passes all follower IDs to bulk notification', async () =>
   const notified = [];
   const service = buildService({
     queryImpl: async () => ({ rows: [{ user_id: 'follower-1' }, { user_id: 'follower-2' }] }),
-    onBulkNotification: (userIds) => notified.push(...userIds),
+    onBulkNotification: userIds => notified.push(...userIds),
   });
 
   const count = await service.notifyFollowers(CAMPAIGN_ID, 'notify_funding', {
@@ -77,7 +77,7 @@ test('announceFundingProgress notifies followers once per threshold', async () =
   const notified = [];
   let thresholdClaimed = false;
   const service = buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaigns')) {
         return { rows: [{ title: 'Solar grid', raised_amount: '600', target_amount: '1000' }] };
       }
@@ -98,7 +98,7 @@ test('announceFundingProgress notifies followers once per threshold', async () =
 
 test('announceFundingProgress stays quiet below the first threshold', async () => {
   const service = buildService({
-    queryImpl: async (text) => {
+    queryImpl: async text => {
       if (text.includes('FROM campaigns')) {
         return { rows: [{ title: 'Solar grid', raised_amount: '10', target_amount: '1000' }] };
       }

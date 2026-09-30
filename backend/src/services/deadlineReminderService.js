@@ -3,7 +3,7 @@ const logger = require('../config/logger');
 const { sendCampaignDeadlineReminderEmail } = require('./emailService');
 
 function frontendBaseUrl() {
-  return (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+  return (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
 }
 
 async function processRemindersForHoursLeft(hoursLeft) {
@@ -48,10 +48,10 @@ async function processRemindersForHoursLeft(hoursLeft) {
           raisedAmount: campaign.raised_amount,
         });
       } catch (err) {
-        logger.error('Failed to send deadline reminder', { 
-          email: backer.email, 
+        logger.error('Failed to send deadline reminder', {
+          email: backer.email,
           campaignId: campaign.id,
-          error: err.message 
+          error: err.message,
         });
       }
     }

@@ -41,8 +41,8 @@ async function sendCampaignUpdateNotifications({ campaignId, campaignTitle, upda
         body: updateExcerpt,
         link: `/campaigns/${campaignId}`,
       },
-      [authorId, ...contributors.map((c) => c.id)]
-    ).catch((err) => {
+      [authorId, ...contributors.map(c => c.id)]
+    ).catch(err => {
       logger.error('Failed to notify campaign followers of update', {
         campaignId,
         updateId: update.id,
@@ -51,7 +51,7 @@ async function sendCampaignUpdateNotifications({ campaignId, campaignTitle, upda
     });
 
     await Promise.allSettled(
-      contributors.map(async (contributor) => {
+      contributors.map(async contributor => {
         await createNotification(contributor.id, {
           type: 'campaign_update',
           title: `${campaignTitle}: ${update.title}`,
@@ -69,7 +69,7 @@ async function sendCampaignUpdateNotifications({ campaignId, campaignTitle, upda
           updateTitle: update.title,
           updateExcerpt,
           updateBody: update.body,
-        }).catch((err) => {
+        }).catch(err => {
           logger.error('Failed to send campaign update email', {
             contributorId: contributor.id,
             updateId: update.id,
@@ -134,7 +134,7 @@ async function publishDueCampaignUpdates() {
         campaignTitle: update.campaign_title,
         update: publishedUpdate,
         authorId: update.author_id,
-      }).catch((err) => {
+      }).catch(err => {
         logger.error('Failed to dispatch notifications for published update', {
           updateId: update.id,
           error: err.message,

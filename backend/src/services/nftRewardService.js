@@ -1,10 +1,7 @@
 const db = require('../config/database');
 
 function isNftMintConfigured() {
-  return Boolean(
-    process.env.NFT_REWARDS_CONTRACT_ID &&
-      process.env.NFT_REWARDS_ENABLED === 'true'
-  );
+  return Boolean(process.env.NFT_REWARDS_CONTRACT_ID && process.env.NFT_REWARDS_ENABLED === 'true');
 }
 
 async function assertContributionOwnedByUser(contributionId, userId) {
@@ -16,10 +13,9 @@ async function assertContributionOwnedByUser(contributionId, userId) {
     [contributionId, userId]
   );
   if (!rows.length) {
-    const { rows: exists } = await db.query(
-      `SELECT id FROM contributions WHERE id = $1`,
-      [contributionId]
-    );
+    const { rows: exists } = await db.query(`SELECT id FROM contributions WHERE id = $1`, [
+      contributionId,
+    ]);
     const err = new Error(exists.length ? 'Forbidden' : 'Contribution not found');
     err.statusCode = exists.length ? 403 : 404;
     throw err;
@@ -45,7 +41,7 @@ async function getUserNftRewards(userId) {
      ))
        AND nr.status <> 'quarantined'
      ORDER BY nr.created_at DESC`,
-    [userId],
+    [userId]
   );
   return rows;
 }
@@ -62,7 +58,7 @@ async function getCampaignNftRewards(campaignId) {
      WHERE nr.campaign_id = $1
        AND nr.status <> 'quarantined'
      ORDER BY nr.created_at DESC`,
-    [campaignId],
+    [campaignId]
   );
   return rows;
 }
@@ -75,7 +71,12 @@ async function markNftRewardMinted({
   serialNumber,
   contractId = null,
 }) {
-  if (!tokenId || !txHash || String(tokenId).startsWith('tok_') || String(txHash).startsWith('hash_')) {
+  if (
+    !tokenId ||
+    !txHash ||
+    String(tokenId).startsWith('tok_') ||
+    String(txHash).startsWith('hash_')
+  ) {
     throw new Error('Refusing to mark NFT as minted with mock identifiers');
   }
   await db.query(
@@ -83,7 +84,7 @@ async function markNftRewardMinted({
      SET status = 'minted', token_id = $1, tx_hash = $2, serial_number = $3,
          contract_id = COALESCE($6, contract_id), updated_at = NOW()
      WHERE reward_tier_id = $4 AND contribution_id = $5`,
-    [tokenId, txHash, serialNumber, rewardTierId, contributionId, contractId],
+    [tokenId, txHash, serialNumber, rewardTierId, contributionId, contractId]
   );
 }
 
@@ -92,7 +93,7 @@ async function markNftRewardFailed({ rewardTierId, contributionId, errorMessage 
     `UPDATE nft_rewards
      SET status = 'failed', error_message = $1, updated_at = NOW()
      WHERE reward_tier_id = $2 AND contribution_id = $3`,
-    [errorMessage, rewardTierId, contributionId],
+    [errorMessage, rewardTierId, contributionId]
   );
 }
 
@@ -102,7 +103,7 @@ async function ensureNftRewardRecord({ campaignId, rewardTierId, contributionId 
      VALUES ($1, $2, $3, 'minting')
      ON CONFLICT (reward_tier_id, contribution_id) DO NOTHING
      RETURNING id, status`,
-    [campaignId, rewardTierId, contributionId],
+    [campaignId, rewardTierId, contributionId]
   );
   return rows[0] || null;
 }
@@ -115,7 +116,7 @@ async function listNftRewardsForContribution(contributionId) {
      LEFT JOIN reward_tiers rt ON rt.id = nr.reward_tier_id
      WHERE nr.contribution_id = $1
      ORDER BY nr.created_at DESC`,
-    [contributionId],
+    [contributionId]
   );
   return rows;
 }

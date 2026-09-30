@@ -33,7 +33,9 @@ function backoffMinutes(failureCount) {
 }
 
 function nextIntervalSql(interval) {
-  return interval === 'weekly' ? 'next_run_at + INTERVAL \'7 days\'' : 'next_run_at + INTERVAL \'1 month\'';
+  return interval === 'weekly'
+    ? "next_run_at + INTERVAL '7 days'"
+    : "next_run_at + INTERVAL '1 month'";
 }
 
 function manageUrl() {
@@ -153,7 +155,12 @@ async function processRecurringContributions() {
              next_run_at   = NOW() + ($4 || ' minutes')::interval,
              updated_at    = NOW()
          WHERE id = $1`,
-        [schedule.id, failures, String(err && err.message || 'unknown').slice(0, 500), retryMinutes]
+        [
+          schedule.id,
+          failures,
+          String((err && err.message) || 'unknown').slice(0, 500),
+          retryMinutes,
+        ]
       );
 
       await sendRecurringContributionNoticeEmail({
@@ -161,7 +168,7 @@ async function processRecurringContributions() {
         kind: 'failed',
         recurringRunKey: runKey,
         ...baseParams,
-      }).catch((mailErr) =>
+      }).catch(mailErr =>
         logger.error('recurring-contributions: failure email could not be sent', {
           schedule_id: schedule.id,
           error: mailErr.message,
@@ -181,11 +188,11 @@ async function processRecurringContributions() {
 }
 
 function startRecurringContributionsCron() {
-  processRecurringContributions().catch((err) =>
+  processRecurringContributions().catch(err =>
     logger.error('recurring-contributions: initial run failed', { error: err.message })
   );
   _timer = setInterval(() => {
-    processRecurringContributions().catch((err) =>
+    processRecurringContributions().catch(err =>
       logger.error('recurring-contributions: cron failed', { error: err.message })
     );
   }, CRON_INTERVAL_MS);

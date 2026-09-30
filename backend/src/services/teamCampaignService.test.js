@@ -86,9 +86,7 @@ test('getTeamPage aggregates member progress and clamps at 100%', async () => {
   const { service } = buildService([
     // listTeamMembers
     {
-      rows: [
-        { member_campaign_id: MEMBER_ID, role: 'owner', display_order: 0 },
-      ],
+      rows: [{ member_campaign_id: MEMBER_ID, role: 'owner', display_order: 0 }],
       rowCount: 1,
     },
     // loadCampaignsRows
@@ -121,7 +119,14 @@ test('getTeamPage handles zero targets without dividing by zero', async () => {
     { rows: [{ member_campaign_id: MEMBER_ID, role: 'member', display_order: 0 }], rowCount: 1 },
     {
       rows: [
-        { id: MEMBER_ID, title: 'Team B', target_amount: '0', raised_amount: '0', asset_type: 'XLM', status: 'active' },
+        {
+          id: MEMBER_ID,
+          title: 'Team B',
+          target_amount: '0',
+          raised_amount: '0',
+          asset_type: 'XLM',
+          status: 'active',
+        },
       ],
       rowCount: 1,
     },

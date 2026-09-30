@@ -23,7 +23,7 @@ function buildApp({ referralService = {}, referral = {}, authed = true } = {}) {
         : denyAuth(),
     },
     '../services/referralService': {
-      getLeaderboard: async (opts) => {
+      getLeaderboard: async opts => {
         calls.leaderboardOpts = opts;
         return [{ id: 'u1', totalEarned: 10 }];
       },
@@ -31,11 +31,11 @@ function buildApp({ referralService = {}, referral = {}, authed = true } = {}) {
         calls.rewardsArgs = [userId, opts];
         return { rewards: [], total: 0 };
       },
-      getUserRewardSummary: async (userId) => {
+      getUserRewardSummary: async userId => {
         calls.summaryUserId = userId;
         return { totalEarned: 0, paidOut: 0, pending: 0 };
       },
-      getReferralAnalytics: async (userId) => {
+      getReferralAnalytics: async userId => {
         calls.analyticsUserId = userId;
         return { clicks: 1, conversions: 0 };
       },
@@ -49,7 +49,7 @@ function buildApp({ referralService = {}, referral = {}, authed = true } = {}) {
       ...referralService,
     },
     '../services/referral': {
-      listUserReferralLinks: async (userId) => {
+      listUserReferralLinks: async userId => {
         calls.linksUserId = userId;
         return [{ code: 'abc' }];
       },

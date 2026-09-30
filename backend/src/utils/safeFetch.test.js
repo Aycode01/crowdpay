@@ -6,12 +6,12 @@ const { safeFetch, SsrfBlockedError } = require('./safeFetch');
 
 async function withServer(handler, fn) {
   const server = http.createServer(handler);
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const { port } = server.address();
   try {
     return await fn(`http://127.0.0.1:${port}`);
   } finally {
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise(resolve => server.close(resolve));
   }
 }
 
@@ -27,7 +27,7 @@ test('safeFetch performs a real pinned request and returns the response', async 
       res.writeHead(200, { 'Content-Type': 'text/plain' });
       res.end('hello');
     },
-    async (baseUrl) => {
+    async baseUrl => {
       const res = await safeFetch(`${baseUrl}/ok`, { method: 'GET' });
       assert.equal(res.status, 200);
       assert.equal(res.ok, true);
@@ -40,13 +40,15 @@ test('safeFetch sends the request body and custom headers', async () => {
   await withServer(
     (req, res) => {
       let received = '';
-      req.on('data', (chunk) => { received += chunk; });
+      req.on('data', chunk => {
+        received += chunk;
+      });
       req.on('end', () => {
         res.writeHead(200, { 'X-Echo-Signature': req.headers['x-crowdpay-signature'] || '' });
         res.end(received);
       });
     },
-    async (baseUrl) => {
+    async baseUrl => {
       const res = await safeFetch(`${baseUrl}/webhook`, {
         method: 'POST',
         headers: { 'X-CrowdPay-Signature': 'sha256=abc' },
@@ -69,7 +71,7 @@ test('safeFetch follows a redirect to a public/allowed target', async () => {
       res.writeHead(200);
       res.end('final destination');
     },
-    async (baseUrl) => {
+    async baseUrl => {
       const res = await safeFetch(`${baseUrl}/start`);
       assert.equal(res.status, 200);
       assert.equal(await res.text(), 'final destination');
@@ -83,12 +85,15 @@ test('safeFetch rejects a redirect to a private/internal target instead of follo
       res.writeHead(302, { Location: 'https://169.254.169.254/latest/meta-data' });
       res.end();
     },
-    async (baseUrl) => {
-      await assert.rejects(() => safeFetch(`${baseUrl}/start`), (err) => {
-        assert.ok(err instanceof SsrfBlockedError);
-        assert.match(err.message, /private\/internal/);
-        return true;
-      });
+    async baseUrl => {
+      await assert.rejects(
+        () => safeFetch(`${baseUrl}/start`),
+        err => {
+          assert.ok(err instanceof SsrfBlockedError);
+          assert.match(err.message, /private\/internal/);
+          return true;
+        }
+      );
     }
   );
 });
@@ -99,12 +104,15 @@ test('safeFetch rejects a redirect to a plain-http target the same way a direct 
       res.writeHead(302, { Location: 'http://169.254.169.254/latest/meta-data' });
       res.end();
     },
-    async (baseUrl) => {
-      await assert.rejects(() => safeFetch(`${baseUrl}/start`), (err) => {
-        assert.ok(err instanceof SsrfBlockedError);
-        assert.match(err.message, /HTTP is only allowed for localhost/);
-        return true;
-      });
+    async baseUrl => {
+      await assert.rejects(
+        () => safeFetch(`${baseUrl}/start`),
+        err => {
+          assert.ok(err instanceof SsrfBlockedError);
+          assert.match(err.message, /HTTP is only allowed for localhost/);
+          return true;
+        }
+      );
     }
   );
 });
@@ -115,10 +123,10 @@ test('safeFetch gives up after too many redirects', async () => {
       res.writeHead(302, { Location: req.url });
       res.end();
     },
-    async (baseUrl) => {
+    async baseUrl => {
       await assert.rejects(
         () => safeFetch(`${baseUrl}/loop`, { maxRedirects: 2 }),
-        (err) => {
+        err => {
           assert.ok(err instanceof SsrfBlockedError);
           assert.match(err.message, /too many redirects/);
           return true;
@@ -129,10 +137,13 @@ test('safeFetch gives up after too many redirects', async () => {
 });
 
 test('safeFetch rejects the initial URL outright when it is unsafe, without connecting', async () => {
-  await assert.rejects(() => safeFetch('http://169.254.169.254/'), (err) => {
-    assert.ok(err instanceof SsrfBlockedError);
-    return true;
-  });
+  await assert.rejects(
+    () => safeFetch('http://169.254.169.254/'),
+    err => {
+      assert.ok(err instanceof SsrfBlockedError);
+      return true;
+    }
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -153,13 +164,17 @@ test('safeFetch rejects a hostname with mixed public/private DNS answers', async
     { address: '8.8.8.8', family: 4 },
     { address: '169.254.169.254', family: 4 },
   ];
-  const { safeFetch: mockedSafeFetch, SsrfBlockedError: MockedError } = buildSafeFetchWithMockedDns(dnsLookupImpl);
+  const { safeFetch: mockedSafeFetch, SsrfBlockedError: MockedError } =
+    buildSafeFetchWithMockedDns(dnsLookupImpl);
 
-  await assert.rejects(() => mockedSafeFetch('https://attacker-controlled.example/'), (err) => {
-    assert.ok(err instanceof MockedError);
-    assert.match(err.message, /private\/internal/);
-    return true;
-  });
+  await assert.rejects(
+    () => mockedSafeFetch('https://attacker-controlled.example/'),
+    err => {
+      assert.ok(err instanceof MockedError);
+      assert.match(err.message, /private\/internal/);
+      return true;
+    }
+  );
 });
 
 test('safeFetch resolves DNS exactly once per hop and pins the connection to that answer (no re-resolution at connect time)', async () => {
@@ -178,17 +193,25 @@ test('safeFetch resolves DNS exactly once per hop and pins the connection to tha
   // itself (Node's custom `lookup` on the request options satisfies the
   // connect without a second resolution).
   await assert.rejects(() => mockedSafeFetch('https://example-under-test.invalid:1/'));
-  assert.equal(lookupCalls, 1, 'DNS should be resolved exactly once, not re-resolved at connect time');
+  assert.equal(
+    lookupCalls,
+    1,
+    'DNS should be resolved exactly once, not re-resolved at connect time'
+  );
 });
 
 test('safeFetch rejects when DNS resolution fails entirely', async () => {
   const dnsLookupImpl = async () => {
     throw new Error('ENOTFOUND');
   };
-  const { safeFetch: mockedSafeFetch, SsrfBlockedError: MockedError } = buildSafeFetchWithMockedDns(dnsLookupImpl);
+  const { safeFetch: mockedSafeFetch, SsrfBlockedError: MockedError } =
+    buildSafeFetchWithMockedDns(dnsLookupImpl);
 
-  await assert.rejects(() => mockedSafeFetch('https://does-not-resolve.example/'), (err) => {
-    assert.ok(err instanceof MockedError);
-    return true;
-  });
+  await assert.rejects(
+    () => mockedSafeFetch('https://does-not-resolve.example/'),
+    err => {
+      assert.ok(err instanceof MockedError);
+      return true;
+    }
+  );
 });

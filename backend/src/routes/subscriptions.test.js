@@ -34,7 +34,7 @@ function buildApp(recurringStub) {
 test('POST /campaigns/:id/subscriptions returns the balance schedule', async () => {
   let received = null;
   const app = buildApp({
-    createSubscription: async (args) => {
+    createSubscription: async args => {
       received = args;
       return {
         subscriptionId: SUBSCRIPTION_ID,
@@ -77,7 +77,7 @@ test('POST /campaigns/:id/subscriptions surfaces INSUFFICIENT_BALANCE_FOR_SUBSCR
 test('DELETE /campaigns/:id/subscriptions/:subscriptionId returns the cancellation summary', async () => {
   let received = null;
   const app = buildApp({
-    cancelSubscription: async (args) => {
+    cancelSubscription: async args => {
       received = args;
       return {
         cancelled: 4,
@@ -116,7 +116,7 @@ test('DELETE /campaigns/:id/subscriptions/:subscriptionId 404s for an unknown su
 
 test('GET /subscriptions/mine lists the caller subscriptions', async () => {
   const app = buildApp({
-    listSubscriptionsForUser: async (userId) => [
+    listSubscriptionsForUser: async userId => [
       { id: SUBSCRIPTION_ID, contributor: userId, campaign_title: 'Solar Grid', status: 'active' },
     ],
   });
@@ -130,15 +130,23 @@ test('GET /subscriptions/mine lists the caller subscriptions', async () => {
 test('POST /campaigns/:id/subscriptions passes truncateToDeadline only when explicitly true (#837)', async () => {
   const received = [];
   const app = buildApp({
-    createSubscription: async (args) => {
+    createSubscription: async args => {
       received.push(args.truncateToDeadline);
-      return { subscriptionId: SUBSCRIPTION_ID, totalPeriods: 3, requestedPeriods: 6, truncatedToDeadline: true };
+      return {
+        subscriptionId: SUBSCRIPTION_ID,
+        totalPeriods: 3,
+        requestedPeriods: 6,
+        truncatedToDeadline: true,
+      };
     },
   });
   const body = { amountPerPeriod: 10, asset: 'XLM', periodMonths: 1, totalPeriods: 6 };
 
   await request(app).post(`/api/campaigns/${CAMPAIGN_ID}/subscriptions`).send(body).expect(201);
-  await request(app).post(`/api/campaigns/${CAMPAIGN_ID}/subscriptions`).send({ ...body, truncateToDeadline: 'yes' }).expect(201);
+  await request(app)
+    .post(`/api/campaigns/${CAMPAIGN_ID}/subscriptions`)
+    .send({ ...body, truncateToDeadline: 'yes' })
+    .expect(201);
   const res = await request(app)
     .post(`/api/campaigns/${CAMPAIGN_ID}/subscriptions`)
     .send({ ...body, truncateToDeadline: true })

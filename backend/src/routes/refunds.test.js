@@ -5,37 +5,41 @@ const proxyquire = require('proxyquire').noCallThru();
 const mockClient = {
   queryLog: [],
   rows: {
-    contrib: [{
-      id: 'contrib-1',
-      amount: '100',
-      refunded_amount: '0',
-      asset: 'native',
-      sender_public_key: 'GWALLET',
-      campaign_id: 'camp-1',
-      user_id: 'user-1',
-      contributor_email: 'alice@example.com',
-      contributor_name: 'Alice',
-      contributor_wallet: 'GWALLET',
-    }],
+    contrib: [
+      {
+        id: 'contrib-1',
+        amount: '100',
+        refunded_amount: '0',
+        asset: 'native',
+        sender_public_key: 'GWALLET',
+        campaign_id: 'camp-1',
+        user_id: 'user-1',
+        contributor_email: 'alice@example.com',
+        contributor_name: 'Alice',
+        contributor_wallet: 'GWALLET',
+      },
+    ],
   },
   async query(sql, params) {
     this.queryLog.push({ sql: sql.replace(/\s+/g, ' ').trim(), params });
     if (sql.includes('FOR UPDATE')) return { rows: this.rows.contrib };
     if (sql.includes('INSERT INTO creator_refunds')) {
       return {
-        rows: [{
-          id: 'refund-1',
-          campaign_id: params[0],
-          contribution_id: params[1],
-          recipient_wallet: params[2],
-          amount: params[3],
-          asset: params[4],
-          reason: params[5],
-          status: 'processing',
-          is_force_refund: params[6],
-          admin_note: params[7],
-          created_by: params[8],
-        }],
+        rows: [
+          {
+            id: 'refund-1',
+            campaign_id: params[0],
+            contribution_id: params[1],
+            recipient_wallet: params[2],
+            amount: params[3],
+            asset: params[4],
+            reason: params[5],
+            status: 'processing',
+            is_force_refund: params[6],
+            admin_note: params[7],
+            created_by: params[8],
+          },
+        ],
       };
     }
     return { rows: [] };
@@ -62,10 +66,15 @@ function makeService(dbOverride, stellarShouldFail) {
       './notifications': { createNotification: async () => {} },
       './emailService': { sendEmail: async () => {} },
       './auditService': { logAuditEvent: async () => {} },
-      './webhookDispatcher': { emitWebhookEventForUser: async () => {}, WEBHOOK_EVENTS: { REFUND_ISSUED: 'refund.issued' } },
+      './webhookDispatcher': {
+        emitWebhookEventForUser: async () => {},
+        WEBHOOK_EVENTS: { REFUND_ISSUED: 'refund.issued' },
+      },
       './stellarService': {
         sendCampaignRefund: stellarShouldFail
-          ? async () => { throw new Error('on-chain failure'); }
+          ? async () => {
+              throw new Error('on-chain failure');
+            }
           : async () => ({ hash: 'TX123' }),
       },
     }),
@@ -76,9 +85,19 @@ function makeService(dbOverride, stellarShouldFail) {
 test('getEligibleContributions returns contributions with remaining amount', async () => {
   const mockDb = {
     connect: async () => mockClient,
-    query: async (sql) => {
+    query: async sql => {
       if (sql.includes('FROM contributions')) {
-        return { rows: [{ id: 'c1', amount: '100', refunded_amount: '30', remaining_amount: '70', asset: 'native' }] };
+        return {
+          rows: [
+            {
+              id: 'c1',
+              amount: '100',
+              refunded_amount: '30',
+              remaining_amount: '70',
+              asset: 'native',
+            },
+          ],
+        };
       }
       return { rows: [] };
     },
@@ -117,16 +136,36 @@ test('processRefund succeeds for full refund', async () => {
 test('processRefund rejects over-refund amount', async () => {
   const { svc } = makeService();
   await assert.rejects(
-    () => svc.processRefund({ campaignId: 'camp-1', contributionId: 'contrib-1', amount: 200, reason: 'x', initiatorId: 'creator-1' }),
-    (err) => { assert.equal(err.status, 422); return true; }
+    () =>
+      svc.processRefund({
+        campaignId: 'camp-1',
+        contributionId: 'contrib-1',
+        amount: 200,
+        reason: 'x',
+        initiatorId: 'creator-1',
+      }),
+    err => {
+      assert.equal(err.status, 422);
+      return true;
+    }
   );
 });
 
 test('processRefund rolls back and throws on on-chain failure', async () => {
   const { svc } = makeService(null, true);
   await assert.rejects(
-    () => svc.processRefund({ campaignId: 'camp-1', contributionId: 'contrib-1', amount: 50, reason: 'x', initiatorId: 'creator-1' }),
-    (err) => { assert.equal(err.status, 502); return true; }
+    () =>
+      svc.processRefund({
+        campaignId: 'camp-1',
+        contributionId: 'contrib-1',
+        amount: 50,
+        reason: 'x',
+        initiatorId: 'creator-1',
+      }),
+    err => {
+      assert.equal(err.status, 502);
+      return true;
+    }
   );
 });
 
@@ -150,7 +189,17 @@ test('processRefund returns 404 for non-existent contribution', async () => {
   const emptyDb = makeMockDb([]);
   const { svc } = makeService(emptyDb);
   await assert.rejects(
-    () => svc.processRefund({ campaignId: 'camp-1', contributionId: 'missing', amount: 10, reason: 'x', initiatorId: 'u' }),
-    (err) => { assert.equal(err.status, 404); return true; }
+    () =>
+      svc.processRefund({
+        campaignId: 'camp-1',
+        contributionId: 'missing',
+        amount: 10,
+        reason: 'x',
+        initiatorId: 'u',
+      }),
+    err => {
+      assert.equal(err.status, 404);
+      return true;
+    }
   );
 });

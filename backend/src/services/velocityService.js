@@ -22,7 +22,7 @@ async function getCampaignVelocity(campaignId) {
   );
 
   const now = Date.now();
-  const sumSince = (msAgo) => {
+  const sumSince = msAgo => {
     const cutoff = new Date(now - msAgo);
     return txRows
       .filter(t => new Date(t.created_at) >= cutoff)
@@ -119,10 +119,10 @@ async function getCampaignVelocity(campaignId) {
 }
 
 async function updateCampaignVelocityAlertThreshold(campaignId, threshold) {
-  await db.query(
-    `UPDATE campaigns SET velocity_alert_threshold = $1 WHERE id = $2`,
-    [threshold, campaignId]
-  );
+  await db.query(`UPDATE campaigns SET velocity_alert_threshold = $1 WHERE id = $2`, [
+    threshold,
+    campaignId,
+  ]);
   return { success: true, threshold };
 }
 

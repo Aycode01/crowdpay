@@ -7,7 +7,10 @@ function isKycRequiredForCampaigns() {
 }
 
 function appBaseUrl() {
-  return (process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+  return (process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:5173').replace(
+    /\/$/,
+    ''
+  );
 }
 
 function devKycSession({ user }) {
@@ -50,7 +53,7 @@ async function createPersonaInquiry({ user }) {
     }),
   });
 
-  const body = await response.json().catch((err) => {
+  const body = await response.json().catch(err => {
     logger.warn('Could not parse Persona inquiry response body', {
       status: response.status,
       error: err.message,
@@ -58,7 +61,8 @@ async function createPersonaInquiry({ user }) {
     return {};
   });
   if (!response.ok) {
-    const message = body?.errors?.[0]?.detail || body?.errors?.[0]?.title || 'Could not create KYC session';
+    const message =
+      body?.errors?.[0]?.detail || body?.errors?.[0]?.title || 'Could not create KYC session';
     throw new Error(message);
   }
 
@@ -82,9 +86,7 @@ async function createKycSession({ user }) {
     return createPersonaInquiry({ user });
   }
 
-  throw new Error(
-    `Unsupported KYC_PROVIDER "${provider}". Use "persona" or "dev".`
-  );
+  throw new Error(`Unsupported KYC_PROVIDER "${provider}". Use "persona" or "dev".`);
 }
 
 const VERIFICATION_TIER_LIMITS = {
@@ -106,7 +108,11 @@ function determineVerificationTier(webhookPayload = {}) {
 
   const checks = nestedAttrs.checks || attrs.checks || [];
   const tags = nestedAttrs.tags || attrs.tags || [];
-  const verificationPackages = nestedAttrs['verification-packages'] || nestedAttrs.verification_packages || attrs['verification-packages'] || [];
+  const verificationPackages =
+    nestedAttrs['verification-packages'] ||
+    nestedAttrs.verification_packages ||
+    attrs['verification-packages'] ||
+    [];
 
   const checkTypes = new Set();
   for (const check of checks) {
@@ -124,20 +130,23 @@ function determineVerificationTier(webhookPayload = {}) {
 
   const tagSet = new Set(Array.isArray(tags) ? tags.map(String) : []);
 
-  const hasLiveness = checkTypes.has('liveness') ||
+  const hasLiveness =
+    checkTypes.has('liveness') ||
     checkTypes.has('face-detection') ||
     checkTypes.has('selfie') ||
     checkTypes.has('liveness_check') ||
     tagSet.has('liveness') ||
     tagSet.has('selfie');
 
-  const hasAddress = checkTypes.has('address') ||
+  const hasAddress =
+    checkTypes.has('address') ||
     checkTypes.has('address-verification') ||
     checkTypes.has('proof-of-address') ||
     checkTypes.has('address-check') ||
     tagSet.has('address');
 
-  const hasGovernmentId = checkTypes.has('government-id') ||
+  const hasGovernmentId =
+    checkTypes.has('government-id') ||
     checkTypes.has('id-document') ||
     checkTypes.has('document') ||
     checkTypes.has('government_id') ||
@@ -237,7 +246,10 @@ function extractWebhookResult(payload = {}) {
 function verifyPersonaWebhookSignature(rawBody, signatureHeader) {
   const secret = process.env.PERSONA_WEBHOOK_SECRET;
   if (!secret) {
-    return process.env.NODE_ENV === 'test' || String(process.env.KYC_PROVIDER || '').toLowerCase() === 'dev';
+    return (
+      process.env.NODE_ENV === 'test' ||
+      String(process.env.KYC_PROVIDER || '').toLowerCase() === 'dev'
+    );
   }
 
   if (!signatureHeader || typeof signatureHeader !== 'string') {
@@ -263,7 +275,7 @@ function verifyPersonaWebhookSignature(rawBody, signatureHeader) {
     .update(`${timestamp}.${bodyStr}`)
     .digest('hex');
 
-  return signatures.some((sig) => {
+  return signatures.some(sig => {
     try {
       return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
     } catch {

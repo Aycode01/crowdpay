@@ -5,7 +5,8 @@ const { parsePagination } = require('../utils/pagination');
 
 const MAX_AUDIT_LIMIT = 200;
 
-const SENSITIVE_KEY_PATTERN = /(password|passwd|secret|private.?key|seed|token|authorization|cookie|totp)/i;
+const SENSITIVE_KEY_PATTERN =
+  /(password|passwd|secret|private.?key|seed|token|authorization|cookie|totp)/i;
 const STELLAR_SECRET_PATTERN = /^S[A-Z2-7]{55}$/;
 const REDACTED = '[REDACTED]';
 
@@ -36,7 +37,7 @@ function sanitizeMetadata(value, seen = new WeakSet()) {
   seen.add(value);
 
   if (Array.isArray(value)) {
-    return value.map((entry) => sanitizeMetadata(entry, seen));
+    return value.map(entry => sanitizeMetadata(entry, seen));
   }
 
   const out = {};
@@ -73,7 +74,15 @@ async function logAuditEvent({
     `INSERT INTO audit_logs (actor_id, action, resource_type, resource_id, ip_address, user_agent, metadata)
      VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
      RETURNING id, actor_id, action, resource_type, resource_id, ip_address, user_agent, metadata, created_at`,
-    [actorId, action, resourceType, resourceId !== null && resourceId !== undefined ? String(resourceId) : null, ip, userAgent, JSON.stringify(safeMetadata)]
+    [
+      actorId,
+      action,
+      resourceType,
+      resourceId !== null && resourceId !== undefined ? String(resourceId) : null,
+      ip,
+      userAgent,
+      JSON.stringify(safeMetadata),
+    ]
   );
 
   logger.info('audit_log_event', {
@@ -86,18 +95,29 @@ async function logAuditEvent({
   return rows[0];
 }
 
-const CREDENTIAL_RESOURCE_TYPES = new Set([
-  'api_key',
-  'webhook',
-]);
+const CREDENTIAL_RESOURCE_TYPES = new Set(['api_key', 'webhook']);
 
 /**
  * Record an append-only credential audit event.
  * Redacts raw keys, webhook secrets, ciphertext, and decrypted values from metadata.
  */
-async function logCredentialEvent({ actorId, action, resourceType, resourceId, metadata = {}, req = null }) {
+async function logCredentialEvent({
+  actorId,
+  action,
+  resourceType,
+  resourceId,
+  metadata = {},
+  req = null,
+}) {
   const sanitizedMetadata = sanitizeMetadata(metadata);
-  return logAuditEvent({ actorId, action, resourceType, resourceId, metadata: sanitizedMetadata, req });
+  return logAuditEvent({
+    actorId,
+    action,
+    resourceType,
+    resourceId,
+    metadata: sanitizedMetadata,
+    req,
+  });
 }
 
 /**
@@ -113,7 +133,7 @@ async function getCredentialActivity(userId, { limit = 50, offset = 0 } = {}) {
      LIMIT $3 OFFSET $4`,
     [userId, ['api_key', 'webhook'], limit, offset]
   );
-  return rows.map((row) => ({
+  return rows.map(row => ({
     id: row.id,
     action: row.action,
     resourceType: row.resource_type,
@@ -133,7 +153,9 @@ function buildWhereClause({ actor, action, resourceType, startDate, endDate }) {
   if (actor) {
     params.push(`%${actor}%`);
     params.push(actor);
-    conditions.push(`(u.email ILIKE $${params.length - 1} OR a.actor_id::text = $${params.length})`);
+    conditions.push(
+      `(u.email ILIKE $${params.length - 1} OR a.actor_id::text = $${params.length})`
+    );
   }
 
   if (action) {
@@ -165,12 +187,12 @@ function buildWhereClause({ actor, action, resourceType, startDate, endDate }) {
   return { conditions, params };
 }
 
-const COUNT_SQL = (where) => `
+const COUNT_SQL = where => `
   SELECT COUNT(*)::int AS total
     FROM audit_logs a
    ${where}`;
 
-const LIST_SQL = (where) => `
+const LIST_SQL = where => `
   SELECT a.id,
          a.actor_id,
          u.email AS actor_email,
@@ -221,7 +243,16 @@ function csvRow(values) {
   return `${values.map(csvCell).join(',')}\n`;
 }
 
-const CSV_HEADER = ['actor', 'action', 'resource_type', 'resource_id', 'ip_address', 'user_agent', 'metadata', 'created_at'];
+const CSV_HEADER = [
+  'actor',
+  'action',
+  'resource_type',
+  'resource_id',
+  'ip_address',
+  'user_agent',
+  'metadata',
+  'created_at',
+];
 
 function exportCell(value) {
   if (value && typeof value === 'object') value = JSON.stringify(value);

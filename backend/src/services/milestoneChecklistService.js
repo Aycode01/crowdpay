@@ -66,10 +66,9 @@ async function replaceChecklist(milestoneId, items) {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
-    await client.query(
-      'DELETE FROM milestone_evidence_checklist_items WHERE milestone_id = $1',
-      [milestoneId]
-    );
+    await client.query('DELETE FROM milestone_evidence_checklist_items WHERE milestone_id = $1', [
+      milestoneId,
+    ]);
     for (const item of items) {
       await client.query(
         `INSERT INTO milestone_evidence_checklist_items
@@ -114,20 +113,18 @@ async function recordCompletions(milestoneId, completedItemIds, completedBy) {
   if (!items.length) return { recorded: 0 };
 
   const requested = new Set(Array.isArray(completedItemIds) ? completedItemIds : []);
-  const unknown = [...requested].filter((id) => !items.some((item) => item.id === id));
+  const unknown = [...requested].filter(id => !items.some(item => item.id === id));
   if (unknown.length) {
     return { ok: false, status: 422, error: 'checklist items do not belong to this milestone' };
   }
 
-  const missingRequired = items.filter(
-    (item) => item.required && !requested.has(item.id)
-  );
+  const missingRequired = items.filter(item => item.required && !requested.has(item.id));
   if (missingRequired.length) {
     return {
       ok: false,
       status: 422,
       error: `required checklist items not completed: ${missingRequired
-        .map((item) => item.label)
+        .map(item => item.label)
         .join(', ')}`,
     };
   }
@@ -169,8 +166,8 @@ async function getChecklistWithStatus(milestoneId) {
      WHERE milestone_id = $1`,
     [milestoneId]
   );
-  const byItem = new Map(rows.map((row) => [row.item_id, row]));
-  return items.map((item) => {
+  const byItem = new Map(rows.map(row => [row.item_id, row]));
+  return items.map(item => {
     const completion = byItem.get(item.id);
     return {
       id: item.id,
@@ -193,10 +190,10 @@ async function getChecklistWithStatus(milestoneId) {
  */
 async function isSubmissionSatisfied(milestoneId, completedItemIds) {
   const items = await getChecklist(milestoneId);
-  const required = items.filter((item) => item.required);
+  const required = items.filter(item => item.required);
   if (!required.length) return true;
   const requested = new Set(Array.isArray(completedItemIds) ? completedItemIds : []);
-  return required.every((item) => requested.has(item.id));
+  return required.every(item => requested.has(item.id));
 }
 
 module.exports = {

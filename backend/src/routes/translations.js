@@ -12,34 +12,62 @@ const VALID_LANGUAGES = [...SUPPORTED_LANGUAGES];
 
 const upsertValidation = [
   param('campaignId').isUUID().withMessage('Valid campaign ID is required'),
-  body('locale').optional().custom((value) => Boolean(resolveCampaignLanguage(value))).withMessage(`Locale must resolve to one of: ${VALID_LANGUAGES.join(', ')}`),
-  body('language').optional().custom((value) => Boolean(resolveCampaignLanguage(value))).withMessage(`Language must resolve to one of: ${VALID_LANGUAGES.join(', ')}`),
-  body().custom((val) => {
+  body('locale')
+    .optional()
+    .custom(value => Boolean(resolveCampaignLanguage(value)))
+    .withMessage(`Locale must resolve to one of: ${VALID_LANGUAGES.join(', ')}`),
+  body('language')
+    .optional()
+    .custom(value => Boolean(resolveCampaignLanguage(value)))
+    .withMessage(`Language must resolve to one of: ${VALID_LANGUAGES.join(', ')}`),
+  body().custom(val => {
     const loc = val && (val.locale || val.language);
     if (!loc) {
       throw new Error('Either locale or language is required');
     }
-    if (val.locale && val.language && resolveCampaignLanguage(val.locale) !== resolveCampaignLanguage(val.language)) {
+    if (
+      val.locale &&
+      val.language &&
+      resolveCampaignLanguage(val.locale) !== resolveCampaignLanguage(val.language)
+    ) {
       throw new Error('Locale and language must match');
     }
     return true;
   }),
-  body('title').trim().isLength({ min: 1, max: 255 }).withMessage('Title is required (max 255 chars)'),
+  body('title')
+    .trim()
+    .isLength({ min: 1, max: 255 })
+    .withMessage('Title is required (max 255 chars)'),
   body('description').optional().trim(),
-  body('milestone_titles').optional().custom((value) => {
-    let titles = value;
-    if (typeof titles === 'string') {
-      try { titles = JSON.parse(titles); } catch { throw new Error('Milestone titles must be valid JSON'); }
-    }
-    if (!titles || typeof titles !== 'object' || (!Array.isArray(titles) && Object.getPrototypeOf(titles) !== Object.prototype)) {
-      throw new Error('Milestone titles must be an array or object');
-    }
-    const values = Array.isArray(titles) ? titles : Object.values(titles);
-    if (values.length > 100 || values.some((title) => typeof title !== 'string' || title.length > 255)) {
-      throw new Error('Milestone titles must contain at most 100 strings of 255 characters or fewer');
-    }
-    return true;
-  }),
+  body('milestone_titles')
+    .optional()
+    .custom(value => {
+      let titles = value;
+      if (typeof titles === 'string') {
+        try {
+          titles = JSON.parse(titles);
+        } catch {
+          throw new Error('Milestone titles must be valid JSON');
+        }
+      }
+      if (
+        !titles ||
+        typeof titles !== 'object' ||
+        (!Array.isArray(titles) && Object.getPrototypeOf(titles) !== Object.prototype)
+      ) {
+        throw new Error('Milestone titles must be an array or object');
+      }
+      const values = Array.isArray(titles) ? titles : Object.values(titles);
+      if (
+        values.length > 100 ||
+        values.some(title => typeof title !== 'string' || title.length > 255)
+      ) {
+        throw new Error(
+          'Milestone titles must contain at most 100 strings of 255 characters or fewer'
+        );
+      }
+      return true;
+    }),
 ];
 
 // GET /:campaignId/translations — list all translations for a campaign
@@ -63,7 +91,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const { campaignId } = req.params;
     const locale = resolveCampaignLanguage(req.params.locale);
-    if (!locale) return res.status(400).json({ success: false, error: 'Unsupported campaign locale' });
+    if (!locale)
+      return res.status(400).json({ success: false, error: 'Unsupported campaign locale' });
     const { rows } = await db.query(
       `SELECT id, campaign_id, language, COALESCE(locale, language) AS locale, title, description, milestone_titles, created_at, updated_at
        FROM campaign_translations
@@ -91,20 +120,21 @@ router.post(
     const userId = req.user.userId || req.user.id;
 
     // Verify user owns this campaign
-    const { rows: campaigns } = await db.query(
-      'SELECT creator_id FROM campaigns WHERE id = $1',
-      [campaignId]
-    );
-    if (campaigns.length === 0) return res.status(404).json({ success: false, error: 'Campaign not found' });
+    const { rows: campaigns } = await db.query('SELECT creator_id FROM campaigns WHERE id = $1', [
+      campaignId,
+    ]);
+    if (campaigns.length === 0)
+      return res.status(404).json({ success: false, error: 'Campaign not found' });
     if (campaigns[0].creator_id !== userId && !req.user.is_admin) {
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
 
     let milestoneTitlesJson = '[]';
     if (req.body.milestone_titles !== undefined) {
-      milestoneTitlesJson = typeof req.body.milestone_titles === 'string'
-        ? req.body.milestone_titles
-        : JSON.stringify(req.body.milestone_titles);
+      milestoneTitlesJson =
+        typeof req.body.milestone_titles === 'string'
+          ? req.body.milestone_titles
+          : JSON.stringify(req.body.milestone_titles);
     }
 
     const { rows } = await db.query(
@@ -131,14 +161,15 @@ router.delete(
   asyncHandler(async (req, res) => {
     const { campaignId } = req.params;
     const locale = resolveCampaignLanguage(req.params.locale);
-    if (!locale) return res.status(400).json({ success: false, error: 'Unsupported campaign locale' });
+    if (!locale)
+      return res.status(400).json({ success: false, error: 'Unsupported campaign locale' });
     const userId = req.user.userId || req.user.id;
 
-    const { rows: campaigns } = await db.query(
-      'SELECT creator_id FROM campaigns WHERE id = $1',
-      [campaignId]
-    );
-    if (campaigns.length === 0) return res.status(404).json({ success: false, error: 'Campaign not found' });
+    const { rows: campaigns } = await db.query('SELECT creator_id FROM campaigns WHERE id = $1', [
+      campaignId,
+    ]);
+    if (campaigns.length === 0)
+      return res.status(404).json({ success: false, error: 'Campaign not found' });
     if (campaigns[0].creator_id !== userId && !req.user.is_admin) {
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }

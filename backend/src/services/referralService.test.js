@@ -9,7 +9,16 @@ test('adjustReferralCommissionOnRefund correctly adjusts commission on partial r
       query: async (text, params) => {
         queries.push({ text, params });
         if (text.includes('FROM contributions')) {
-          return { rows: [{ id: 'c-1', campaign_id: 'camp-1', amount: '100.0000000', referral_link_id: 'link-1' }] };
+          return {
+            rows: [
+              {
+                id: 'c-1',
+                campaign_id: 'camp-1',
+                amount: '100.0000000',
+                referral_link_id: 'link-1',
+              },
+            ],
+          };
         }
         if (text.includes('FROM referral_links')) {
           return { rows: [{ id: 'link-1', user_id: 'user-ref', campaign_id: 'camp-1' }] };
@@ -36,11 +45,13 @@ test('adjustReferralCommissionOnRefund correctly adjusts commission on partial r
     refundAmount: '50.0000000',
   });
 
-  const updateQuery = queries.find((q) => q.text.includes('UPDATE referral_commissions'));
+  const updateQuery = queries.find(q => q.text.includes('UPDATE referral_commissions'));
   assert.ok(updateQuery);
   assert.equal(updateQuery.params[0], '2.5000000');
 
-  const adjQuery = queries.find((q) => q.text.includes('INSERT INTO referral_commission_adjustments'));
+  const adjQuery = queries.find(q =>
+    q.text.includes('INSERT INTO referral_commission_adjustments')
+  );
   assert.ok(adjQuery);
   assert.equal(adjQuery.params[2], '-2.5000000');
 });

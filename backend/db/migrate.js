@@ -47,7 +47,7 @@ async function runUp() {
     validateMigrationFiles();
     await ensureSchemaMigrationsTable(client);
     const appliedRows = await loadApplied(client);
-    const appliedMap = new Map(appliedRows.map((r) => [r.filename, r]));
+    const appliedMap = new Map(appliedRows.map(r => [r.filename, r]));
 
     // Verify that already-applied migrations haven't been edited in place.
     for (const file of listUpMigrationFilenames()) {
@@ -71,10 +71,10 @@ async function runUp() {
       try {
         await client.query('BEGIN');
         await client.query(sql);
-        await client.query(
-          'INSERT INTO schema_migrations (filename, file_hash) VALUES ($1, $2)',
-          [file, hash]
-        );
+        await client.query('INSERT INTO schema_migrations (filename, file_hash) VALUES ($1, $2)', [
+          file,
+          hash,
+        ]);
         await client.query('COMMIT');
         count++;
       } catch (err) {
@@ -107,10 +107,10 @@ async function runStatus() {
   try {
     await ensureSchemaMigrationsTable(client);
     const appliedRows = await loadApplied(client);
-    const appliedMap = new Map(appliedRows.map((r) => [r.filename, r]));
+    const appliedMap = new Map(appliedRows.map(r => [r.filename, r]));
 
     const files = listAllMigrationFilenames();
-    const rows = files.map((file) => {
+    const rows = files.map(file => {
       const record = appliedMap.get(file);
       let status = 'PENDING';
       let appliedAt = '';
@@ -119,9 +119,10 @@ async function runStatus() {
       } else if (file.endsWith('.down.sql')) {
         status = 'DOWN MIGRATION';
       } else if (record) {
-        appliedAt = record.applied_at instanceof Date
-          ? record.applied_at.toISOString()
-          : String(record.applied_at);
+        appliedAt =
+          record.applied_at instanceof Date
+            ? record.applied_at.toISOString()
+            : String(record.applied_at);
         status =
           record.file_hash && record.file_hash !== fileHashFor(file)
             ? 'APPLIED (HASH MISMATCH)'
@@ -136,11 +137,13 @@ async function runStatus() {
       const at = r.appliedAt ? ` @ ${r.appliedAt}` : '';
       console.log(`  ${r.status.padEnd(28)} ${r.file}${at}`);
     }
-    const pending = rows.filter((r) => r.status === 'PENDING').length;
-    const applied = rows.filter((r) => r.status.startsWith('APPLIED')).length;
-    const unsupported = rows.filter((r) => r.status === 'UNSUPPORTED FORMAT').length;
+    const pending = rows.filter(r => r.status === 'PENDING').length;
+    const applied = rows.filter(r => r.status.startsWith('APPLIED')).length;
+    const unsupported = rows.filter(r => r.status === 'UNSUPPORTED FORMAT').length;
     console.log('-----------------');
-    console.log(`${applied} applied, ${pending} pending, ${unsupported} unsupported (${rows.length} total).`);
+    console.log(
+      `${applied} applied, ${pending} pending, ${unsupported} unsupported (${rows.length} total).`
+    );
   } catch (err) {
     console.error('[migrate:status] Failed:', err.message);
     process.exitCode = 1;
@@ -171,7 +174,9 @@ async function main() {
       console.error(`Unknown command: ${COMMAND}`);
       console.error('Usage: node db/migrate.js [up|status|down] [--bootstrap-schema]');
       console.error('  --bootstrap-schema  skip migrations whose objects already exist after');
-      console.error('                      `psql -f db/schema.sql` (used by npm run migrate:fresh)');
+      console.error(
+        '                      `psql -f db/schema.sql` (used by npm run migrate:fresh)'
+      );
       process.exitCode = 1;
       await pool.end();
   }

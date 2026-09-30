@@ -38,7 +38,9 @@ const MAX_DAILY_BUCKETS = 365;
  * @returns {Promise<object>}
  */
 async function getCampaignAnalytics(campaignId) {
-  const { rows: [campaign] } = await db.query(
+  const {
+    rows: [campaign],
+  } = await db.query(
     `SELECT created_at, deadline, raised_amount, target_amount, asset_type FROM campaigns WHERE id = $1`,
     [campaignId]
   );
@@ -83,9 +85,10 @@ async function getCampaignAnalytics(campaignId) {
   const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
   // If the campaign spans more than MAX_DAILY_BUCKETS days, clamp to the most recent window
-  const effectiveStart = totalDays > MAX_DAILY_BUCKETS
-    ? new Date(end.getTime() - (MAX_DAILY_BUCKETS - 1) * 24 * 60 * 60 * 1000)
-    : start;
+  const effectiveStart =
+    totalDays > MAX_DAILY_BUCKETS
+      ? new Date(end.getTime() - (MAX_DAILY_BUCKETS - 1) * 24 * 60 * 60 * 1000)
+      : start;
 
   const byDay = Object.fromEntries(dailyRows.rows.map(r => [r.day.toISOString().slice(0, 10), r]));
   const buckets = [];
@@ -194,7 +197,7 @@ async function getCampaignBackers(campaignId) {
   return {
     total_backers: senderStats.rows[0]?.total_backers ?? 0,
     new_backers_by_day: backerRows.rows,
-    top_backers: topBackerRows.rows.map((row) => ({
+    top_backers: topBackerRows.rows.map(row => ({
       sender_public_key: row.sender_public_key,
       contribution_count: row.contribution_count,
       total_amount: row.total_amount,
@@ -207,9 +210,10 @@ async function getCampaignBackers(campaignId) {
  * Aggregate analytics across all campaigns owned by a creator.
  */
 async function getUserDashboardAnalytics(userId) {
-  const [overviewRows, trendRows, topCampaignRows, velocityRows, retentionRows, referralRows] = await Promise.all([
-    db.query(
-      `SELECT
+  const [overviewRows, trendRows, topCampaignRows, velocityRows, retentionRows, referralRows] =
+    await Promise.all([
+      db.query(
+        `SELECT
          COUNT(DISTINCT c.id)::int                                AS total_campaigns,
          COALESCE(SUM(ctr.amount), 0)                            AS total_raised,
          COUNT(ctr.id)::int                                       AS total_contributions,
@@ -220,10 +224,10 @@ async function getUserDashboardAnalytics(userId) {
        FROM campaigns c
        LEFT JOIN contributions ctr ON ctr.campaign_id = c.id
        WHERE c.creator_id = $1`,
-      [userId]
-    ),
-    db.query(
-      `SELECT DATE(ctr.created_at) AS day,
+        [userId]
+      ),
+      db.query(
+        `SELECT DATE(ctr.created_at) AS day,
               COUNT(*)::int         AS contribution_count,
               SUM(ctr.amount)       AS total_amount
        FROM contributions ctr
@@ -232,10 +236,10 @@ async function getUserDashboardAnalytics(userId) {
          AND ctr.created_at >= NOW() - INTERVAL '30 days'
        GROUP BY DATE(ctr.created_at)
        ORDER BY day ASC`,
-      [userId]
-    ),
-    db.query(
-      `SELECT c.id, c.title, c.raised_amount, c.target_amount, c.asset_type,
+        [userId]
+      ),
+      db.query(
+        `SELECT c.id, c.title, c.raised_amount, c.target_amount, c.asset_type,
               COUNT(ctr.id)::int AS contribution_count
        FROM campaigns c
        LEFT JOIN contributions ctr ON ctr.campaign_id = c.id
@@ -243,11 +247,11 @@ async function getUserDashboardAnalytics(userId) {
        GROUP BY c.id
        ORDER BY c.raised_amount DESC
        LIMIT 5`,
-      [userId]
-    ),
-    // Funding velocity: daily cumulative raised per campaign (last 60 days)
-    db.query(
-      `SELECT c.id AS campaign_id, c.title,
+        [userId]
+      ),
+      // Funding velocity: daily cumulative raised per campaign (last 60 days)
+      db.query(
+        `SELECT c.id AS campaign_id, c.title,
               DATE(ctr.created_at) AS day,
               SUM(ctr.amount)      AS daily_amount
        FROM contributions ctr
@@ -256,11 +260,11 @@ async function getUserDashboardAnalytics(userId) {
          AND ctr.created_at >= NOW() - INTERVAL '60 days'
        GROUP BY c.id, c.title, DATE(ctr.created_at)
        ORDER BY c.id, day ASC`,
-      [userId]
-    ),
-    // Contributor retention: returning vs first-time per month (last 6 months)
-    db.query(
-      `SELECT
+        [userId]
+      ),
+      // Contributor retention: returning vs first-time per month (last 6 months)
+      db.query(
+        `SELECT
          TO_CHAR(DATE_TRUNC('month', ctr.created_at), 'YYYY-MM') AS month,
          SUM(CASE WHEN prev.sender_public_key IS NOT NULL THEN 1 ELSE 0 END)::int AS returning_count,
          SUM(CASE WHEN prev.sender_public_key IS NULL    THEN 1 ELSE 0 END)::int AS new_count
@@ -277,11 +281,11 @@ async function getUserDashboardAnalytics(userId) {
          AND ctr.created_at >= NOW() - INTERVAL '6 months'
        GROUP BY DATE_TRUNC('month', ctr.created_at)
        ORDER BY month ASC`,
-      [userId]
-    ),
-    // Referral conversion rate: clicks vs contributions per referral code
-    db.query(
-      `SELECT
+        [userId]
+      ),
+      // Referral conversion rate: clicks vs contributions per referral code
+      db.query(
+        `SELECT
          cr.referral_code,
          COUNT(DISTINCT cr.id)::int  AS click_count,
          COUNT(DISTINCT ctr.id)::int AS contribution_count,
@@ -295,9 +299,9 @@ async function getUserDashboardAnalytics(userId) {
        GROUP BY cr.referral_code
        ORDER BY contribution_count DESC
        LIMIT 10`,
-      [userId]
-    ),
-  ]);
+        [userId]
+      ),
+    ]);
 
   return {
     overview: overviewRows.rows[0],

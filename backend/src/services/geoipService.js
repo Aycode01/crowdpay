@@ -110,7 +110,9 @@ function positiveInt(raw, fallback) {
  * restart and tests can flip providers between cases.
  */
 function readConfig() {
-  const raw = String(process.env.GEOIP_PROVIDER || '').trim().toLowerCase();
+  const raw = String(process.env.GEOIP_PROVIDER || '')
+    .trim()
+    .toLowerCase();
   const provider = PROVIDER_ALIASES.get(raw);
 
   if (!provider && !warnedProviders.has(raw)) {
@@ -201,7 +203,10 @@ function isPublicIp(ip) {
 function cleanField(value) {
   if (typeof value !== 'string') return null;
   // eslint-disable-next-line no-control-regex -- intentionally strips control chars from untrusted provider input
-  const cleaned = value.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
+  const cleaned = value
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (!cleaned) return null;
   return cleaned.slice(0, MAX_FIELD_LENGTH);
 }
@@ -406,7 +411,9 @@ function isGeoipEnabled() {
  * @throws {Error} when a provider is selected but cannot possibly work
  */
 function validateGeoipConfig() {
-  const raw = String(process.env.GEOIP_PROVIDER || '').trim().toLowerCase();
+  const raw = String(process.env.GEOIP_PROVIDER || '')
+    .trim()
+    .toLowerCase();
   if (!PROVIDER_ALIASES.has(raw)) {
     throw new Error(
       `Unsupported GEOIP_PROVIDER: ${JSON.stringify(raw)} (supported: ${SUPPORTED_PROVIDERS.join(', ')})`

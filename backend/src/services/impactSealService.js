@@ -44,9 +44,7 @@ function signStats(stats, campaignId) {
     throw new Error('IMPACT_SIGNING_SECRET is not configured');
   }
   const payload = JSON.stringify({ campaign_id: campaignId, ...stats });
-  const signature = crypto.createHmac('sha256', signingSecret)
-    .update(payload)
-    .digest('hex');
+  const signature = crypto.createHmac('sha256', signingSecret).update(payload).digest('hex');
   return {
     ...stats,
     campaign_id: campaignId,

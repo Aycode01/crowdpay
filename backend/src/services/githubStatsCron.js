@@ -29,12 +29,14 @@ async function refreshGithubStats() {
       }
     }
 
-    logger.info(`[githubStatsCron] Finished refreshing stats. Updated ${updatedCount}/${campaigns.length} campaigns.`);
+    logger.info(
+      `[githubStatsCron] Finished refreshing stats. Updated ${updatedCount}/${campaigns.length} campaigns.`
+    );
   } catch (error) {
     logger.error('[githubStatsCron] Error refreshing GitHub stats', { error: error.message });
   }
 }
 
 module.exports = {
-  refreshGithubStats
+  refreshGithubStats,
 };
