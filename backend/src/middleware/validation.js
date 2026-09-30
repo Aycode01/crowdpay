@@ -331,6 +331,25 @@ const contributionValidation = [
     })
     .isLength({ max: 50 })
     .withMessage('Display name must be at most 50 characters'),
+  body('gift').optional({ nullable: true }).isObject().withMessage('gift must be an object'),
+  body('gift.recipient_email')
+    .if(body('gift').isObject({ strict: true }))
+    .trim()
+    .isLength({ max: 254 })
+    .withMessage('gift.recipient_email must be at most 254 characters')
+    .isEmail()
+    .withMessage('gift.recipient_email must be a valid email address')
+    .normalizeEmail(),
+  body('gift.recipient_name')
+    .if(body('gift').isObject({ strict: true }))
+    .customSanitizer(val => (typeof val === 'string' ? stripHtml(val).trim() : val))
+    .isLength({ min: 1, max: 100 })
+    .withMessage('gift.recipient_name must be between 1 and 100 characters'),
+  body('gift.message')
+    .optional({ nullable: true })
+    .customSanitizer(val => (typeof val === 'string' ? stripHtml(val).trim() : val))
+    .isLength({ max: 280 })
+    .withMessage('gift.message must be at most 280 characters'),
   body('tier_id')
     .optional({ nullable: true })
     .custom(value => {

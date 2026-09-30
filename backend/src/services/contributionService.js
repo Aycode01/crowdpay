@@ -138,6 +138,7 @@ async function submitCustodialContribution({
   intentOverride,
   anchorMetadata,
   displayName,
+  gift,
   referralCode,
   referralLinkCode,
   referralLinkId,
@@ -180,6 +181,15 @@ async function submitCustodialContribution({
 
   const metadata = {
     ...intent.flowMetadata,
+    ...(gift
+      ? {
+          gift: {
+            recipient_name: gift.recipient_name,
+            recipient_email: gift.recipient_email,
+            message: gift.message || null,
+          },
+        }
+      : {}),
     platform_fee_amount: 0,
     ip_address: ipAddress || null,
     device_fingerprint: deviceFingerprint || null,

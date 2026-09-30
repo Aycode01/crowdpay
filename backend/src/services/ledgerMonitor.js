@@ -15,6 +15,10 @@ const { attributeContributionToReferrer } = require('./referralService');
 const { reconcileCampaignBalances: runBalanceReconciliation } = require('./reconciliation');
 const { sendContributionReceipt } = require('./emailService');
 const {
+  processPendingGiftNotifications,
+  startGiftNotificationWorker,
+} = require('./contributionGiftNotifications');
+const {
   emitWebhookEventForUser,
   emitWebhookEventForCampaign,
   WEBHOOK_EVENTS,
@@ -385,7 +389,7 @@ async function recordConfirmedContribution({
     await client.query('BEGIN');
 
     const { rows: creatorRows } = await client.query(
-      'SELECT creator_id FROM campaigns WHERE id = $1',
+      'SELECT creator_id, title FROM campaigns WHERE id = $1',
       [campaignId]
     );
     const creatorId = creatorRows[0].creator_id;
@@ -399,6 +403,7 @@ async function recordConfirmedContribution({
     );
     const anchorMetadata = submittedRows[0]?.metadata?.anchor || null;
     const displayName = submittedRows[0]?.metadata?.display_name || null;
+    const gift = submittedRows[0]?.metadata?.gift || null;
     const referralCode = submittedRows[0]?.metadata?.referral_code || null;
     const ipAddress = submittedRows[0]?.metadata?.ip_address || null;
     const deviceFingerprint = submittedRows[0]?.metadata?.device_fingerprint || null;
@@ -448,6 +453,26 @@ async function recordConfirmedContribution({
         'completed',
       ]
     );
+
+    if (gift) {
+      await client.query(
+        `INSERT INTO contribution_gift_notifications
+           (contribution_id, campaign_id, recipient_email, recipient_name, message,
+            amount, asset, campaign_title)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (contribution_id) DO NOTHING`,
+        [
+          inserted[0].id,
+          campaignId,
+          gift.recipient_email,
+          gift.recipient_name,
+          gift.message || null,
+          destinationAmount,
+          destinationAsset,
+          creatorRows[0].title,
+        ]
+      );
+    }
 
     const { rows: fundedRows } = await client.query(
       `UPDATE campaigns
@@ -553,6 +578,7 @@ async function recordConfirmedContribution({
         asset: destinationAsset,
         senderPublicKey,
       },
+      hasGift: Boolean(gift),
     };
     logger.info('Contribution indexed', {
       campaign_id: campaignId,
@@ -663,6 +689,16 @@ async function recordConfirmedContribution({
           error: e.message,
         })
       );
+
+      if (postCommitHooks.hasGift) {
+        processPendingGiftNotifications().catch(error =>
+          logger.error('Gift contribution notification processing failed', {
+            campaign_id: postCommitHooks.campaignId,
+            contribution_id: postCommitHooks.contributionId,
+            error: error.message,
+          })
+        );
+      }
 
       // User-level webhooks (legacy)
       emitWebhookEventForUser(
@@ -834,6 +870,7 @@ async function watchCampaignWallet(campaignIdOrOpts, walletPublicKeyArg) {
 const RECONCILE_INTERVAL_MS = 10 * 60 * 1000;
 
 async function startLedgerMonitor() {
+  startGiftNotificationWorker();
   await defaultIngestionWorker.start();
 
   const { rows } = await db.query(
