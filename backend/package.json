@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.410.0",
+    "@aws-sdk/s3-request-presigner": "3.1038.0",
     "@sentry/node": "^10.68.0",
     "@stellar/stellar-sdk": "^12.3.0",
     "bcryptjs": "^2.4.3",
