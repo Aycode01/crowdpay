@@ -15,6 +15,8 @@ function setupEnv(overrides = {}) {
   const base = {
     DATABASE_URL: 'postgres://crowdpay:crowdpay@localhost:5432/crowdpay',
     JWT_SECRET: VALID_JWT_SECRET,
+    JWT_ISSUER: 'crowdpay-test',
+    JWT_AUDIENCE: 'crowdpay-test-clients',
     API_KEY_PEPPER: 'b'.repeat(64),
     PLATFORM_SECRET_KEY: VALID_PLATFORM_SECRET_KEY,
     ARBITRATOR_SECRET_KEY: VALID_PLATFORM_SECRET_KEY,
@@ -160,4 +162,56 @@ test('exits when API_KEY_PEPPER equals JWT_SECRET', () => {
   });
   assert.deepEqual(exitCalls, [1]);
   assert.match(stderr, /API_KEY_PEPPER must differ from JWT_SECRET/);
+});
+
+test('exits in production when neither SMTP_HOST nor EMAIL_SERVICE_API_KEY is set', () => {
+  const { exitCalls, stderr } = runValidateEnv({
+    NODE_ENV: 'production',
+    SMTP_HOST: undefined,
+    EMAIL_SERVICE_API_KEY: undefined,
+    DISABLE_EMAILS: undefined,
+  });
+  assert.deepEqual(exitCalls, [1]);
+  assert.match(stderr, /SMTP_HOST or EMAIL_SERVICE_API_KEY must be set in production/);
+});
+
+test('does not exit in production when SMTP_HOST is set', () => {
+  const { exitCalls } = runValidateEnv({
+    NODE_ENV: 'production',
+    SMTP_HOST: 'smtp.example.com',
+    EMAIL_SERVICE_API_KEY: undefined,
+    DISABLE_EMAILS: undefined,
+  });
+  assert.deepEqual(exitCalls, []);
+});
+
+test('does not exit in production when EMAIL_SERVICE_API_KEY is set', () => {
+  const { exitCalls } = runValidateEnv({
+    NODE_ENV: 'production',
+    SMTP_HOST: undefined,
+    EMAIL_SERVICE_API_KEY: 'key',
+    DISABLE_EMAILS: undefined,
+  });
+  assert.deepEqual(exitCalls, []);
+});
+
+test('DISABLE_EMAILS=true is an explicit opt-out in production but warns loudly', () => {
+  const { exitCalls, stderr } = runValidateEnv({
+    NODE_ENV: 'production',
+    SMTP_HOST: undefined,
+    EMAIL_SERVICE_API_KEY: undefined,
+    DISABLE_EMAILS: 'true',
+  });
+  assert.deepEqual(exitCalls, []);
+  assert.match(stderr, /DISABLE_EMAILS=true in production/);
+});
+
+test('does not require SMTP outside production', () => {
+  const { exitCalls } = runValidateEnv({
+    NODE_ENV: 'development',
+    SMTP_HOST: undefined,
+    EMAIL_SERVICE_API_KEY: undefined,
+    DISABLE_EMAILS: undefined,
+  });
+  assert.deepEqual(exitCalls, []);
 });

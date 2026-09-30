@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../config/database');
 const Sentry = require('@sentry/node');
 const logger = require('../config/logger');
+const { isEmailConfigured } = require('../services/emailService');
 
 const router = express.Router();
 
@@ -25,6 +26,7 @@ router.get('/', async (_req, res) => {
     res.json({
       status: 'ok',
       db: { pool, utilisation },
+      email: isEmailConfigured() ? 'ready' : 'unconfigured',
     });
   } catch (err) {
     logger.error('Health check database query failed', { error: err.message });

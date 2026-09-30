@@ -47,6 +47,17 @@ if (
   });
 }
 
+let warnedUnconfigured = false;
+
+/**
+ * True when a transporter exists, i.e. emails can actually be delivered.
+ * Reads the state established at module load so it cannot drift from the
+ * transporter that sendEmail() really uses.
+ */
+function isEmailConfigured() {
+  return Boolean(transporter);
+}
+
 /**
  * Sends an email asynchronously.
  */
@@ -57,7 +68,13 @@ async function sendEmail({ to, subject, text, html }) {
   }
 
   if (!transporter) {
-    logger.info('Email Service Mock: would have sent email', { subject });
+    if (!warnedUnconfigured) {
+      warnedUnconfigured = true;
+      logger.warn(
+        'Email Service is not configured (SMTP_HOST / EMAIL_SERVICE_API_KEY unset): transactional emails are NOT being delivered',
+        { subject },
+      );
+    }
     return;
   }
 
@@ -82,6 +99,13 @@ async function sendEmail({ to, subject, text, html }) {
  */
 async function sendIdempotent({ dedupeKey, to, subject, text, html }) {
   if (!to) return;
+
+  // Without a transporter nothing can be delivered. Do not consume the dedupe
+  // key, so the email can still be sent once email is configured.
+  if (!transporter) {
+    await sendEmail({ to, subject, text, html });
+    return;
+  }
 
   const { rows } = await db.query(
     `INSERT INTO sent_emails (dedupe_key, recipient_email)
@@ -448,6 +472,7 @@ const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
 module.exports = {
   sendEmail,
+  isEmailConfigured,
   sendIdempotent,
   isUnsubscribed,
   isCampaignUpdateUnsubscribed,

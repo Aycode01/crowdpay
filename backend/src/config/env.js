@@ -74,6 +74,20 @@ function validateEnv() {
     }
   }
 
+  if (process.env.NODE_ENV === 'production') {
+    const emailsDisabled =
+      String(process.env.DISABLE_EMAILS || '').toLowerCase() === 'true';
+    if (emailsDisabled) {
+      warnings.push(
+        'DISABLE_EMAILS=true in production — no transactional email (receipts, password resets, KYC/withdrawal decisions) will be sent'
+      );
+    } else if (!process.env.SMTP_HOST && !process.env.EMAIL_SERVICE_API_KEY) {
+      errors.push(
+        'SMTP_HOST or EMAIL_SERVICE_API_KEY must be set in production (or set DISABLE_EMAILS=true to opt out explicitly)'
+      );
+    }
+  }
+
   const storageConfigured = STORAGE_VARS.some((key) => !!process.env[key]);
   const storageMissing = STORAGE_VARS.filter((key) => !process.env[key]);
   if (storageConfigured && storageMissing.length) {
